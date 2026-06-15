@@ -200,8 +200,15 @@ def _modality_shap_explanation(modality_name, estimator, scaler, raw_features, f
     try:
         # If the estimator is a VotingClassifier, pick its RandomForest or GradientBoosting sub-estimator for tree explanation
         actual_estimator = estimator
-        if hasattr(estimator, 'estimators_') and len(estimator.estimators_) > 0:
-            for sub in estimator.estimators_:
+        
+        # Unwrap CalibratedClassifierCV if present
+        if hasattr(actual_estimator, 'calibrated_classifiers_') and len(actual_estimator.calibrated_classifiers_) > 0:
+            actual_estimator = actual_estimator.calibrated_classifiers_[0].estimator
+        elif hasattr(actual_estimator, 'estimator'):
+            actual_estimator = actual_estimator.estimator
+
+        if hasattr(actual_estimator, 'estimators_') and len(actual_estimator.estimators_) > 0:
+            for sub in actual_estimator.estimators_:
                 sub_name = type(sub).__name__
                 if 'Forest' in sub_name or 'Boosting' in sub_name or 'Tree' in sub_name:
                     actual_estimator = sub

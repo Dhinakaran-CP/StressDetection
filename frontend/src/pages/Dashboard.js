@@ -577,7 +577,9 @@ export default function Dashboard({ theme, toggleTheme }) {
       faceFile: faceImage,
       voiceFile,
       eegData,
-      gsrData
+      gsrData,
+      eegFile,
+      gsrFile
     });
 
     if (validationErrors.length > 0) {
@@ -899,7 +901,7 @@ export default function Dashboard({ theme, toggleTheme }) {
                   padding: '1rem',
                   color: '#c74545'
                 }}>
-                  <strong>?? Error:</strong> {error}
+                  <strong>⚠️ Error:</strong> {error}
                 </div>
               </div>
             </div>
@@ -911,8 +913,8 @@ export default function Dashboard({ theme, toggleTheme }) {
               <div className="spinner-border text-primary mb-3" role="status" style={{width: '3rem', height: '3rem'}}></div>
               <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
                 {phase === 'reanalyzing'
-                  ? '?? Re-analyzing after recovery...'
-                  : '?? Analyzing stress indicators...'}
+                  ? '⏳ Re-analyzing after recovery...'
+                  : '⏳ Analyzing stress indicators...'}
               </div>
             </div>
           )}

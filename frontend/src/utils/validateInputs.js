@@ -1,10 +1,10 @@
 // frontend/src/utils/validateInputs.js
 
-export function validateAnalysisInputs({ faceFile, voiceFile, eegData, gsrData }) {
+export function validateAnalysisInputs({ faceFile, voiceFile, eegData, gsrData, eegFile, gsrFile }) {
   const errors = [];
 
   // Must have at least one modality
-  const hasModality = faceFile || voiceFile || eegData?.trim() || gsrData?.trim();
+  const hasModality = faceFile || voiceFile || eegFile || gsrFile || eegData?.trim() || gsrData?.trim();
   if (!hasModality) {
     errors.push('Provide at least one input: photo, voice recording, or EEG/GSR data.');
   }
