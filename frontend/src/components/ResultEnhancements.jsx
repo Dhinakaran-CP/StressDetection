@@ -84,7 +84,7 @@ export default function ResultEnhancements({ result }) {
     const total = points.reduce((sum, item) => sum + item.value, 0) || 1;
 
     return {
-      cause: sorted.length > 1 ? \ and \ : sorted[0].reason,
+      cause: sorted.length > 1 ? `${sorted[0].reason} and ${sorted[1].reason}` : sorted[0].reason,
       contributions: points.map((item) => ({
         ...item,
         contribution: Math.round((item.value / total) * 100),

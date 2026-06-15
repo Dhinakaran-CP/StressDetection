@@ -60,7 +60,7 @@ if model.load_model(BASE_DIR):
     print("Pre-trained expert models loaded successfully!")
 else:
     print("Could not load one or more expert models.")
-    print("Please ensure 'facial_expert_model.pkl', 'voice_expert_model.pkl', and 'physio_expert_model.pkl' exist in the backend folder.")
+    print("Please ensure 'face_expert_lightweight.pkl', 'voice_expert_lightweight.pkl', and 'physio_expert.pkl' exist in the 'backend/expert_models/' folder.")
 
 # --- Load environment variables and configuration ---
 import pickle
