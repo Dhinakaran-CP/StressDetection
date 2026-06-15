@@ -8,6 +8,26 @@ import librosa
 import pickle
 import os
 import mediapipe as mp
+import sys
+
+class CustomUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if 'sklearn._loss' in module:
+            try:
+                return super().find_class(module, name)
+            except (ImportError, ModuleNotFoundError):
+                for alt_module in ['sklearn._loss', 'sklearn._loss._loss', 'sklearn._loss.loss']:
+                    try:
+                        __import__(alt_module)
+                        m = sys.modules[alt_module]
+                        if hasattr(m, name):
+                            return getattr(m, name)
+                    except (ImportError, KeyError, AttributeError):
+                        continue
+        return super().find_class(module, name)
+
+def safe_pickle_load(file_obj):
+    return CustomUnpickler(file_obj).load()
 
 # Check if we can use legacy solutions or modern Tasks API
 USE_LEGACY_MEDIAPIPE = False
@@ -125,7 +145,7 @@ class MultimodalStressDetector:
                 return None
             try:
                 with open(path, 'rb') as f:
-                    loaded_obj = pickle.load(f)
+                    loaded_obj = safe_pickle_load(f)
                 return loaded_obj
             except Exception as e:
                 err_msg = f"Pickle load error: {e}"

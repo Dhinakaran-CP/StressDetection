@@ -28,7 +28,7 @@ from werkzeug.utils import secure_filename
 import tempfile
 import cv2
 import librosa
-from model import MultimodalStressDetector, extract_physiological_features
+from model import MultimodalStressDetector, extract_physiological_features, safe_pickle_load
 
 app = Flask(__name__)
 CORS(app)
@@ -135,7 +135,7 @@ def load_expert(filename):
         return None
     try:
         with open(path, 'rb') as f:
-            return pickle.load(f)
+            return safe_pickle_load(f)
     except Exception as e:
         err = f"Pickle load error: {e}"
         print(f"Error loading {filename}: {e}")
