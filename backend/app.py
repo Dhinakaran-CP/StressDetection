@@ -1,9 +1,5 @@
-import multiprocessing
-
-# Only monkey patch standard libraries in the main process to prevent deadlocks in subprocesses
-if multiprocessing.current_process().name == 'MainProcess':
-    import eventlet
-    eventlet.monkey_patch()
+import eventlet
+eventlet.monkey_patch()
 
 import sys
 import builtins
