@@ -2,138 +2,134 @@
 
 A real-time stress detection system that uses three physiological modalities — **facial expressions**, **voice acoustics**, and **physiological signals** — to detect and quantify stress levels using machine learning.
 
-## Quick Start
+---
 
-```bash
-# Start both backend and frontend
-run.bat
-```
+## 📖 Overview
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
+The **Multimodal Stress Detection System** aims to accurately identify human stress levels by fusing multiple streams of biological telemetry. By observing users through their webcam and microphone—as well as optionally analyzing uploaded EEG and GSR data—the application acts as an intelligent health monitoring dashboard. It not only predicts the likelihood of stress but also explicitly tells users *why* they are stressed using Explainable AI (XAI).
 
-## Project Structure
+## ✨ Key Features
 
-```
+- **Real-Time Telemetry Dashboard:** Stream live stress analysis directly from your webcam and microphone.
+- **Multimodal Uploads:** Support for batch analysis of images, audio files, and physiological CSV data (EEG/GSR).
+- **Explainable AI (XAI):** Uses SHAP (SHapley Additive exPlanations) to break down the exact biometric features driving your stress score (e.g., "Left Brow Tension" or "Vocal Jitter").
+- **Personal Baseline Calibration:** Calibrate the system to your natural resting state before analyzing stress to reduce false positives.
+- **Interactive UI:** Smooth React-based frontend with a toggleable Earthy/Cyber theme and responsive visual plots.
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework:** React.js
+- **Visualization:** Recharts (for live radar and bar charts)
+- **Styling:** Custom CSS (glassmorphism UI, dynamic themes)
+- **Web Workers:** Background thread processing for face posture requests.
+
+### Backend
+- **Framework:** Python, Flask, Flask-CORS
+- **Concurrency:** Eventlet & Socket.IO (for asynchronous workers and SSE/WebSocket streaming)
+
+### Machine Learning & Data Processing
+- **Core ML:** Scikit-Learn (Ensemble methods, SVM, Random Forest, Gradient Boosting, Calibrated Classifiers)
+- **Computer Vision:** MediaPipe Tasks API (Face Landmarking), OpenCV (Fallback Haar Cascades)
+- **Audio Processing:** Librosa, Custom Fast Autocorrelation
+- **Explainability:** SHAP (TreeExplainer)
+- **Data Manipulation:** NumPy, Pandas
+
+---
+
+## 🧠 Methodology & Architecture
+
+The system uses a **three-expert fusion** approach:
+
+| Expert | Input | Model | Latency |
+|--------|-------|-------|---------|
+| **Facial** | Webcam frames → MediaPipe 3D Landmarks | Voting Ensemble (GB + RF + SVM) | ~8 ms |
+| **Voice** | Microphone chunks → 12 Acoustic Biomarkers | Gradient Boosting | ~15 ms |
+| **Physiological** | Uploaded EEG/GSR Signals | Random Forest | ~5 ms |
+
+### 1. Facial Expression Expert
+- Extracts 18 high-level geometric features based on facial action units (Eye Aspect Ratio, Brow Tension, Lip Compression, Jaw Displacement, etc.).
+- Soft-Voting Ensemble Classifier trained on augmented face landmark geometries, balanced via SMOTE (Synthetic Minority Over-sampling Technique).
+
+### 2. Voice Acoustics Expert
+- Extracts 12 specific acoustic biomarkers including Pitch, Jitter (frequency instability), Shimmer (amplitude instability), and Harmonics-to-Noise Ratio (HNR).
+- Voice feature extraction uses autocorrelation with parabolic peak interpolation, achieving a heavily optimized execution time of **<15ms** (down from 4.6s using standard libraries).
+
+### 3. Physiological Signal Expert
+- Analyzes CSV datasets of EEG (Brainwave Alpha/Beta power) and GSR (Skin Conductance rate).
+- Wrapped in a `CalibratedClassifierCV` for highly accurate probabilistic stress mapping.
+
+### ⚙️ Fusion Engine
+Results from the distinct models are aggregated via a **weighted confidence engine**. It applies temporal smoothing and a 15-second decay buffer for voice (ensuring conversation-style scoring continuity while the user takes breaths or pauses). The output is streamed in real-time to the frontend via Server-Sent Events (SSE).
+
+---
+
+## 📂 Project Structure
+
+```text
 StressDetectionUsingML/
 │
 ├── run.bat                       # One-click launcher (starts backend + frontend)
 ├── README.md
 ├── TEST_GUIDE.md                 # Comprehensive testing guide
 │
-├── backend/                      # Flask + SocketIO API server
-│   ├── app.py                    # Main application entry point (API routes, SSE, WebSocket)
-│   ├── model.py                  # MultimodalStressDetector: feature extraction + inference
-│   ├── realtime_core.py          # StressStreamProcessor: real-time session management
-│   ├── voice_worker.py           # High-speed vocal feature extraction (autocorrelation pitch)
+├── backend/                      # Flask API server & ML Inference
+│   ├── app.py                    # Main application entry point (API routes, SSE)
+│   ├── model.py                  # Feature extraction + inference logic
+│   ├── realtime_core.py          # Real-time session management & SSE streams
+│   ├── voice_worker.py           # High-speed vocal feature extraction
 │   ├── calibration.py            # Per-user baseline calibration engine
 │   ├── score_buffer.py           # Rolling score buffer with smoothing
 │   ├── requirements.txt          # Python dependencies
 │   │
-│   ├── expert_models/            # Production lightweight expert models (~1-2 MB each)
-│   │   ├── face_expert_lightweight.pkl
-│   │   ├── face_scaler_lightweight.pkl
-│   │   ├── voice_expert_lightweight.pkl
-│   │   ├── voice_scaler_lightweight.pkl
-│   │   ├── physio_expert.pkl
-│   │   └── physio_scaler.pkl
-│   │
-│   ├── face_landmarker.task      # MediaPipe Tasks face landmarker model
-│   ├── facial_expert_model.pkl   # Legacy full-size facial model (multimodal endpoint)
-│   ├── voice_expert_model.pkl    # Legacy full-size voice model (multimodal endpoint)
-│   ├── physio_expert_model.pkl   # Legacy physio model (multimodal endpoint)
-│   │
-│   ├── run_and_verify_all.py     # Automated 23-test verification suite
-│   ├── tests/                    # Manual and API test scripts
-│   │   ├── test_api_endpoints.py
-│   │   ├── test_health.py
-│   │   ├── test_realtime_performance.py
-│   │   ├── test_socket_stream.py
-│   │   └── test_voice_model.py
-│   │
-│   ├── uploads/                  # Temporary file uploads (auto-cleaned)
-│   └── training/                 # Offline training scripts & datasets (not for production)
-│       ├── train_model.py        # Train voice + physio experts
-│       ├── train_face_expert.py  # Train facial expression expert
-│       ├── colab_training.py     # Google Colab training notebook (standalone)
-│       ├── integrate_dataset.py  # StressID dataset integration
-│       ├── extract_face_indicators_offline.py
-│       ├── Dataset/              # labels.csv
-│       └── Feature Extraction/   # Pre-computed feature CSVs
+│   ├── expert_models/            # Production lightweight models (~1-2 MB each)
+│   ├── tests/                    # API, health, and streaming test scripts
+│   └── uploads/                  # Temporary file uploads (auto-cleaned)
 │
 ├── frontend/                     # React application
 │   ├── public/
-│   │   ├── index.html
-│   │   ├── facePostWorker.js     # Web Worker: offloads face POST requests off main thread
-│   │   └── mediapipe/            # MediaPipe WASM bundles (face landmarker)
+│   │   └── facePostWorker.js     # Web Worker: offloads face POST requests
 │   └── src/
-│       ├── App.js                # Root: renders Dashboard directly
-│       ├── index.js
-│       ├── index.css
-│       ├── theme.css             # Global design tokens & CSS variables
-│       ├── pages/
-│       │   └── Dashboard.js     # Main page: upload analysis + real-time monitor tabs
-│       └── components/
-│           ├── RealtimeMonitor.jsx   # Live telemetry dashboard with SSE fusion stream
-│           ├── CalibrationWizard.jsx # 3-phase personal baseline calibration wizard
-│           ├── FaceStream.jsx        # Webcam capture + MediaPipe landmark streaming
-│           └── WaveformRecorder.jsx  # Microphone capture + chunked audio streaming
-│
-├── dataset_extracted/            # User-extracted StressID baseline indicator CSVs
-│   ├── face_indicators_stressid.csv
-│   └── voice_indicators_stressid.csv
-│
-├── docs/                         # Architecture & optimization documentation
-│   ├── OPTIMIZATION_STRATEGY.md
-│   └── PHASE1_REALTIME_ARCHITECTURE.md
+│       ├── App.js                # Root Component
+│       ├── pages/Dashboard.js    # Main UI Dashboard
+│       └── components/           # UI Components (RealtimeMonitor, AnalysisPanel)
 │
 └── reports/                      # Performance benchmarks & analysis reports
-    ├── performance_charts.png
-    ├── performance_report.md
-    ├── project_report.md             # Comprehensive project report (June 2026)
-    └── stress_pattern_reliability_report.md
 ```
 
-## Architecture
+---
 
-The system uses a **three-expert fusion** approach:
+## 🚀 Getting Started
 
-| Expert | Input | Model | Latency |
-|--------|-------|-------|---------|
-| Facial | Webcam frames → MediaPipe landmarks | Voting Ensemble (GB + RF + SVM) | ~8 ms |
-| Voice | Microphone chunks → 12 Acoustic Biomarkers | Gradient Boosting | ~15 ms |
-| Physiological | EEG + GSR signals | Random Forest | ~5 ms |
-
-Results are **fused via a weighted confidence engine** and streamed in real-time to the frontend via Server-Sent Events (SSE).
-
-### Key Design Decisions
-
-- **Interactive Biomarker Guide**: The UI includes a built-in parameter explorer for both Face and Voice. Users can dynamically learn how landmarks (like masseter clench, jaw width) and audio features (like Jitter RAP, Shimmer) are calculated, how they map to physiological stress, and instructions on how to test them.
-- **Personal Baseline Calibration**: A 3-phase wizard (silence → voice → face) builds a personal reference frame, so stress is measured _relative to the user's own calm state_.
-- **Soft-Voting Ensemble Classifier**: The facial expert employs an ensemble of Gradient Boosting, Random Forest, and Support Vector Machine (SVC) trained on augmented face landmark geometries balanced via SMOTE (accuracy: 65.27% under real-world noise simulation).
-- **Fast Autocorrelation Pitch Extractor**: Voice feature extraction uses autocorrelation with parabolic peak interpolation. This yields an execution time of **<15ms** (from 4.6 seconds using librosa's pyin) and resolves raw jitter flatline discretization bugs.
-- **15-Second Decay Buffer**: The fusion engine holds the voice stress score in its buffer for 15 seconds after speaking ends, ensuring conversation-style scoring continuity while the user is silent.
-- **OS Thread Pool**: CPU-heavy audio processing runs in `eventlet.tpool` to avoid GIL blocking.
-- **Web Worker**: Face POST requests run in a background browser thread to keep the webcam feed smooth at 30fps.
-
-## Running Tests
-
+### Quick Start (Windows)
+You can run the entire stack (both frontend and backend) simultaneously using the provided batch script:
 ```bash
-cd backend
-python run_and_verify_all.py   # Full 23-test automated suite
+run.bat
 ```
+- **Frontend URL:** http://localhost:3000
+- **Backend API URL:** http://localhost:5000
 
-## Dependencies
+### Manual Setup
 
-### Backend
+**1. Backend**
 ```bash
 cd backend
 pip install -r requirements.txt
+python app.py
 ```
 
-### Frontend
+**2. Frontend**
 ```bash
 cd frontend
 npm install
 npm start
+```
+
+## 🧪 Running Tests
+An automated suite of 23 tests is available to verify API behavior, model load times, and real-time inference latency.
+```bash
+cd backend
+python run_and_verify_all.py
 ```
