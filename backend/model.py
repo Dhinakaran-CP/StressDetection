@@ -116,44 +116,57 @@ class MultimodalStressDetector:
     
     def load_model(self, base_path='.'):
         """Load the 3 specialized expert models"""
+        self.load_errors = {}
         models_dir = os.path.join(base_path, 'expert_models')
+        
+        def _safe_load(path, name):
+            if not os.path.exists(path):
+                self.load_errors[name] = f"File not found: {path}"
+                return None
+            try:
+                with open(path, 'rb') as f:
+                    loaded_obj = pickle.load(f)
+                return loaded_obj
+            except Exception as e:
+                err_msg = f"Pickle load error: {e}"
+                self.load_errors[name] = err_msg
+                print(f"Error unpickling {name} from {path}: {e}")
+                return None
+
         try:
             # 1. Facial Expert
             face_path = os.path.join(models_dir, 'face_expert_lightweight.pkl')
             face_scaler_path = os.path.join(models_dir, 'face_scaler_lightweight.pkl')
-            if os.path.exists(face_path):
-                with open(face_path, 'rb') as f:
-                    self.facial_model = pickle.load(f)
-                if os.path.exists(face_scaler_path):
-                    with open(face_scaler_path, 'rb') as f:
-                        self.facial_scaler = pickle.load(f)
+            self.facial_model = _safe_load(face_path, 'facial_model')
+            self.facial_scaler = _safe_load(face_scaler_path, 'facial_scaler')
+            if self.facial_model:
                 print("Loaded Facial Expert Model")
             
             # 2. Voice Expert
             voice_path = os.path.join(models_dir, 'voice_expert_lightweight.pkl')
             voice_scaler_path = os.path.join(models_dir, 'voice_scaler_lightweight.pkl')
-            if os.path.exists(voice_path):
-                with open(voice_path, 'rb') as f:
-                    self.voice_model = pickle.load(f)
-                if os.path.exists(voice_scaler_path):
-                    with open(voice_scaler_path, 'rb') as f:
-                        self.voice_scaler = pickle.load(f)
+            self.voice_model = _safe_load(voice_path, 'voice_model')
+            self.voice_scaler = _safe_load(voice_scaler_path, 'voice_scaler')
+            if self.voice_model:
                 print("Loaded Voice Expert Model")
 
             # 3. Physio Expert
             phys_path = os.path.join(models_dir, 'physio_expert.pkl')
             phys_scaler_path = os.path.join(models_dir, 'physio_scaler.pkl')
-            if os.path.exists(phys_path):
-                with open(phys_path, 'rb') as f:
-                    self.phys_model = pickle.load(f)
-                if os.path.exists(phys_scaler_path):
-                    with open(phys_scaler_path, 'rb') as f:
-                        self.phys_scaler = pickle.load(f)
+            self.phys_model = _safe_load(phys_path, 'physio_model')
+            self.phys_scaler = _safe_load(phys_scaler_path, 'physio_scaler')
+            if self.phys_model:
                 print("Loaded Physio Expert Model")
             
-            self.is_trained = True
-            return True
+            # Allow the detector to function if at least one model is successfully loaded
+            if self.facial_model or self.voice_model or self.phys_model:
+                self.is_trained = True
+                return True
+            else:
+                self.is_trained = False
+                return False
         except Exception as e:
+            self.load_errors['general'] = str(e)
             print(f"Error loading models: {e}")
             return False
 

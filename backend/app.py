@@ -61,6 +61,10 @@ if model.load_model(BASE_DIR):
 else:
     print("Could not load one or more expert models.")
     print("Please ensure 'face_expert_lightweight.pkl', 'voice_expert_lightweight.pkl', and 'physio_expert.pkl' exist in the 'backend/expert_models/' folder.")
+    if hasattr(model, 'load_errors') and model.load_errors:
+        print("Detailed load errors:")
+        for name, err in model.load_errors.items():
+            print(f"  - {name}: {err}")
 
 # --- Load environment variables and configuration ---
 import pickle
@@ -105,7 +109,7 @@ GEMINI_API_KEY = get_env_or_dotenv('GEMINI_API_KEY', '')
 GEMINI_MODEL = get_env_or_dotenv('GEMINI_MODEL', 'gemini-2.5-flash')
 
 # Muse EEG stream tracking configuration
-MUSE_DEFAULT_FILENAME = r"C:\Musedata\eeg_session.csv"
+MUSE_DEFAULT_FILENAME = os.path.join(BASE_DIR, 'uploads', 'eeg_session.csv')
 MUSE_SESSION_LOCK = threading.Lock()
 MUSE_SESSION = {
     'process': None,
@@ -117,19 +121,25 @@ MUSE_SESSION = {
     'error': None,
 }
 
+MODEL_LOAD_ERRORS = {}
+
 def load_expert(filename):
     # Try backend/expert_models/ first, then backend/
     path1 = os.path.join(BASE_DIR, 'expert_models', filename)
     path2 = os.path.join(BASE_DIR, filename)
     path = path1 if os.path.exists(path1) else path2
     if not os.path.exists(path):
+        err = f"File not found at {path1} or {path2}"
         print(f"Warning: {filename} not found at {path1} or {path2}")
+        MODEL_LOAD_ERRORS[filename] = err
         return None
     try:
         with open(path, 'rb') as f:
             return pickle.load(f)
     except Exception as e:
+        err = f"Pickle load error: {e}"
         print(f"Error loading {filename}: {e}")
+        MODEL_LOAD_ERRORS[filename] = err
         return None
 
 face_expert = load_expert('face_expert_lightweight.pkl')
@@ -574,13 +584,22 @@ def allowed_file(filename, allowed_extensions):
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    detector_load_errors = getattr(model, 'load_errors', {})
+    
+    # Merge load errors from both sources
+    all_errors = {**MODEL_LOAD_ERRORS}
+    for k, v in detector_load_errors.items():
+        all_errors[f"detector_{k}"] = v
+        
+    status = 'ok' if (face_expert is not None and model.is_trained) else 'degraded'
     return jsonify({
-        'status': 'ok',
+        'status': status,
         'models_loaded': {
             'face_expert': face_expert is not None,
-            'voice_expert': voice_expert is not None,
+            'voice_expert': model.voice_model is not None,
             'physio_expert': (model.phys_model is not None if hasattr(model, 'phys_model') else False)
         },
+        'load_errors': all_errors,
         'server': 'eventlet'
     })
 
@@ -1353,6 +1372,10 @@ def start_muse_stream():
 
     if not file_path:
         return jsonify({'status': 'error', 'message': 'filename is required'}), 400
+
+    # Resolve relative path to absolute path relative to BASE_DIR
+    if not os.path.isabs(file_path):
+        file_path = os.path.abspath(os.path.join(BASE_DIR, file_path))
 
     output_dir = os.path.dirname(file_path)
     if output_dir:

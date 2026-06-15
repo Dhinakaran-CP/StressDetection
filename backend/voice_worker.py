@@ -66,20 +66,58 @@ def extract_voice_stress_indicators(audio_bytes, sr_target=16000, f0_min=75, f0_
         audio_buf = io.BytesIO(audio_bytes)
         y, sr = librosa.load(audio_buf, sr=sr_target, mono=True, duration=3.0)
     except Exception as e:
-        # Fallback: write to a temp file and load (some codecs require a file path)
+        print(f"librosa.load direct BytesIO failed, trying scipy.io.wavfile fallback: {e}")
         try:
-            fd, temp_path = tempfile.mkstemp(suffix='.bin')
-            os.close(fd)
-            with open(temp_path, 'wb') as f:
-                f.write(audio_bytes)
-            y, sr = librosa.load(temp_path, sr=sr_target, mono=True, duration=3.0)
+            from scipy.io import wavfile
+            from scipy import signal
+            audio_buf = io.BytesIO(audio_bytes)
+            sr_orig, y_orig = wavfile.read(audio_buf)
+            
+            # Convert to float32 normalized to [-1.0, 1.0]
+            if y_orig.dtype == np.int16:
+                y_float = y_orig.astype(np.float32) / 32768.0
+            elif y_orig.dtype == np.int32:
+                y_float = y_orig.astype(np.float32) / 2147483648.0
+            elif y_orig.dtype == np.uint8:
+                y_float = (y_orig.astype(np.float32) - 128.0) / 128.0
+            else:
+                y_float = y_orig.astype(np.float32)
+            
+            # Convert stereo to mono
+            if len(y_float.shape) > 1:
+                y_float = np.mean(y_float, axis=1)
+                
+            # Resample if sample rate doesn't match target
+            if sr_orig != sr_target:
+                num_samples = int(len(y_float) * sr_target / sr_orig)
+                y = signal.resample(y_float, num_samples)
+                sr = sr_target
+            else:
+                y = y_float
+                sr = sr_target
+                
+            # Truncate to maximum 3.0 seconds duration
+            max_samples = int(sr * 3.0)
+            if len(y) > max_samples:
+                y = y[:max_samples]
+                
+            print("Successfully loaded WAV audio using scipy.io.wavfile fallback")
+        except Exception as e_scipy:
+            print(f"scipy.io.wavfile fallback failed: {e_scipy}. Trying temp WAV file fallback...")
+            # Fallback 2: write to a temp file with correct .wav extension and load
             try:
-                os.remove(temp_path)
-            except:
-                pass
-        except Exception as e_inner:
-            print(f"Error loading audio: {e_inner}")
-            return None
+                fd, temp_path = tempfile.mkstemp(suffix='.wav')
+                os.close(fd)
+                with open(temp_path, 'wb') as f:
+                    f.write(audio_bytes)
+                y, sr = librosa.load(temp_path, sr=sr_target, mono=True, duration=3.0)
+                try:
+                    os.remove(temp_path)
+                except:
+                    pass
+            except Exception as e_inner:
+                print(f"Error loading audio via tempfile: {e_inner}")
+                return None
 
     if y is None or len(y) < sr_target * 0.5 or np.max(np.abs(y)) < 0.005:
         return None

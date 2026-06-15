@@ -107,7 +107,7 @@ export default function Dashboard({ theme, toggleTheme }) {
 
   // Muse stream states
   const [museDuration, setMuseDuration] = useState(20);
-  const [museFilename, setMuseFilename] = useState("C:\\Musedata\\eeg_session.csv");
+  const [museFilename, setMuseFilename] = useState("uploads/eeg_session.csv");
   const [museCollecting, setMuseCollecting] = useState(false);
   const [musePoints, setMusePoints] = useState([]);
   const [museSessionError, setMuseSessionError] = useState(null);
@@ -1236,7 +1236,7 @@ export default function Dashboard({ theme, toggleTheme }) {
                       }}>
                         <h5 style={{ marginBottom: '0.75rem' }}>Muse 2 Real-Time Stream</h5>
                         <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                          Uses muselsl command: python -m muselsl record --duration X --filename C:\\Musedata\\eeg_session.csv
+                          Uses muselsl command: python -m muselsl record --duration X --filename uploads/eeg_session.csv
                         </p>
 
                         <div className="row">
@@ -1258,7 +1258,7 @@ export default function Dashboard({ theme, toggleTheme }) {
                               className="form-control"
                               value={museFilename}
                               onChange={(e) => setMuseFilename(e.target.value)}
-                              placeholder="C:\\Musedata\\eeg_session.csv"
+                              placeholder="uploads/eeg_session.csv"
                             />
                           </div>
                         </div>
