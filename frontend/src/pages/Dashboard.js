@@ -140,6 +140,11 @@ export default function Dashboard({ theme, toggleTheme }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Scroll to top on navigation/redirect (e.g. mode or phase change)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [mode, phase]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
