@@ -45,21 +45,21 @@ The system uses a **three-expert fusion** approach:
 
 | Expert | Input | Model | Latency |
 |--------|-------|-------|---------|
-| **Facial** | Webcam frames → MediaPipe 3D Landmarks | Voting Ensemble (GB + RF + SVM) | ~8 ms |
+| **Facial** | Webcam frames → MediaPipe 3D Landmarks | Gradient Boosting | ~8 ms |
 | **Voice** | Microphone chunks → 12 Acoustic Biomarkers | Gradient Boosting | ~15 ms |
-| **Physiological** | Uploaded EEG/GSR Signals | Random Forest | ~5 ms |
+| **Physiological** | Uploaded EEG/GSR Signals | Soft-Voting Ensemble (GB + RF) | ~5 ms |
 
 ### 1. Facial Expression Expert
 - Extracts 18 high-level geometric features based on facial action units (Eye Aspect Ratio, Brow Tension, Lip Compression, Jaw Displacement, etc.).
-- Soft-Voting Ensemble Classifier trained on augmented face landmark geometries, balanced via SMOTE (Synthetic Minority Over-sampling Technique).
+- Gradient Boosting Classifier trained on augmented face landmark geometries, balanced via SMOTE (Synthetic Minority Over-sampling Technique).
 
 ### 2. Voice Acoustics Expert
 - Extracts 12 specific acoustic biomarkers including Pitch, Jitter (frequency instability), Shimmer (amplitude instability), and Harmonics-to-Noise Ratio (HNR).
-- Voice feature extraction uses autocorrelation with parabolic peak interpolation, achieving a heavily optimized execution time of **<15ms** (down from 4.6s using standard libraries).
+- Gradient Boosting Classifier utilizing custom autocorrelation with parabolic peak interpolation, achieving a heavily optimized execution time of **<15ms** (down from 4.6s using standard libraries).
 
 ### 3. Physiological Signal Expert
 - Analyzes CSV datasets of EEG (Brainwave Alpha/Beta power) and GSR (Skin Conductance rate).
-- Wrapped in a `CalibratedClassifierCV` for highly accurate probabilistic stress mapping.
+- Soft-Voting Ensemble (Gradient Boosting + Random Forest) wrapped in a `CalibratedClassifierCV` for highly accurate probabilistic stress mapping.
 
 ### ⚙️ Fusion Engine
 Results from the distinct models are aggregated via a **weighted confidence engine**. It applies temporal smoothing and a 15-second decay buffer for voice (ensuring conversation-style scoring continuity while the user takes breaths or pauses). The output is streamed in real-time to the frontend via Server-Sent Events (SSE).
@@ -125,11 +125,4 @@ python app.py
 cd frontend
 npm install
 npm start
-```
-
-## 🧪 Running Tests
-An automated suite of 23 tests is available to verify API behavior, model load times, and real-time inference latency.
-```bash
-cd backend
-python run_and_verify_all.py
 ```
