@@ -1,0 +1,53 @@
+# API Contract for Backend Runtime -> Frontend Communcation
+# Version: 1.0.0
+
+event_stream:
+  endpoint: "/stream_results"
+  protocol: "Server-Sent Events (SSE)"
+  
+  payload_schema:
+    type: "object"
+    required:
+      - "timestamp"
+      - "isStressed"
+      - "fusedScore"
+      - "confidence"
+      - "activeModalities"
+      - "explanations"
+      
+    properties:
+      timestamp:
+        type: "string"
+        format: "iso-8601"
+      
+      isStressed:
+        type: "boolean"
+        description: "Final thresholded binary stress prediction."
+      
+      fusedScore:
+        type: "float"
+        minimum: 0.0
+        maximum: 1.0
+        description: "Continuous stress score from the temporal fusion engine."
+      
+      confidence:
+        type: "float"
+        minimum: 0.0
+        maximum: 1.0
+        description: "System confidence in the current prediction."
+        
+      activeModalities:
+        type: "array"
+        items:
+          type: "string"
+          enum: ["face", "voice", "physio"]
+        description: "Which modalities contributed to this score window."
+        
+      explanations:
+        type: "object"
+        properties:
+          top_features:
+            type: "array"
+            items:
+              type: "string"
+            description: "Human-readable labels of top contributing features."

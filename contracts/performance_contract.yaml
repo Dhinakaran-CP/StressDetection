@@ -1,0 +1,16 @@
+# Performance Contract for Multimodal Stress Detection
+# Version: 1.0.0
+
+latency:
+  max_inference_latency_ms: 100
+  description: "Maximum allowed time for a single inference pass (extraction + fusion) to ensure real-time frontend responsiveness."
+
+resource_limits:
+  max_ram_mb: 2048
+  max_cpu_percent: 80
+  
+degraded_mode:
+  allow_face_only: true
+  allow_voice_only: true
+  stale_data_timeout_ms: 2000
+  description: "If a modality drops out for longer than the timeout, the engine must degrade gracefully using active modalities rather than crashing or throwing errors."

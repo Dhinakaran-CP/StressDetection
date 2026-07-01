@@ -1,0 +1,45 @@
+# Feature Contract for Multimodal Stress Detection
+# Version: 1.0.0
+
+modalities:
+  face:
+    input_shape: 18
+    features:
+      - "left_ear"
+      - "right_ear"
+      - "avg_ear"
+      - "blink_velocity"
+      - "brow_descent_left"
+      - "brow_descent_right"
+      - "brow_asymmetry"
+      - "lip_compression"
+      - "jaw_tension"
+      - "mouth_corner_pull"
+      - "forehead_tension"
+      - "face_height_norm"
+      - "head_tilt"
+      - "temporal_x_var"
+      - "temporal_y_var"
+      - "eye_openness_ratio"
+      - "landmark_confidence"
+      - "nose_wrinkle"
+    scaling: "StandardScaler"
+    missing_value_strategy: "zero_fill"
+    
+  voice:
+    input_shape: 12
+    features:
+      - "f0_mean"
+      - "f0_std"
+      - "f0_range"
+      - "jitter_percent"
+      - "shimmer_db"
+      - "hnr"
+      - "speaking_rate_proxy"
+      - "voice_intensity"
+      - "high_freq_ratio"
+      - "spectral_flux"
+      - "pause_ratio"
+      - "voiced_fraction"
+    scaling: "StandardScaler"
+    missing_value_strategy: "zero_fill"
