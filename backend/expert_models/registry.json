@@ -1,0 +1,39 @@
+{
+    "active_models": {},
+    "active_datasets": {
+        "face_dataset": {
+            "artifact_id": "face_dataset_v1",
+            "artifact_type": "dataset",
+            "version": "1.0.0",
+            "timestamp": 1782911830.117996,
+            "hash": "994053c857f8ee409125279e749f70b85a3cdc94bfeed1ceb2d01c816fc968fa",
+            "metadata": {
+                "dataset_name": "Face Modality",
+                "total_rows": 108051,
+                "total_subjects": 53,
+                "class_balance": {
+                    "0": 61746,
+                    "1": 46305
+                },
+                "status": "CERTIFIED"
+            }
+        },
+        "voice_dataset": {
+            "artifact_id": "voice_dataset_v1",
+            "artifact_type": "dataset",
+            "version": "1.0.0",
+            "timestamp": 1782911830.3475769,
+            "hash": "99e3892aeeb1f5838e44cd96ea8be09017328a8f904991b0afbb0086565f67fc",
+            "metadata": {
+                "dataset_name": "Voice Modality",
+                "total_rows": 44982,
+                "total_subjects": 54,
+                "class_balance": {
+                    "1": 31892,
+                    "0": 13090
+                },
+                "status": "CERTIFIED"
+            }
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "artifact_id": "voice_dataset_v1",
+    "artifact_type": "dataset",
+    "version": "1.0.0",
+    "timestamp": 1782911830.3475769,
+    "hash": "99e3892aeeb1f5838e44cd96ea8be09017328a8f904991b0afbb0086565f67fc",
+    "metadata": {
+        "dataset_name": "Voice Modality",
+        "total_rows": 44982,
+        "total_subjects": 54,
+        "class_balance": {
+            "1": 31892,
+            "0": 13090
+        },
+        "status": "CERTIFIED"
+    }
+}
