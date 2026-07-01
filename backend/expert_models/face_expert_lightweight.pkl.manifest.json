@@ -1,0 +1,22 @@
+{
+    "artifact_id": "face_expert_v1",
+    "artifact_type": "model",
+    "version": "1.0.0",
+    "timestamp": 1782912619.667459,
+    "hash": "d7c004fade932602082fc7e088a1e701f80b0135897b1819acbb4654d3069d42",
+    "metadata": {
+        "accuracy": 0.631214234620887,
+        "f1_score_stress": 0.546583850931677,
+        "confusion_matrix": [
+            [
+                9147,
+                1951
+            ],
+            [
+                6298,
+                4972
+            ]
+        ],
+        "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+    }
+}

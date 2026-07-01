@@ -1,0 +1,72 @@
+import os
+import sys
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import GroupKFold
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+
+# Ensure backend root is in sys.path
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.append(backend_dir)
+
+from backend.core.feature_runtime_lock import FeatureRuntimeLock
+from backend.training.release_expert_model import package_and_release_expert
+
+def train_voice_expert():
+    print("==============================================")
+    print("STAGE 4: Training Voice Expert (LOSO Protocol)")
+    print("==============================================")
+    
+    DATA_PATH = "dataset_certified/voice_certified.csv"
+    if not os.path.exists(DATA_PATH):
+        raise FileNotFoundError(f"Certified dataset not found: {DATA_PATH}. Run Phase 2 first.")
+        
+    df = pd.read_csv(DATA_PATH)
+    print(f"Loaded certified dataset: {len(df)} rows.")
+    
+    # 1. Prepare Features through Runtime Lock
+    lock = FeatureRuntimeLock()
+    feature_names = lock.contract["modalities"]["voice"]["features"]
+    
+    X_raw = df[feature_names].values
+    y = df["label"].values
+    groups = df["subject_id"].values
+    
+    # Fill missing values
+    X_clean = []
+    for row in X_raw:
+        X_clean.append(lock.process_voice_features(row, scaler=None)[0])
+    X = np.array(X_clean)
+    
+    # 2. Leave-One-Subject-Out via GroupKFold
+    gkf = GroupKFold(n_splits=5)
+    train_idx, test_idx = list(gkf.split(X, y, groups))[-1]
+    
+    X_train, y_train, groups_train = X[train_idx], y[train_idx], groups[train_idx]
+    X_test, y_test, groups_test = X[test_idx], y[test_idx], groups[test_idx]
+    
+    # Prove no leakage
+    train_subjects = set(groups_train)
+    test_subjects = set(groups_test)
+    assert len(train_subjects.intersection(test_subjects)) == 0, "DATA LEAKAGE DETECTED!"
+    
+    print(f"Train subjects: {len(train_subjects)} | Test subjects: {len(test_subjects)}")
+    print(f"Train size: {len(y_train)} | Test size: {len(y_test)}")
+    
+    # 3. Scale
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    # 4. Train
+    print("Fitting Random Forest Classifier...")
+    model = RandomForestClassifier(n_estimators=100, max_depth=8, class_weight='balanced', random_state=42)
+    model.fit(X_train_scaled, y_train)
+    
+    # 5. Release
+    package_and_release_expert("voice", model, scaler, X_test_scaled, y_test)
+
+if __name__ == "__main__":
+    train_voice_expert()

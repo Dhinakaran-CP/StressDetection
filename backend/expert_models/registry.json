@@ -1,5 +1,50 @@
 {
-    "active_models": {},
+    "active_models": {
+        "face_expert": {
+            "artifact_id": "face_expert_v1",
+            "artifact_type": "model",
+            "version": "1.0.0",
+            "timestamp": 1782912619.667459,
+            "hash": "d7c004fade932602082fc7e088a1e701f80b0135897b1819acbb4654d3069d42",
+            "metadata": {
+                "accuracy": 0.631214234620887,
+                "f1_score_stress": 0.546583850931677,
+                "confusion_matrix": [
+                    [
+                        9147,
+                        1951
+                    ],
+                    [
+                        6298,
+                        4972
+                    ]
+                ],
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+            }
+        },
+        "voice_expert": {
+            "artifact_id": "voice_expert_v1",
+            "artifact_type": "model",
+            "version": "1.0.0",
+            "timestamp": 1782912612.5660746,
+            "hash": "ec90e43716362a5a7c473b0fc219ca6357e1dcfc85202bb670c094e2671a442c",
+            "metadata": {
+                "accuracy": 0.5639855942376951,
+                "f1_score_stress": 0.6389662027833002,
+                "confusion_matrix": [
+                    [
+                        1484,
+                        1372
+                    ],
+                    [
+                        2260,
+                        3214
+                    ]
+                ],
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+            }
+        }
+    },
     "active_datasets": {
         "face_dataset": {
             "artifact_id": "face_dataset_v1",
