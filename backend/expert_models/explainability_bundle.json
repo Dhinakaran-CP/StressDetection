@@ -1,0 +1,256 @@
+{
+  "version": "1.0.0",
+  "created_at": "2026-07-02T13:30:09.956250Z",
+  "shap_available": true,
+  "models": {
+    "face": {
+      "model_file": "face_expert_lightweight.pkl",
+      "n_features": 18,
+      "sample_size": 500,
+      "feature_labels": [
+        "Left Eye Aspect Ratio",
+        "Right Eye Aspect Ratio",
+        "Avg Eye Aspect Ratio",
+        "Blink Velocity",
+        "Left Brow Descent",
+        "Right Brow Descent",
+        "Brow Asymmetry",
+        "Lip Compression",
+        "Jaw Displacement",
+        "Mouth Corner Pull",
+        "Forehead Tension",
+        "Face Height Norm",
+        "Head Tilt",
+        "Temporal X Variance",
+        "Temporal Y Variance",
+        "Eye Openness Ratio",
+        "Landmark Confidence",
+        "Nose Wrinkle"
+      ],
+      "feature_groups": [
+        "eye",
+        "eye",
+        "eye",
+        "eye",
+        "brow",
+        "brow",
+        "brow",
+        "mouth",
+        "mouth",
+        "mouth",
+        "face",
+        "face",
+        "head",
+        "temporal",
+        "temporal",
+        "eye",
+        "quality",
+        "nose"
+      ],
+      "shap_means": [
+        0.09729683582504356,
+        0.043850539526354475,
+        0.0022595740653139924,
+        0.0,
+        0.08315702510911074,
+        0.1388470032337636,
+        0.07177760506268989,
+        0.7172620730700772,
+        0.3028807530238471,
+        0.11951570659996792,
+        0.22572734364158592,
+        0.10829403173737727,
+        0.0,
+        0.0,
+        0.0,
+        0.0051648903357937185,
+        0.0,
+        0.19893688562401654
+      ],
+      "top_features": [
+        {
+          "feature_index": 7,
+          "feature_label": "Lip Compression",
+          "feature_group": "mouth",
+          "mean_abs_shap": 0.7172620730700772
+        },
+        {
+          "feature_index": 8,
+          "feature_label": "Jaw Displacement",
+          "feature_group": "mouth",
+          "mean_abs_shap": 0.3028807530238471
+        },
+        {
+          "feature_index": 10,
+          "feature_label": "Forehead Tension",
+          "feature_group": "face",
+          "mean_abs_shap": 0.22572734364158592
+        },
+        {
+          "feature_index": 17,
+          "feature_label": "Nose Wrinkle",
+          "feature_group": "nose",
+          "mean_abs_shap": 0.19893688562401654
+        },
+        {
+          "feature_index": 5,
+          "feature_label": "Right Brow Descent",
+          "feature_group": "brow",
+          "mean_abs_shap": 0.1388470032337636
+        },
+        {
+          "feature_index": 9,
+          "feature_label": "Mouth Corner Pull",
+          "feature_group": "mouth",
+          "mean_abs_shap": 0.11951570659996792
+        }
+      ],
+      "shap_available": true
+    },
+    "voice": {
+      "model_file": "voice_expert_lightweight.pkl",
+      "n_features": 12,
+      "sample_size": 500,
+      "feature_labels": [
+        "F0 Mean (Pitch Hz)",
+        "F0 Std (Pitch Variation)",
+        "F0 Range",
+        "Jitter Percent",
+        "Shimmer dB",
+        "HNR Mean",
+        "Speaking Rate Proxy",
+        "Voice Intensity",
+        "High Freq Ratio",
+        "Spectral Flux",
+        "Pause Ratio",
+        "Voiced Fraction"
+      ],
+      "feature_groups": [
+        "pitch",
+        "pitch",
+        "pitch",
+        "perturbation",
+        "perturbation",
+        "quality",
+        "rate",
+        "intensity",
+        "spectral",
+        "spectral",
+        "prosody",
+        "voice_activity"
+      ],
+      "shap_means": [
+        0.061343353049977976,
+        0.006097318772110672,
+        0.004452290132638203,
+        0.00237676927513217,
+        0.0054092228125179834,
+        0.01247998780383145,
+        0.020902726522892122,
+        0.009249409598069098,
+        0.02009690655312738,
+        0.013665032226576324,
+        0.011818007138109068,
+        0.003836963420062061
+      ],
+      "top_features": [
+        {
+          "feature_index": 0,
+          "feature_label": "F0 Mean (Pitch Hz)",
+          "feature_group": "pitch",
+          "mean_abs_shap": 0.061343353049977976
+        },
+        {
+          "feature_index": 6,
+          "feature_label": "Speaking Rate Proxy",
+          "feature_group": "rate",
+          "mean_abs_shap": 0.020902726522892122
+        },
+        {
+          "feature_index": 8,
+          "feature_label": "High Freq Ratio",
+          "feature_group": "spectral",
+          "mean_abs_shap": 0.02009690655312738
+        },
+        {
+          "feature_index": 9,
+          "feature_label": "Spectral Flux",
+          "feature_group": "spectral",
+          "mean_abs_shap": 0.013665032226576324
+        },
+        {
+          "feature_index": 5,
+          "feature_label": "HNR Mean",
+          "feature_group": "quality",
+          "mean_abs_shap": 0.01247998780383145
+        },
+        {
+          "feature_index": 10,
+          "feature_label": "Pause Ratio",
+          "feature_group": "prosody",
+          "mean_abs_shap": 0.011818007138109068
+        }
+      ],
+      "shap_available": true
+    },
+    "physio": {
+      "model_file": "physio_expert_lightweight.pkl",
+      "n_features": 5,
+      "sample_size": 500,
+      "feature_labels": [
+        "Heart Rate Mean (BPM)",
+        "HRV RMSSD (ms)",
+        "HRV SDNN (ms)",
+        "EDA SCL Mean (\u00b5S)",
+        "Respiration Rate (br/min)"
+      ],
+      "feature_groups": [
+        "heart_rate",
+        "hrv",
+        "hrv",
+        "eda",
+        "respiration"
+      ],
+      "shap_means": [
+        0.3306580745745434,
+        0.11922663457250124,
+        0.12064200966345831,
+        0.3426493189576434,
+        0.25565979858877463
+      ],
+      "top_features": [
+        {
+          "feature_index": 3,
+          "feature_label": "EDA SCL Mean (\u00b5S)",
+          "feature_group": "eda",
+          "mean_abs_shap": 0.3426493189576434
+        },
+        {
+          "feature_index": 0,
+          "feature_label": "Heart Rate Mean (BPM)",
+          "feature_group": "heart_rate",
+          "mean_abs_shap": 0.3306580745745434
+        },
+        {
+          "feature_index": 4,
+          "feature_label": "Respiration Rate (br/min)",
+          "feature_group": "respiration",
+          "mean_abs_shap": 0.25565979858877463
+        },
+        {
+          "feature_index": 2,
+          "feature_label": "HRV SDNN (ms)",
+          "feature_group": "hrv",
+          "mean_abs_shap": 0.12064200966345831
+        },
+        {
+          "feature_index": 1,
+          "feature_label": "HRV RMSSD (ms)",
+          "feature_group": "hrv",
+          "mean_abs_shap": 0.11922663457250124
+        }
+      ],
+      "shap_available": true
+    }
+  }
+}

@@ -43,6 +43,28 @@
                 ],
                 "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
             }
+        },
+        "physio_expert": {
+            "artifact_id": "physio_expert_v1",
+            "artifact_type": "model",
+            "version": "1.0.0",
+            "timestamp": 1782919711.0979605,
+            "hash": "ee5a649675eec58ed5edbeda059a99ad60aa52c8f6f97521e0fa294e482aede3",
+            "metadata": {
+                "accuracy": 0.6003778742563113,
+                "f1_score_stress": 0.31672279881778814,
+                "confusion_matrix": [
+                    [
+                        12631,
+                        1868
+                    ],
+                    [
+                        8073,
+                        2304
+                    ]
+                ],
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+            }
         }
     },
     "active_datasets": {
@@ -78,6 +100,34 @@
                     "0": 13090
                 },
                 "status": "CERTIFIED"
+            }
+        }
+    },
+    "active_bundles": {
+        "explainability_bundle": {
+            "artifact_id": "explainability_bundle_v1",
+            "artifact_type": "bundle",
+            "version": "1.0.0",
+            "timestamp": 1782999019.7037086,
+            "hash": "12f5d4421f0d07d69e87bbfc555c7aeaa3f2eb9c96e44622f688ee5daf2692c4",
+            "metadata": {
+                "modalities": [
+                    "face",
+                    "voice",
+                    "physio"
+                ],
+                "shap_available": true,
+                "top_k_per_mod": 6,
+                "sample_sizes": {
+                    "face": 500,
+                    "voice": 500,
+                    "physio": 500
+                },
+                "top_drivers": {
+                    "face": "Lip Compression",
+                    "voice": "F0 Mean (Pitch Hz)",
+                    "physio": "EDA SCL Mean (\u00b5S)"
+                }
             }
         }
     }

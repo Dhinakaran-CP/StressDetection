@@ -1,0 +1,26 @@
+{
+    "artifact_id": "explainability_bundle_v1",
+    "artifact_type": "bundle",
+    "version": "1.0.0",
+    "timestamp": 1782999019.7037086,
+    "hash": "12f5d4421f0d07d69e87bbfc555c7aeaa3f2eb9c96e44622f688ee5daf2692c4",
+    "metadata": {
+        "modalities": [
+            "face",
+            "voice",
+            "physio"
+        ],
+        "shap_available": true,
+        "top_k_per_mod": 6,
+        "sample_sizes": {
+            "face": 500,
+            "voice": 500,
+            "physio": 500
+        },
+        "top_drivers": {
+            "face": "Lip Compression",
+            "voice": "F0 Mean (Pitch Hz)",
+            "physio": "EDA SCL Mean (\u00b5S)"
+        }
+    }
+}

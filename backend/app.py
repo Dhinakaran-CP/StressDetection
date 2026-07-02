@@ -27,7 +27,7 @@ import librosa
 from model import MultimodalStressDetector, extract_physiological_features, safe_pickle_load
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000"]}})
 socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=60, ping_interval=25, max_http_buffer_size=100000000)
 
 # Initialize global stream processor
@@ -142,6 +142,39 @@ face_expert = load_expert('face_expert_lightweight.pkl')
 face_scaler = load_expert('face_scaler_lightweight.pkl')
 voice_expert = load_expert('voice_expert_lightweight.pkl')
 voice_scaler = load_expert('voice_scaler_lightweight.pkl')
+physio_expert = load_expert('physio_expert_lightweight.pkl')
+physio_scaler = load_expert('physio_scaler_lightweight.pkl')
+
+# --- Phase 6: Explainability Engine (pre-built bundle, no live SHAP per request) ---
+try:
+    from backend.explainability.explainability_engine import ExplainabilityEngine
+    from backend.explainability.explainability_contract import (
+        FACE_FEATURE_LABELS, VOICE_FEATURE_LABELS, PHYSIO_FEATURE_LABELS
+    )
+    _expl_engine = ExplainabilityEngine()
+except Exception as _expl_err:
+    _expl_engine = None
+    print(f'[app.py] ExplainabilityEngine load failed: {_expl_err}')
+    # Fallback label dicts (used only by legacy live-SHAP path)
+    FACE_FEATURE_LABELS = [
+        'Left Eye Aspect Ratio', 'Right Eye Aspect Ratio', 'Avg Eye Aspect Ratio',
+        'Blink Velocity', 'Left Brow Descent', 'Right Brow Descent', 'Brow Asymmetry',
+        'Lip Compression', 'Jaw Displacement', 'Mouth Corner Pull',
+        'Forehead Tension', 'Face Height Norm', 'Head Tilt',
+        'Temporal X Variance', 'Temporal Y Variance', 'Eye Openness Ratio',
+        'Landmark Confidence', 'Nose Wrinkle',
+    ]
+    VOICE_FEATURE_LABELS = [
+        'F0 Mean (Pitch Hz)', 'F0 Std (Pitch Variation)', 'F0 Range',
+        'Jitter Percent', 'Shimmer dB', 'HNR Mean', 'Speaking Rate Proxy',
+        'Voice Intensity', 'High Freq Ratio', 'Spectral Flux',
+        'Pause Ratio', 'Voiced Fraction',
+    ]
+    PHYSIO_FEATURE_LABELS = [
+        'Heart Rate Mean (BPM)', 'HRV RMSSD (ms)', 'HRV SDNN (ms)',
+        'EDA SCL Mean (uS)', 'Respiration Rate (br/min)',
+    ]
+
 
 # --- Explainability SHAP Helper Functions ---
 def _extract_class1_shap_values(shap_values):
@@ -224,8 +257,18 @@ def _modality_shap_explanation(modality_name, estimator, scaler, raw_features, f
 
         top_features = []
         for idx in top_indices:
+            # Use human-readable label if available, else fall back to index notation
+            if feature_prefix == 'facial' and idx < len(FACE_FEATURE_LABELS):
+                label = FACE_FEATURE_LABELS[idx]
+            elif feature_prefix == 'voice' and idx < len(VOICE_FEATURE_LABELS):
+                label = VOICE_FEATURE_LABELS[idx]
+            elif feature_prefix == 'physio' and idx < len(PHYSIO_FEATURE_LABELS):
+                label = PHYSIO_FEATURE_LABELS[idx]
+            else:
+                label = f'{feature_prefix}_{int(idx)}'
+
             top_features.append({
-                'feature': f'{feature_prefix}_{int(idx)}',
+                'feature': label,
                 'feature_index': int(idx),
                 'feature_value': float(x_raw[0, idx]),
                 'shap_value': float(class1_values[idx]),
@@ -250,6 +293,19 @@ def _modality_shap_explanation(modality_name, estimator, scaler, raw_features, f
 
 
 def build_explainability_payload(facial_features=None, voice_features=None, phys_features=None):
+    """
+    Phase 6: Delegates to ExplainabilityEngine (pre-built bundle) for fast,
+    versioned explanations. Falls back to live SHAP if bundle is unavailable.
+    """
+    # ── Fast path: use pre-built bundle ──────────────────────────────────────
+    if _expl_engine and _expl_engine.is_loaded:
+        return _expl_engine.build_full_payload(
+            face_features=facial_features,
+            voice_features=voice_features,
+            physio_features=phys_features,
+        )
+
+    # ── Fallback: legacy live-SHAP path (Phase 5 code) ───────────────────────
     modalities = []
 
     facial_expl = _modality_shap_explanation(
@@ -274,10 +330,10 @@ def build_explainability_payload(facial_features=None, voice_features=None, phys
 
     phys_expl = _modality_shap_explanation(
         modality_name='physiological',
-        estimator=model.phys_model,
-        scaler=model.phys_scaler,
+        estimator=physio_expert,
+        scaler=physio_scaler,
         raw_features=phys_features,
-        feature_prefix='phys',
+        feature_prefix='physio',
     )
     if phys_expl:
         modalities.append(phys_expl)
@@ -290,15 +346,16 @@ def build_explainability_payload(facial_features=None, voice_features=None, phys
                 **feat,
             })
 
-    top_drivers = sorted(top_drivers, key=lambda item: abs(item['shap_value']), reverse=True)[:8]
+    top_drivers = sorted(top_drivers, key=lambda item: abs(item.get('shap_value', 0)), reverse=True)[:8]
 
     return {
-        'engine': 'shap',
+        'engine': 'shap_live',
         'available': SHAP_AVAILABLE,
         'modalities': modalities,
         'top_drivers': top_drivers,
-        'message': None if SHAP_AVAILABLE else 'Install shap in backend environment to enable SHAP values.',
+        'message': None if SHAP_AVAILABLE else 'Install shap in backend environment.',
     }
+
 
 
 # --- Chatbot Helper Functions ---
@@ -602,9 +659,19 @@ def health_check():
             'voice_expert': model.voice_model is not None,
             'physio_expert': (model.phys_model is not None if hasattr(model, 'phys_model') else False)
         },
+        'explainability_engine': _expl_engine.status() if _expl_engine else {'loaded': False},
         'load_errors': all_errors,
         'server': 'eventlet'
     })
+
+
+@app.route('/api/explainability/status', methods=['GET'])
+def explainability_status():
+    """Phase 6: Return explainability bundle version and modality coverage."""
+    if _expl_engine is None:
+        return jsonify({'loaded': False, 'error': 'ExplainabilityEngine not initialized'}), 503
+    return jsonify(_expl_engine.status())
+
 
 @app.route('/api/multimodal/analyze', methods=['POST'])
 def analyze_multimodal():
@@ -873,11 +940,15 @@ def capture_webcam():
 
 def fuse_predictions(probs, confs, certainties=None, fusion_mode='reliability'):
     """
-    Fuse predictions from active modalities.
-    If only one modality is active, returns that score.
-    If multiple, fuses them using the reliability weight algorithm.
+    Phase 5: Real-time SSE fusion using Phase 4-validated optimal weights.
+    Face=0.30, Voice=0.40, Physio=0.30. Re-normalised when some modalities are absent.
     """
+    OPTIMAL_WEIGHTS = {'face': 0.30, 'voice': 0.40, 'physio': 0.30}
     active_modes = list(probs.keys())
+    if not active_modes:
+        return {'fused_score': 0.0, 'stress_level': 'Low'}
+    
+    active_modes = [m for m in active_modes if m in OPTIMAL_WEIGHTS]
     if not active_modes:
         return {'fused_score': 0.0, 'stress_level': 'Low'}
         
@@ -886,34 +957,17 @@ def fuse_predictions(probs, confs, certainties=None, fusion_mode='reliability'):
         level = "High" if score > 0.7 else "Moderate" if score > 0.4 else "Low"
         return {'fused_score': score, 'stress_level': level}
         
-    # Reliability weights: base confidence on MediaPipe landmark confidence or fixed defaults
-    # face: 0.5, voice: 0.5
-    base_weights = {'face': 0.5, 'voice': 0.5}
-    
-    # Filter active modalities to only include face and voice
-    active_modes = [m for m in active_modes if m in base_weights]
-    if not active_modes:
-        return {'fused_score': 0.0, 'stress_level': 'Low'}
-        
-    # Calculate reliability weights: weight = base_weight * confidence * certainty
-    weights = {}
-    for m in active_modes:
-        conf = confs.get(m, 1.0)
-        cert = certainties.get(m, 1.0) if certainties else 1.0
-        weights[m] = base_weights[m] * conf * cert
-
-    w_sum = sum(weights.values())
-    if w_sum > 0:
-        norm_weights = {m: w / w_sum for m, w in weights.items()}
-    else:
-        norm_weights = {m: 1.0 / len(active_modes) for m in active_modes}
+    # Re-normalise the active subset
+    raw_w = {m: OPTIMAL_WEIGHTS[m] for m in active_modes}
+    w_sum = sum(raw_w.values())
+    norm_weights = {m: raw_w[m] / w_sum for m in active_modes}
         
     fused_score = sum(probs[m] * norm_weights[m] for m in active_modes)
     level = "High" if fused_score > 0.7 else "Moderate" if fused_score > 0.4 else "Low"
     return {
         'fused_score': fused_score,
         'stress_level': level,
-        'weights': norm_weights
+        'weights': {m: round(norm_weights[m], 3) for m in active_modes}
     }
 
 # Rolling histories and locks for multi-user face score smoothing
@@ -1346,6 +1400,20 @@ def stress_chat():
                 'message': 'Message is required.'
             }), 400
 
+        # Crisis Detection Gate
+        import re
+        crisis_keywords = [
+            r'\bsuicide\b', r'\bkill myself\b', r'\bwant to die\b', r'\bend it all\b',
+            r'\bhurt myself\b', r'\bno reason to live\b', r'\bdon\'t want to be here anymore\b'
+        ]
+        message_lower = message.lower()
+        if any(re.search(keyword, message_lower) for keyword in crisis_keywords):
+            return jsonify({
+                'status': 'success',
+                'reply': "It sounds like you are going through a very difficult time. Please know that you are not alone and help is available right now. Please reach out to a local emergency service or a crisis hotline immediately (e.g., dial 988 in the US/Canada or your local emergency number).",
+                'provider': 'crisis-gate'
+            })
+
         reply = ask_gemini_stress_assistant(message, stress_level, stress_percentage)
 
         return jsonify({
@@ -1490,6 +1558,8 @@ def muse_stream_status():
 
 @app.route('/api/restart/backend', methods=['POST'])
 def restart_backend():
+    if request.remote_addr != '127.0.0.1':
+        return jsonify({'status': 'error', 'message': 'Forbidden'}), 403
     print("[Shutdown] Restarting backend server...")
     def restart_self():
         import time, os, sys, subprocess
@@ -1508,6 +1578,8 @@ def restart_backend():
 
 @app.route('/api/shutdown/backend', methods=['POST'])
 def shutdown_backend():
+    if request.remote_addr != '127.0.0.1':
+        return jsonify({'status': 'error', 'message': 'Forbidden'}), 403
     print("[Shutdown] Shutting down backend server...")
     def kill_self():
         import time, os
@@ -1519,6 +1591,8 @@ def shutdown_backend():
 
 @app.route('/api/shutdown/all', methods=['POST'])
 def shutdown_all():
+    if request.remote_addr != '127.0.0.1':
+        return jsonify({'status': 'error', 'message': 'Forbidden'}), 403
     print("[Shutdown] Shutting down entire application (frontend + backend)...")
     def kill_all():
         import time, os, subprocess
@@ -1544,4 +1618,4 @@ if __name__ == '__main__':
     
     # Waitress does not support WebSockets/Socket.IO, so we use eventlet via socketio.run
     print("Starting SocketIO server on http://localhost:5000...")
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000, use_reloader=False, minimum_chunk_size=1)
+    socketio.run(app, debug=False, host='127.0.0.1', port=5000, use_reloader=False, minimum_chunk_size=1)
