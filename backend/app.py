@@ -30,8 +30,8 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000"]}})
 socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=60, ping_interval=25, max_http_buffer_size=100000000)
 
-# Initialize global stream processor
-stream_processor = StressStreamProcessor()
+# Initialize global stream processor (will be injected after runtime_engine is ready)
+stream_processor = None
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -46,21 +46,16 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 # Create upload folder if it doesn't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Initialize the model
+# Initialize the Phase 7 RuntimeEngine
+from backend.runtime.runtime_engine import RuntimeEngine
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+runtime_engine = RuntimeEngine.from_registry()
+# Keep 'model' for backward compatibility (extractors)
 model = MultimodalStressDetector()
 
-# Try to load pre-trained expert models
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# The load_model method now expects a directory containing the 3 expert .pkl files
-if model.load_model(BASE_DIR):
-    print("Pre-trained expert models loaded successfully!")
-else:
-    print("Could not load one or more expert models.")
-    print("Please ensure 'face_expert_lightweight.pkl', 'voice_expert_lightweight.pkl', and 'physio_expert.pkl' exist in the 'backend/expert_models/' folder.")
-    if hasattr(model, 'load_errors') and model.load_errors:
-        print("Detailed load errors:")
-        for name, err in model.load_errors.items():
-            print(f"  - {name}: {err}")
+# Inject into stream processor
+stream_processor = StressStreamProcessor(runtime_engine=runtime_engine)
 
 # --- Load environment variables and configuration ---
 import pickle
@@ -119,61 +114,21 @@ MUSE_SESSION = {
 
 MODEL_LOAD_ERRORS = {}
 
+# --- Legacy aliases for zero-downtime transition ---
 def load_expert(filename):
-    # Try backend/expert_models/ first, then backend/
-    path1 = os.path.join(BASE_DIR, 'expert_models', filename)
-    path2 = os.path.join(BASE_DIR, filename)
-    path = path1 if os.path.exists(path1) else path2
-    if not os.path.exists(path):
-        err = f"File not found at {path1} or {path2}"
-        print(f"Warning: {filename} not found at {path1} or {path2}")
-        MODEL_LOAD_ERRORS[filename] = err
-        return None
-    try:
-        with open(path, 'rb') as f:
-            return safe_pickle_load(f)
-    except Exception as e:
-        err = f"Pickle load error: {e}"
-        print(f"Error loading {filename}: {e}")
-        MODEL_LOAD_ERRORS[filename] = err
-        return None
+    print(f"[app.py] Deprecated load_expert({filename}) called. Phase 7 routes this via RuntimeEngine.")
+    return None
 
-face_expert = load_expert('face_expert_lightweight.pkl')
-face_scaler = load_expert('face_scaler_lightweight.pkl')
-voice_expert = load_expert('voice_expert_lightweight.pkl')
-voice_scaler = load_expert('voice_scaler_lightweight.pkl')
-physio_expert = load_expert('physio_expert_lightweight.pkl')
-physio_scaler = load_expert('physio_scaler_lightweight.pkl')
+face_expert = runtime_engine._models.get('face')
+face_scaler = runtime_engine._scalers.get('face')
+voice_expert = runtime_engine._models.get('voice')
+voice_scaler = runtime_engine._scalers.get('voice')
+physio_expert = runtime_engine._models.get('physio')
+physio_scaler = runtime_engine._scalers.get('physio')
 
-# --- Phase 6: Explainability Engine (pre-built bundle, no live SHAP per request) ---
-try:
-    from backend.explainability.explainability_engine import ExplainabilityEngine
-    from backend.explainability.explainability_contract import (
-        FACE_FEATURE_LABELS, VOICE_FEATURE_LABELS, PHYSIO_FEATURE_LABELS
-    )
-    _expl_engine = ExplainabilityEngine()
-except Exception as _expl_err:
-    _expl_engine = None
-    print(f'[app.py] ExplainabilityEngine load failed: {_expl_err}')
-    # Fallback label dicts (used only by legacy live-SHAP path)
-    FACE_FEATURE_LABELS = [
-        'Left Eye Aspect Ratio', 'Right Eye Aspect Ratio', 'Avg Eye Aspect Ratio',
-        'Blink Velocity', 'Left Brow Descent', 'Right Brow Descent', 'Brow Asymmetry',
-        'Lip Compression', 'Jaw Displacement', 'Mouth Corner Pull',
-        'Forehead Tension', 'Face Height Norm', 'Head Tilt',
-        'Temporal X Variance', 'Temporal Y Variance', 'Eye Openness Ratio',
-        'Landmark Confidence', 'Nose Wrinkle',
-    ]
-    VOICE_FEATURE_LABELS = [
-        'F0 Mean (Pitch Hz)', 'F0 Std (Pitch Variation)', 'F0 Range',
-        'Jitter Percent', 'Shimmer dB', 'HNR Mean', 'Speaking Rate Proxy',
-        'Voice Intensity', 'High Freq Ratio', 'Spectral Flux',
-        'Pause Ratio', 'Voiced Fraction',
-    ]
-    PHYSIO_FEATURE_LABELS = [
-        'Heart Rate Mean (BPM)', 'HRV RMSSD (ms)', 'HRV SDNN (ms)',
-        'EDA SCL Mean (uS)', 'Respiration Rate (br/min)',
-    ]
+_expl_engine = runtime_engine.expl_engine
+
+
 
 
 # --- Explainability SHAP Helper Functions ---
@@ -525,10 +480,10 @@ def _predict_from_muse_csv(file_path):
         }
 
     phys_features = extract_physiological_features(eeg_array, gsr_array)
-    result = model.predict(phys_features=phys_features)
-    if result.get('status') == 'success':
-        result['source'] = 'muse_stream'
-        result['explainability'] = build_explainability_payload(phys_features=phys_features)
+    result = runtime_engine.predict_fused(physio=phys_features)
+    if 'status' not in result and 'error' not in result:
+        result['status'] = 'success'
+    result['source'] = 'muse_stream'
     return result
 
 
@@ -640,6 +595,11 @@ def parse_numeric_csv_file(file_storage, signal_type='eeg'):
 
 def allowed_file(filename, allowed_extensions):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+
+@app.route('/api/runtime/status', methods=['GET'])
+def runtime_status():
+    return jsonify(runtime_engine.status())
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -755,10 +715,10 @@ def analyze_multimodal():
             }), 400
         
         # Make prediction
-        result = model.predict(
-            facial_features=facial_features,
-            voice_features=voice_features,
-            phys_features=phys_features
+        result = runtime_engine.predict_fused(
+            face=facial_features,
+            voice=voice_features,
+            physio=phys_features
         )
         
         if 'error' in result:
@@ -767,12 +727,6 @@ def analyze_multimodal():
                 'status': 'error',
                 'message': result['error']
             }), 400
-        
-        result['explainability'] = build_explainability_payload(
-            facial_features=facial_features,
-            voice_features=voice_features,
-            phys_features=phys_features,
-        )
         
         print(f"[HTTP] POST /api/multimodal/analyze - Success: stress_level={result.get('stress_level')}, percentage={result.get('percentage')}%")
         return jsonify(result)
@@ -815,7 +769,7 @@ def analyze_face():
         
         # Extract features and predict
         facial_features, _ = model.extract_facial_features(filepath)
-        result = model.predict(facial_features=facial_features)
+        result = runtime_engine.predict_face(raw_features=facial_features)
         
         # Clean up
         os.remove(filepath)
@@ -872,7 +826,7 @@ def analyze_voice():
                 'message': 'Failed to extract voice features. Ensure the audio is not silent and is in a valid format.'
             }), 400
             
-        result = model.predict(voice_features=voice_features)
+        result = runtime_engine.predict_voice(raw_features=voice_features)
         
         print(f"[HTTP] POST /api/voice/upload - Success: stress_level={result.get('stress_level')}, percentage={result.get('percentage')}%")
         return jsonify(result)
@@ -920,7 +874,7 @@ def capture_webcam():
         
         # Extract features and predict
         facial_features, _ = model.extract_facial_features(temp_path)
-        result = model.predict(facial_features=facial_features)
+        result = runtime_engine.predict_face(raw_features=facial_features)
         
         # Clean up
         os.remove(temp_path)
