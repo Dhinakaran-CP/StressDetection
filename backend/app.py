@@ -114,202 +114,14 @@ MUSE_SESSION = {
 
 MODEL_LOAD_ERRORS = {}
 
-# --- Legacy aliases for zero-downtime transition ---
-def load_expert(filename):
-    print(f"[app.py] Deprecated load_expert({filename}) called. Phase 7 routes this via RuntimeEngine.")
-    return None
+# --- Phase 8: Runtime Observability and Replay ---
+from backend.monitoring.runtime_metrics import RuntimeMetrics
+from backend.monitoring.drift_monitor import DriftMonitor
+from backend.monitoring.golden_replay import GoldenReplay
 
-face_expert = runtime_engine._models.get('face')
-face_scaler = runtime_engine._scalers.get('face')
-voice_expert = runtime_engine._models.get('voice')
-voice_scaler = runtime_engine._scalers.get('voice')
-physio_expert = runtime_engine._models.get('physio')
-physio_scaler = runtime_engine._scalers.get('physio')
-
-_expl_engine = runtime_engine.expl_engine
-
-
-
-
-# --- Explainability SHAP Helper Functions ---
-def _extract_class1_shap_values(shap_values):
-    if hasattr(shap_values, 'values'):
-        shap_values = shap_values.values
-        
-    if isinstance(shap_values, list):
-        return np.array(shap_values[1][0], dtype=float)
-
-    arr = np.array(shap_values)
-    if arr.ndim == 3:
-        return np.array(arr[0, :, 1], dtype=float)
-    if arr.ndim == 2:
-        return np.array(arr[0], dtype=float)
-    return np.array(arr, dtype=float).flatten()
-
-
-def _extract_class1_expected_value(expected_value):
-    if isinstance(expected_value, list):
-        return float(expected_value[1])
-
-    arr = np.array(expected_value)
-    if arr.ndim == 1 and arr.size >= 2:
-        return float(arr[1])
-    if arr.ndim == 0:
-        return float(arr)
-    return float(arr.flatten()[0])
-
-
-def _modality_shap_explanation(modality_name, estimator, scaler, raw_features, feature_prefix):
-    if raw_features is None or estimator is None:
-        return None
-
-    x_raw = np.array(raw_features, dtype=float).reshape(1, -1)
-    
-    # Scale features if scaler is present
-    if scaler is not None:
-        x_scaled = scaler.transform(x_raw)
-    else:
-        x_scaled = x_raw
-
-    try:
-        stress_prob = float(estimator.predict_proba(x_scaled)[0][1])
-    except Exception:
-        stress_prob = 0.5
-
-    if not SHAP_AVAILABLE:
-        return {
-            'modality': modality_name,
-            'status': 'unavailable',
-            'reason': 'SHAP package is not installed in the backend environment.',
-            'stress_probability': stress_prob,
-            'top_features': [],
-        }
-
-    try:
-        # If the estimator is a VotingClassifier, pick its RandomForest or GradientBoosting sub-estimator for tree explanation
-        actual_estimator = estimator
-        
-        # Unwrap CalibratedClassifierCV if present
-        if hasattr(actual_estimator, 'calibrated_classifiers_') and len(actual_estimator.calibrated_classifiers_) > 0:
-            actual_estimator = actual_estimator.calibrated_classifiers_[0].estimator
-        elif hasattr(actual_estimator, 'estimator'):
-            actual_estimator = actual_estimator.estimator
-
-        if hasattr(actual_estimator, 'estimators_') and len(actual_estimator.estimators_) > 0:
-            for sub in actual_estimator.estimators_:
-                sub_name = type(sub).__name__
-                if 'Forest' in sub_name or 'Boosting' in sub_name or 'Tree' in sub_name:
-                    actual_estimator = sub
-                    break
-        
-        explainer = shap.TreeExplainer(actual_estimator)
-        shap_values = explainer.shap_values(x_scaled)
-        class1_values = _extract_class1_shap_values(shap_values)
-        base_value = _extract_class1_expected_value(explainer.expected_value)
-
-        top_count = min(6, class1_values.shape[0])
-        top_indices = np.argsort(np.abs(class1_values))[::-1][:top_count]
-
-        top_features = []
-        for idx in top_indices:
-            # Use human-readable label if available, else fall back to index notation
-            if feature_prefix == 'facial' and idx < len(FACE_FEATURE_LABELS):
-                label = FACE_FEATURE_LABELS[idx]
-            elif feature_prefix == 'voice' and idx < len(VOICE_FEATURE_LABELS):
-                label = VOICE_FEATURE_LABELS[idx]
-            elif feature_prefix == 'physio' and idx < len(PHYSIO_FEATURE_LABELS):
-                label = PHYSIO_FEATURE_LABELS[idx]
-            else:
-                label = f'{feature_prefix}_{int(idx)}'
-
-            top_features.append({
-                'feature': label,
-                'feature_index': int(idx),
-                'feature_value': float(x_raw[0, idx]),
-                'shap_value': float(class1_values[idx]),
-                'direction': 'increase' if class1_values[idx] >= 0 else 'decrease',
-            })
-
-        return {
-            'modality': modality_name,
-            'status': 'ok',
-            'base_value': base_value,
-            'stress_probability': stress_prob,
-            'top_features': top_features,
-        }
-    except Exception as exc:
-        return {
-            'modality': modality_name,
-            'status': 'error',
-            'reason': f'SHAP computation failed: {exc}',
-            'stress_probability': stress_prob,
-            'top_features': [],
-        }
-
-
-def build_explainability_payload(facial_features=None, voice_features=None, phys_features=None):
-    """
-    Phase 6: Delegates to ExplainabilityEngine (pre-built bundle) for fast,
-    versioned explanations. Falls back to live SHAP if bundle is unavailable.
-    """
-    # ── Fast path: use pre-built bundle ──────────────────────────────────────
-    if _expl_engine and _expl_engine.is_loaded:
-        return _expl_engine.build_full_payload(
-            face_features=facial_features,
-            voice_features=voice_features,
-            physio_features=phys_features,
-        )
-
-    # ── Fallback: legacy live-SHAP path (Phase 5 code) ───────────────────────
-    modalities = []
-
-    facial_expl = _modality_shap_explanation(
-        modality_name='facial',
-        estimator=face_expert,
-        scaler=face_scaler,
-        raw_features=facial_features,
-        feature_prefix='facial',
-    )
-    if facial_expl:
-        modalities.append(facial_expl)
-
-    voice_expl = _modality_shap_explanation(
-        modality_name='voice',
-        estimator=voice_expert,
-        scaler=voice_scaler,
-        raw_features=voice_features,
-        feature_prefix='voice',
-    )
-    if voice_expl:
-        modalities.append(voice_expl)
-
-    phys_expl = _modality_shap_explanation(
-        modality_name='physiological',
-        estimator=physio_expert,
-        scaler=physio_scaler,
-        raw_features=phys_features,
-        feature_prefix='physio',
-    )
-    if phys_expl:
-        modalities.append(phys_expl)
-
-    top_drivers = []
-    for modality in modalities:
-        for feat in modality.get('top_features', []):
-            top_drivers.append({
-                'modality': modality['modality'],
-                **feat,
-            })
-
-    top_drivers = sorted(top_drivers, key=lambda item: abs(item.get('shap_value', 0)), reverse=True)[:8]
-
-    return {
-        'engine': 'shap_live',
-        'available': SHAP_AVAILABLE,
-        'modalities': modalities,
-        'top_drivers': top_drivers,
-        'message': None if SHAP_AVAILABLE else 'Install shap in backend environment.',
-    }
+runtime_metrics = RuntimeMetrics()
+drift_monitor = DriftMonitor(window_size=1000)
+golden_replay = GoldenReplay(runtime_engine)
 
 
 
@@ -715,7 +527,28 @@ def analyze_multimodal():
             }), 400
         
         # Make prediction
+        import time
+        start_t = time.time()
+        
         result = runtime_engine.predict_fused(
+            face=facial_features,
+            voice=voice_features,
+            physio=phys_features
+        )
+        
+        # Phase 8: Record telemetry
+        latency = (time.time() - start_t) * 1000
+        missing = []
+        if facial_features is None: missing.append("face")
+        if voice_features is None: missing.append("voice")
+        if phys_features is None: missing.append("physio")
+        
+        runtime_metrics.record_prediction(
+            latency_ms=latency,
+            missing_modalities=missing,
+            stress_probability=result.get("stress_probability", 0)
+        )
+        drift_monitor.record_features(
             face=facial_features,
             voice=voice_features,
             physio=phys_features
@@ -1573,3 +1406,41 @@ if __name__ == '__main__':
     # Waitress does not support WebSockets/Socket.IO, so we use eventlet via socketio.run
     print("Starting SocketIO server on http://localhost:5000...")
     socketio.run(app, debug=False, host='127.0.0.1', port=5000, use_reloader=False, minimum_chunk_size=1)
+
+
+# --- Phase 8: Admin & Monitoring Endpoints ---
+
+@app.route('/api/admin/metrics', methods=['GET'])
+def get_metrics():
+    return jsonify({
+        "status": "success",
+        "metrics": runtime_metrics.get_metrics(),
+        "drift": drift_monitor.get_drift_report()
+    })
+
+@app.route('/api/admin/rollback', methods=['POST'])
+def rollback():
+    data = request.json or {}
+    model_key = data.get('model_key', 'face')
+    version = data.get('version')
+    if not version:
+        return jsonify({"status": "error", "message": "version required"}), 400
+        
+    registry = runtime_engine.registry
+    if registry.rollback_model(model_key, version):
+        # Reload runtime engine
+        global runtime_engine, stream_processor
+        runtime_engine = RuntimeEngine.from_registry()
+        stream_processor = StressStreamProcessor(runtime_engine=runtime_engine)
+        return jsonify({"status": "success", "message": f"Rolled back {model_key} to {version}"})
+    return jsonify({"status": "error", "message": "Rollback failed"}), 400
+
+@app.route('/api/admin/golden_replay', methods=['POST'])
+def run_golden_replay():
+    data = request.json or {}
+    rows = data.get('rows', [])
+    if not rows:
+        return jsonify({"status": "error", "message": "rows required"}), 400
+    
+    res = golden_replay.run_replay(rows)
+    return jsonify(res)
