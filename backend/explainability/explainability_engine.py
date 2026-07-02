@@ -1,4 +1,4 @@
-﻿"""
+"""
 explainability_engine.py
 Phase 6 runtime loader — loads the pre-built explainability_bundle.json
 and serves top-K SHAP explanations without live SHAP computation.
@@ -105,6 +105,11 @@ class ExplainabilityEngine:
         for feat in top_k:
             entry = dict(feat)
             idx   = feat.get("feature_index", -1)
+            
+            # Map bundle keys to frontend expected keys
+            entry["feature"] = feat.get("feature_label", f"{modality}_feature_{idx}")
+            entry["shap_value"] = feat.get("mean_abs_shap", 0.0)
+
             if raw_features is not None and 0 <= idx < len(raw_features):
                 val = float(raw_features[idx])
                 entry["feature_value"] = 0.0 if (np.isnan(val) or np.isinf(val)) else val

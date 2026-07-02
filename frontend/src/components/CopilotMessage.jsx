@@ -42,19 +42,33 @@ export default function CopilotMessage({ stressLevel, explainability }) {
       : "You are in a stable state. Keep this calm rhythm going.";
 
   const rawDrivers = Array.isArray(explainability?.top_drivers)
-    ? explainability.top_drivers.slice(0, 3)
+    ? explainability.top_drivers
     : [];
 
-  const topDrivers = rawDrivers.map((driver) => {
-    const absImpact = Math.min(100, Math.abs(Number(driver.shap_value || 0)) * 1000);
-    return {
-      ...driver,
-      prettyLabel: formatDriverLabel(driver.modality, driver.feature_index),
-      prettyModality: formatModalityName(driver.modality),
-      trendText: driver.direction === "increase" ? "raising stress" : "reducing stress",
-      impactScore: absImpact,
-    };
-  });
+  const topDrivers = [];
+  const seenKeys = new Set();
+
+  for (const driver of rawDrivers) {
+    const prettyLabel = formatDriverLabel(driver.modality, driver.feature_index);
+    const prettyModality = formatModalityName(driver.modality);
+    const trendText = driver.direction === "increase" ? "raising stress" : "reducing stress";
+    
+    const uniqueKey = `${prettyModality}-${prettyLabel}`;
+    
+    if (!seenKeys.has(uniqueKey)) {
+      seenKeys.add(uniqueKey);
+      const absImpact = Math.min(100, Math.abs(Number(driver.shap_value || 0)) * 1000);
+      topDrivers.push({
+        ...driver,
+        prettyLabel,
+        prettyModality,
+        trendText,
+        impactScore: absImpact,
+      });
+      
+      if (topDrivers.length >= 3) break;
+    }
+  }
 
   return (
     <div className="copilot-bubble slide-in-right">

@@ -24,7 +24,8 @@ export function validateAnalysisInputs({ faceFile, voiceFile, eegData, gsrData, 
   if (voiceFile) {
     const validTypes = ['audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/ogg',
                         'audio/webm', 'audio/m4a'];
-    if (!validTypes.some(t => voiceFile.type.includes(t.split('/')[1]))) {
+    const baseType = voiceFile.type.split(';')[0];
+    if (!validTypes.includes(baseType)) {
       errors.push('Voice recording must be WAV, MP3, OGG, WebM, or M4A format.');
     }
     if (voiceFile.size > 50 * 1024 * 1024) {

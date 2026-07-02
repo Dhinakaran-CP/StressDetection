@@ -12,7 +12,11 @@ function App() {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "cyber" ? "earthy" : "cyber"));
+    setTheme((prev) => {
+      if (prev === "cyber") return "earthy";
+      if (prev === "earthy") return "clinical";
+      return "cyber";
+    });
   };
 
   return (

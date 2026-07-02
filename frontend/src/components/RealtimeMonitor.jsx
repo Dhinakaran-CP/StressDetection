@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { API_BASE } from '../config';
 import FaceStream from './FaceStream';
 import WaveformRecorder from './WaveformRecorder';
 import CalibrationWizard from './CalibrationWizard';
@@ -161,7 +162,7 @@ export default function RealtimeMonitor() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:5000/api/health');
+        const response = await fetch(`${API_BASE}/api/health`);
         if (response.ok) {
           setServerStatus('connected');
         } else {
@@ -230,7 +231,7 @@ export default function RealtimeMonitor() {
 
   const connectSSE = () => {
     setServerStatus('connecting');
-    const es = new EventSource('http://127.0.0.1:5000/api/stream/fused');
+    const es = new EventSource(`${API_BASE}/api/stream/fused`);
     
     es.onopen = () => {
       setServerStatus('connected');
@@ -333,7 +334,7 @@ export default function RealtimeMonitor() {
 
   const handleVoiceChunk = async (blob) => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/stream/voice?user_id=default', {
+      const response = await fetch(`${API_BASE}/api/stream/voice?user_id=default`, {
         method: 'POST',
         headers: { 'Content-Type': 'audio/wav' },
         body: blob,
@@ -349,7 +350,7 @@ export default function RealtimeMonitor() {
             console.log("[Calibration] Added silence RMS sample:", data.indicators.voice_intensity);
           }
         } else if (calibrationPhase === 'voice') {
-          await fetch('http://127.0.0.1:5000/api/calibrate/voice_sample', {
+          await fetch(`${API_BASE}/api/calibrate/voice_sample`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: 'default', indicators: data.indicators, features: data.features }),
@@ -395,7 +396,7 @@ export default function RealtimeMonitor() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {!active ? (
             <button 
-              className="btn btn-neon" 
+              className="btn btn-primary" 
               onClick={startMonitoring} 
               disabled={serverStatus === 'disconnected'}
               style={{ fontSize: '1.05rem', padding: '12px 28px' }}

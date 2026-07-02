@@ -24,7 +24,7 @@ from werkzeug.utils import secure_filename
 import tempfile
 import cv2
 import librosa
-from model import MultimodalStressDetector, extract_physiological_features, safe_pickle_load
+from model import MultimodalStressDetector, safe_pickle_load
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000"]}})
@@ -291,7 +291,7 @@ def _predict_from_muse_csv(file_path):
             'message': 'No valid Muse channel values found in CSV.',
         }
 
-    phys_features = extract_physiological_features(eeg_array, gsr_array)
+    phys_features = model.extract_physiological_features(eeg_data=eeg_array, gsr_data=gsr_array)
     result = runtime_engine.predict_fused(physio=phys_features)
     if 'status' not in result and 'error' not in result:
         result['status'] = 'success'
@@ -416,23 +416,18 @@ def runtime_status():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    detector_load_errors = getattr(model, 'load_errors', {})
+    engine_status = runtime_engine.status()
+    is_ready = engine_status.get('ready', False)
     
-    # Merge load errors from both sources
-    all_errors = {**MODEL_LOAD_ERRORS}
-    for k, v in detector_load_errors.items():
-        all_errors[f"detector_{k}"] = v
-        
-    status = 'ok' if (face_expert is not None and model.is_trained) else 'degraded'
     return jsonify({
-        'status': status,
+        'status': 'ok' if is_ready else 'degraded',
         'models_loaded': {
-            'face_expert': face_expert is not None,
-            'voice_expert': model.voice_model is not None,
-            'physio_expert': (model.phys_model is not None if hasattr(model, 'phys_model') else False)
+            'face_expert': engine_status['models'].get('face', {}).get('loaded', False),
+            'voice_expert': engine_status['models'].get('voice', {}).get('loaded', False),
+            'physio_expert': engine_status['models'].get('physio', {}).get('loaded', False)
         },
-        'explainability_engine': _expl_engine.status() if _expl_engine else {'loaded': False},
-        'load_errors': all_errors,
+        'explainability_engine': {'loaded': engine_status.get('explainability_bundle_loaded', False)},
+        'load_errors': MODEL_LOAD_ERRORS,
         'server': 'eventlet'
     })
 
@@ -440,9 +435,9 @@ def health_check():
 @app.route('/api/explainability/status', methods=['GET'])
 def explainability_status():
     """Phase 6: Return explainability bundle version and modality coverage."""
-    if _expl_engine is None:
+    if not runtime_engine or not runtime_engine.expl_engine:
         return jsonify({'loaded': False, 'error': 'ExplainabilityEngine not initialized'}), 503
-    return jsonify(_expl_engine.status())
+    return jsonify(runtime_engine.expl_engine.status())
 
 
 @app.route('/api/multimodal/analyze', methods=['POST'])
@@ -517,7 +512,7 @@ def analyze_multimodal():
             gsr_array = np.fromstring(gsr_data, sep=',')
 
         if (eeg_array is not None and eeg_array.size > 0) or (gsr_array is not None and gsr_array.size > 0):
-            phys_features = extract_physiological_features(eeg_array, gsr_array)
+            phys_features = model.extract_physiological_features(eeg_data=eeg_array, gsr_data=gsr_array)
         
         # Check if at least one modality is provided
         if facial_features is None and voice_features is None and phys_features is None:
@@ -794,6 +789,8 @@ def stream_face():
     """
     Receive 18 browser-extracted facial indicators and update ScoreBuffer.
     """
+    face_expert = runtime_engine._models.get('face')
+    face_scaler = runtime_engine._scalers.get('face')
     if face_expert is None or face_scaler is None:
         return jsonify({'error': 'Face expert model not loaded'}), 500
         
@@ -889,6 +886,8 @@ def stream_voice():
     Receive 2-second audio blob (WAV), extract 12 vocal biomarkers in eventlet's OS thread pool,
     and update ScoreBuffer.
     """
+    voice_expert = runtime_engine._models.get('voice')
+    voice_scaler = runtime_engine._scalers.get('voice')
     if voice_expert is None or voice_scaler is None:
         return jsonify({'error': 'Voice expert model not loaded'}), 500
         
@@ -1420,6 +1419,8 @@ def get_metrics():
 
 @app.route('/api/admin/rollback', methods=['POST'])
 def rollback():
+    global runtime_engine, stream_processor
+    
     data = request.json or {}
     model_key = data.get('model_key', 'face')
     version = data.get('version')
@@ -1429,7 +1430,6 @@ def rollback():
     registry = runtime_engine.registry
     if registry.rollback_model(model_key, version):
         # Reload runtime engine
-        global runtime_engine, stream_processor
         runtime_engine = RuntimeEngine.from_registry()
         stream_processor = StressStreamProcessor(runtime_engine=runtime_engine)
         return jsonify({"status": "success", "message": f"Rolled back {model_key} to {version}"})

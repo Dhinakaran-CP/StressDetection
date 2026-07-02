@@ -490,7 +490,7 @@ export default function GamePanel({ stressLevel, onGameComplete, onDismiss }) {
         }}>
           <button
             onClick={() => setSelected(null)}
-            className="btn btn-outline-neon"
+            className="btn btn-secondary"
             style={{
               padding: '6px 16px',
               fontSize: '0.82rem',
@@ -521,7 +521,7 @@ export default function GamePanel({ stressLevel, onGameComplete, onDismiss }) {
 
           <button
             onClick={onDismiss}
-            className="btn btn-outline-neon"
+            className="btn btn-secondary"
             style={{
               padding: '6px 16px',
               fontSize: '0.82rem',
@@ -555,7 +555,7 @@ export default function GamePanel({ stressLevel, onGameComplete, onDismiss }) {
           🧘 Recovery Activities
         </h3>
         <button onClick={onDismiss}
-          className="btn btn-outline-neon"
+          className="btn btn-secondary"
           style={{
             padding: '6px 16px',
             fontSize: '0.82rem',

@@ -162,14 +162,14 @@ export default function ResultEnhancements({ result }) {
           <h5 style={{ marginBottom: "0.75rem" }}>Intervention Panel</h5>
           <p style={{ marginBottom: "1rem" }}>High stress detected. Start a short calming action now.</p>
           <div className="intervention-actions">
-            <button className="btn btn-neon" onClick={() => setIsBreathing(true)}>
+            <button className="btn btn-primary" onClick={() => setIsBreathing(true)}>
               Start Breathing
             </button>
-            <button className="btn btn-outline-neon" onClick={handleTakeBreak}>
+            <button className="btn btn-secondary" onClick={handleTakeBreak}>
               Take a Break
             </button>
             <button
-              className="btn btn-outline-neon"
+              className="btn btn-secondary"
               onClick={() => {
                 setIsBreathing(false);
                 setShowIntervention(false);

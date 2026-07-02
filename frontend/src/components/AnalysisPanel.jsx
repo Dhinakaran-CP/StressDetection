@@ -73,7 +73,8 @@ const VOICE_FEATURE_NAMES = [
 ];
 
 function featureLabel(key) {
-  const normalizedKey = key.toLowerCase();
+  if (!key) return "Unknown Feature";
+  const normalizedKey = String(key).toLowerCase();
   
   if (normalizedKey.startsWith("facial_")) {
     const idx = parseInt(normalizedKey.split("_")[1]);
@@ -561,7 +562,7 @@ export default function AnalysisPanel({ result, onRequestGame, previousResult, t
       <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
         <button
           onClick={onRequestGame}
-          className="btn btn-neon"
+          className="btn btn-primary"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -581,7 +582,7 @@ export default function AnalysisPanel({ result, onRequestGame, previousResult, t
           onClick={() => {
             window.location.reload();
           }}
-          className="btn btn-outline-neon"
+          className="btn btn-secondary"
           style={{
             display: 'flex',
             alignItems: 'center',

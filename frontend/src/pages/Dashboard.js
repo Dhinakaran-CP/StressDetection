@@ -17,7 +17,7 @@ import {
   Legend,
 } from "recharts";
 
-const API_BASE = "http://127.0.0.1:5000";
+import { API_BASE, STRESS_LEVELS } from "../config";
 
 // Standard PCM WAV encoder helpers
 function bufferToWav(buffer, sampleRate) {
@@ -73,7 +73,7 @@ function writeString(view, offset, string) {
 export default function Dashboard({ theme, toggleTheme }) {
   const [mode, setMode] = useState('upload'); // 'upload' or 'realtime'
   const [serverOnline, setServerOnline] = useState(true);
-  
+
   // File states
   const [faceImage, setFaceImage] = useState(null);
   const [facePreview, setFacePreview] = useState(null);
@@ -83,18 +83,18 @@ export default function Dashboard({ theme, toggleTheme }) {
   const [gsrData, setGsrData] = useState("");
   const [eegFile, setEegFile] = useState(null);
   const [gsrFile, setGsrFile] = useState(null);
-  
+
   // Graph preview states
   const [eegPreviewData, setEegPreviewData] = useState([]);
   const [eegPreviewKeys, setEegPreviewKeys] = useState([]);
   const [gsrPreviewData, setGsrPreviewData] = useState([]);
   const [gsrPreviewKeys, setGsrPreviewKeys] = useState([]);
-  
+
   // Live capture in upload panel
   const [liveFaceResult, setLiveFaceResult] = useState(null);
   const [liveVoiceResult, setLiveVoiceResult] = useState(null);
   const [isMicRecording, setIsMicRecording] = useState(false);
-  
+
   // Phase state machine
   const [phase, setPhase] = useState('idle'); // 'idle' | 'analyzing' | 'currentResult' | 'game' | 'reanalyzing' | 'comparison'
   const [currentResult, setCurrentResult] = useState(null);
@@ -105,6 +105,16 @@ export default function Dashboard({ theme, toggleTheme }) {
   const [error, setError] = useState(null);
   const [webcamActive, setWebcamActive] = useState(false);
 
+  // Custom UI Overlays
+  const [toastMessage, setToastMessage] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null); // { message, onConfirm }
+  const [showInterventionPanel, setShowInterventionPanel] = useState(false);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   // Muse stream states
   const [museDuration, setMuseDuration] = useState(20);
   const [museFilename, setMuseFilename] = useState("uploads/eeg_session.csv");
@@ -112,7 +122,7 @@ export default function Dashboard({ theme, toggleTheme }) {
   const [musePoints, setMusePoints] = useState([]);
   const [museSessionError, setMuseSessionError] = useState(null);
   const [museElapsed, setMuseElapsed] = useState(0);
-  
+
   // Refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -164,7 +174,7 @@ export default function Dashboard({ theme, toggleTheme }) {
     video.srcObject = streamRef.current;
     video.muted = true;
     video.playsInline = true;
-    video.play().catch(() => {});
+    video.play().catch(() => { });
   }, [webcamActive]);
 
   const parseDelimitedSeries = (text, keyName = "value") => {
@@ -216,10 +226,10 @@ export default function Dashboard({ theme, toggleTheme }) {
             selectedIndexes.length > 0
               ? selectedIndexes
               : headers
-                  .map((header, index) => ({ header, index }))
-                  .filter(({ header }) => !header.toLowerCase().includes("timestamp"))
-                  .map((entry) => entry.index)
-                  .slice(0, 4);
+                .map((header, index) => ({ header, index }))
+                .filter(({ header }) => !header.toLowerCase().includes("timestamp"))
+                .map((entry) => entry.index)
+                .slice(0, 4);
 
           const safeIndexes = fallBackIndexes.slice(0, 5);
           const safeKeys = safeIndexes.map((idx) => headers[idx].replace(/\s+/g, "") || `col_${idx}`);
@@ -265,7 +275,7 @@ export default function Dashboard({ theme, toggleTheme }) {
       micStreamRef.current = null;
     }
     if (audioContextRef.current) {
-      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current.close().catch(() => { });
       audioContextRef.current = null;
     }
     analyserRef.current = null;
@@ -456,16 +466,16 @@ export default function Dashboard({ theme, toggleTheme }) {
         const arrayBuffer = await file.arrayBuffer();
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioCtx({ sampleRate: 16000 });
-        
+
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         const channelData = audioBuffer.getChannelData(0);
         const wavBlob = bufferToWav(channelData, 16000);
-        
+
         const cleanName = file.name.replace(/\.[^/.]+$/, "") + ".wav";
         const wavFile = new File([wavBlob], cleanName, { type: 'audio/wav' });
-        
+
         audioCtx.close();
-        
+
         setVoiceFile(wavFile);
         setVoicePreviewUrl(URL.createObjectURL(wavBlob));
       } catch (err) {
@@ -516,7 +526,7 @@ export default function Dashboard({ theme, toggleTheme }) {
   const startWebcam = async () => {
     let stream = null;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ 
+      stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 960 },
           height: { ideal: 540 },
@@ -527,7 +537,7 @@ export default function Dashboard({ theme, toggleTheme }) {
       setWebcamActive(true);
       if (videoRef.current) {
         videoRef.current.srcObject = streamRef.current;
-        videoRef.current.play().catch(() => {});
+        videoRef.current.play().catch(() => { });
       }
     } catch (err) {
       if (stream) {
@@ -558,7 +568,7 @@ export default function Dashboard({ theme, toggleTheme }) {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0);
-      
+
       canvas.toBlob((blob) => {
         const file = new File([blob], 'webcam-capture.jpg', { type: 'image/jpeg' });
         setFaceImage(file);
@@ -568,7 +578,7 @@ export default function Dashboard({ theme, toggleTheme }) {
     }
   };
 
-    const analyzeMultimodal = async () => {
+  const analyzeMultimodal = async () => {
     setError(null);
     const formData = new FormData();
     if (faceImage) formData.append('face_image', faceImage);
@@ -603,22 +613,20 @@ export default function Dashboard({ theme, toggleTheme }) {
         body: formData,
       });
       const data = await response.json();
-      
+
       if (data.status === 'error' || data.error) {
         setError(data.message || data.error || 'Analysis failed');
         setPhase('idle');
         return;
       }
-      
+
       setCurrentResult(data);
-      
-      // Auto-trigger game for high/extreme stress
+
+      // Auto-trigger intervention panel for high/extreme stress
       if (data.stress_level === 'Extreme' || data.stress_level === 'High') {
         setPhase('result');
         setTimeout(() => {
-          if (window.confirm("High stress detected. Would you like to play a quick relaxation game to reduce stress?")) {
-            setPhase('game');
-          }
+          setShowInterventionPanel(true);
         }, 1500);
       } else {
         setPhase('result');
@@ -754,9 +762,52 @@ export default function Dashboard({ theme, toggleTheme }) {
 
   return (
     <div className="container py-5" style={{ position: 'relative' }}>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="toast-notification">
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {confirmDialog && (
+        <div className="modal-overlay">
+          <div className="modal-content neon-card">
+            <h4>Confirmation</h4>
+            <p>{confirmDialog.message}</p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button className="btn btn-primary" onClick={() => {
+                confirmDialog.onConfirm();
+                setConfirmDialog(null);
+              }}>Confirm</button>
+              <button className="btn btn-secondary" onClick={() => setConfirmDialog(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* High Stress Intervention Panel */}
+      {showInterventionPanel && (
+        <div className="modal-overlay">
+          <div className="modal-content neon-card">
+            <h3 style={{ color: 'var(--accent-red)' }}>High Stress Detected</h3>
+            <p>We've noticed elevated stress levels. How would you like to proceed?</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
+              <button className="btn btn-primary" onClick={() => { setShowInterventionPanel(false); setPhase('game'); }}>Play Relaxation Game</button>
+              <button className="btn btn-secondary" onClick={() => setShowInterventionPanel(false)}>Just show me the data</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Medical Disclaimer
+      <div className="medical-disclaimer">
+        This is an experimental estimate based on facial, vocal, and signal patterns. It is not a medical diagnosis.
+      </div> */}
+
       {/* SHUTDOWN & RESTART CONTROLS */}
       <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 1000, display: 'flex', gap: '10px' }}>
-        <button 
+        <button
           title="Restart Backend Server"
           style={{
             width: '45px',
@@ -772,11 +823,14 @@ export default function Dashboard({ theme, toggleTheme }) {
             boxShadow: '0 0 10px rgba(253, 126, 20, 0.6)'
           }}
           onClick={() => {
-            if(window.confirm("Are you sure you want to restart the backend server?")) {
-              fetch('http://127.0.0.1:5000/api/restart/backend', { method: 'POST' })
-                .then(() => alert("Backend is restarting. Please wait a few seconds before analyzing again."))
-                .catch(e => console.error(e));
-            }
+            setConfirmDialog({
+              message: "Are you sure you want to restart the backend server?",
+              onConfirm: () => {
+                fetch(`${API_BASE}/api/restart/backend`, { method: 'POST' })
+                  .then(() => showToast("Backend is restarting. Please wait a few seconds before analyzing again."))
+                  .catch(e => console.error(e));
+              }
+            });
           }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -785,7 +839,7 @@ export default function Dashboard({ theme, toggleTheme }) {
             <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
           </svg>
         </button>
-        <button 
+        <button
           title="Shutdown Backend Server"
           style={{
             width: '45px',
@@ -801,11 +855,14 @@ export default function Dashboard({ theme, toggleTheme }) {
             boxShadow: '0 0 10px rgba(220, 53, 69, 0.6)'
           }}
           onClick={() => {
-            if(window.confirm("Are you sure you want to shut down the backend server?")) {
-              fetch('http://127.0.0.1:5000/api/shutdown/backend', { method: 'POST' })
-                .then(() => alert("Backend is shutting down."))
-                .catch(e => console.error(e));
-            }
+            setConfirmDialog({
+              message: "Are you sure you want to shut down the backend server?",
+              onConfirm: () => {
+                fetch(`${API_BASE}/api/shutdown/backend`, { method: 'POST' })
+                  .then(() => showToast("Backend is shutting down."))
+                  .catch(e => console.error(e));
+              }
+            });
           }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -855,7 +912,7 @@ export default function Dashboard({ theme, toggleTheme }) {
 
           <div style={{ display: "flex", gap: "12px", marginTop: "1rem" }}>
             <button
-              className={`btn ${mode === 'upload' && phase !== 'game' ? 'btn-neon' : 'btn-outline-neon'}`}
+              className={`btn ${mode === 'upload' && phase !== 'game' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => {
                 setMode('upload');
                 setPhase(currentResult ? 'result' : 'idle');
@@ -864,7 +921,7 @@ export default function Dashboard({ theme, toggleTheme }) {
               📂 Upload & Livestreams
             </button>
             <button
-              className={`btn ${mode === 'realtime' && phase !== 'game' ? 'btn-neon' : 'btn-outline-neon'}`}
+              className={`btn ${mode === 'realtime' && phase !== 'game' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => {
                 setMode('realtime');
                 setPhase('idle');
@@ -873,7 +930,7 @@ export default function Dashboard({ theme, toggleTheme }) {
               🔴 Real-Time Streaming
             </button>
             <button
-              className={`btn ${phase === 'game' ? 'btn-neon' : 'btn-outline-neon'}`}
+              className={`btn ${phase === 'game' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setPhase('game')}
             >
               🎮 Relaxation Game
@@ -882,10 +939,10 @@ export default function Dashboard({ theme, toggleTheme }) {
 
           <div style={{ display: "flex", gap: "12px", marginTop: "1rem" }}>
             <button
-              className="btn btn-outline-neon"
+              className="btn btn-secondary"
               onClick={toggleTheme}
             >
-              🎨 Style: {theme === 'cyber' ? 'Cyber ⇆ Earthy' : 'Earthy ⇆ Cyber'}
+              🎨 Style: {theme.charAt(0).toUpperCase() + theme.slice(1)} Mode
             </button>
           </div>
         </div>
@@ -914,12 +971,15 @@ export default function Dashboard({ theme, toggleTheme }) {
 
           {/* Loading states */}
           {(phase === 'analyzing' || phase === 'reanalyzing') && (
-            <div style={{ textAlign: 'center', padding: 40 }}>
-              <div className="spinner-border text-primary mb-3" role="status" style={{width: '3rem', height: '3rem'}}></div>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
+            <div style={{ textAlign: 'center', padding: 60 }} className="fade-in-up">
+              <div className="pulse-circle mx-auto mb-4">
+                <span style={{ fontSize: '1.5rem' }}>⚡</span>
+              </div>
+              <div className="skeleton-loader mx-auto" style={{ height: '8px', width: '150px', marginBottom: '15px' }}></div>
+              <div style={{ color: 'var(--text-color)', fontSize: '1.1rem', fontWeight: 600 }}>
                 {phase === 'reanalyzing'
-                  ? '⏳ Re-analyzing after recovery...'
-                  : '⏳ Analyzing stress indicators...'}
+                  ? 'Re-analyzing after recovery...'
+                  : 'Computing Intelligence Metrics...'}
               </div>
             </div>
           )}
@@ -929,9 +989,9 @@ export default function Dashboard({ theme, toggleTheme }) {
             <div className="result-view fade-in-up">
               {/* Navigation Bar */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <button 
+                <button
                   onClick={clearAll}
-                  className="btn btn-outline-neon"
+                  className="btn btn-secondary"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -943,7 +1003,7 @@ export default function Dashboard({ theme, toggleTheme }) {
                 >
                   <span>←</span> Back to Data Upload
                 </button>
-                
+
                 {phase === 'comparison' && (
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                     ✨ Comparison View Active
@@ -964,9 +1024,9 @@ export default function Dashboard({ theme, toggleTheme }) {
               {/* Sub-cards Row (AI Insights) */}
               <div className="row">
                 <div className="col-12 mb-4">
-                  <CopilotMessage 
-                    stressLevel={currentResult?.stress_level} 
-                    explainability={currentResult?.explainability} 
+                  <CopilotMessage
+                    stressLevel={currentResult?.stress_level}
+                    explainability={currentResult?.explainability}
                   />
                 </div>
               </div>
@@ -991,9 +1051,11 @@ export default function Dashboard({ theme, toggleTheme }) {
                 setPreviousResult(null);
                 clearAll();
               }}
-                style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)',
-                         color: 'rgba(255,255,255,0.5)', borderRadius: 8,
-                         padding: '8px 20px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                style={{
+                  background: 'none', border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.5)', borderRadius: 8,
+                  padding: '8px 20px', cursor: 'pointer', fontSize: '0.82rem'
+                }}>
                 Start New Analysis
               </button>
             </div>
@@ -1001,539 +1063,537 @@ export default function Dashboard({ theme, toggleTheme }) {
 
           {/* Input Section */}
           {phase === 'idle' && (
-          <>
-          <div className="row">
-            <div className="col-12">
-              <div className="neon-card">
-                <h3 className="text-center mb-4">Provide Your Data</h3>
-                <p className="text-center" style={{color: 'var(--text-muted)', marginBottom: '2rem'}}>
-                  Upload any combination of facial images, voice recordings, or physiological data for comprehensive stress analysis
-                </p>
+            <>
+              <div className="row">
+                <div className="col-12">
+                  <div className="neon-card">
+                    <h3 className="text-center mb-4">Provide Your Data</h3>
+                    <p className="text-center" style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
+                      Upload any combination of facial images, voice recordings, or physiological data for comprehensive stress analysis
+                    </p>
 
-                <div className="row">
-                  {/* Facial Input */}
-                  <div className="col-md-6 mb-4">
-                    <div style={{
-                      border: '2px dashed rgba(120, 120, 120, 0.3)',
-                      borderRadius: '12px',
-                      padding: '1.5rem',
-                      background: 'rgba(120, 120, 120, 0.05)'
-                    }}>
-                      <div className="text-center mb-3">
-                        <span style={{fontSize: '3rem'}}>📸</span>
-                        <h4>Facial Analysis</h4>
-                        <p style={{color: 'var(--text-muted)', fontSize: '0.9rem'}}>
-                          Upload a photo or use webcam
-                        </p>
+                    <div className="row">
+                      {/* Facial Input */}
+                      <div className="col-md-6 mb-4">
+                        <div style={{
+                          border: '2px dashed rgba(120, 120, 120, 0.3)',
+                          borderRadius: '12px',
+                          padding: '1.5rem',
+                          background: 'rgba(120, 120, 120, 0.05)'
+                        }}>
+                          <div className="text-center mb-3">
+                            <span style={{ fontSize: '3rem' }}>📸</span>
+                            <h4>Facial Analysis</h4>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                              Upload a photo or use webcam
+                            </p>
+                          </div>
+
+                          {facePreview && (
+                            <div style={{ marginBottom: '1rem', position: 'relative' }}>
+                              <img
+                                src={facePreview}
+                                alt="Preview"
+                                style={{
+                                  width: '100%',
+                                  borderRadius: '8px',
+                                  maxHeight: '200px',
+                                  objectFit: 'cover'
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  setFaceImage(null);
+                                  setFacePreview(null);
+                                }}
+                                className="btn btn-danger"
+                                style={{
+                                  position: 'absolute',
+                                  top: '8px',
+                                  right: '8px',
+                                  padding: '0.25rem 0.5rem',
+                                  fontSize: '0.875rem'
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+
+                          {webcamActive && (
+                            <div style={{ marginBottom: '1rem' }}>
+                              <video
+                                ref={videoRef}
+                                autoPlay
+                                muted
+                                playsInline
+                                onLoadedMetadata={() => {
+                                  if (videoRef.current) {
+                                    videoRef.current.play().catch(() => { });
+                                  }
+                                }}
+                                style={{
+                                  width: '100%',
+                                  minHeight: '260px',
+                                  borderRadius: '8px',
+                                  background: 'rgba(0, 0, 0, 0.35)',
+                                  objectFit: 'cover'
+                                }}
+                              />
+                              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                <button onClick={captureWebcam} className="btn btn-primary" style={{ flex: 1, padding: '10px 5px', fontSize: '0.9rem' }}>
+                                  📷 Capture Photo
+                                </button>
+                                <button onClick={analyzeLiveWebcam} disabled={!serverOnline} className="btn btn-secondary" style={{ flex: 1, padding: '10px 5px', fontSize: '0.9rem' }}>
+                                  {serverOnline ? '⚡ Live Frame' : '🔌 Offline'}
+                                </button>
+                                <button onClick={stopWebcam} className="btn btn-secondary" style={{ flex: 1, padding: '10px 5px', fontSize: '0.9rem' }}>
+                                  Cancel
+                                </button>
+                              </div>
+
+                              {liveFaceResult && (
+                                <div className="currentResult-panel-card" style={{ marginTop: '0.75rem' }}>
+                                  <small>Live Facial Result</small>
+                                  <div style={{ fontWeight: 700 }}>
+                                    {liveFaceResult.stress_level || liveFaceResult.predicted_class} ({Number(liveFaceResult.percentage || 0).toFixed(1)}%)
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {!webcamActive && !facePreview && (
+                            <>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFaceUpload}
+                                className="form-control"
+                              />
+                              <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem' }}>
+                                Supported: JPG, PNG, WEBP
+                              </small>
+                              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                                <button
+                                  onClick={startWebcam}
+                                  className="btn btn-primary"
+                                >
+                                  📹 USE WEBCAM
+                                </button>
+                              </div>
+                            </>
+                          )}
+                          <canvas ref={canvasRef} style={{ display: 'none' }} />
+                        </div>
                       </div>
 
-                      {facePreview && (
-                        <div style={{marginBottom: '1rem', position: 'relative'}}>
-                          <img 
-                            src={facePreview} 
-                            alt="Preview" 
-                            style={{
-                              width: '100%',
-                              borderRadius: '8px',
-                              maxHeight: '200px',
-                              objectFit: 'cover'
-                            }}
-                          />
-                          <button
-                            onClick={() => {
-                              setFaceImage(null);
-                              setFacePreview(null);
-                            }}
-                            className="btn btn-danger"
-                            style={{
-                              position: 'absolute',
-                              top: '8px',
-                              right: '8px',
-                              padding: '0.25rem 0.5rem',
-                              fontSize: '0.875rem'
-                            }}
-                          >
-                            Remove
-                          </button>
+                      {/* Voice Input */}
+                      <div className="col-md-6 mb-4">
+                        <div style={{
+                          border: '2px dashed rgba(120, 120, 120, 0.3)',
+                          borderRadius: '12px',
+                          padding: '1.5rem',
+                          background: 'rgba(120, 120, 120, 0.05)'
+                        }}>
+                          <div className="text-center mb-3">
+                            <span style={{ fontSize: '3rem' }}>🎤</span>
+                            <h4>Voice Analysis</h4>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                              Upload an audio recording
+                            </p>
+                          </div>
+
+                          {voicePreviewUrl && (
+                            <div style={{ marginBottom: '1rem' }}>
+                              <audio
+                                controls
+                                src={voicePreviewUrl}
+                                style={{ width: '100%', marginBottom: '0.5rem' }}
+                              />
+                              <button
+                                onClick={() => {
+                                  setVoiceFile(null);
+                                  setVoicePreviewUrl(null);
+                                }}
+                                className="btn btn-danger w-100"
+                                style={{ fontSize: '0.875rem' }}
+                              >
+                                Remove Audio
+                              </button>
+                            </div>
+                          )}
+
+                          {!voicePreviewUrl && (
+                            <>
+                              <input
+                                type="file"
+                                accept="audio/*"
+                                onChange={handleVoiceUpload}
+                                className="form-control"
+                              />
+                              <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem' }}>
+                                Supported: WAV, MP3, OGG, M4A, WEBM
+                              </small>
+
+                              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  onClick={startMicRecording}
+                                  disabled={isMicRecording}
+                                >
+                                  🎙️ Start Mic
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  onClick={() => stopMicRecording(true)}
+                                  disabled={!isMicRecording}
+                                >
+                                  ⏹️ Stop & Analyze
+                                </button>
+                              </div>
+
+                              <div style={{ width: '100%', height: 100, marginTop: '0.75rem' }}>
+                                <canvas
+                                  ref={micCanvasRef}
+                                  width={320}
+                                  height={100}
+                                  style={{ width: '100%', height: 100, display: 'block', background: 'var(--chat-bg)', borderRadius: 8 }}
+                                />
+                              </div>
+
+                              {liveVoiceResult && (
+                                <div className="currentResult-panel-card" style={{ marginTop: '0.75rem' }}>
+                                  <small>Live Voice Result</small>
+                                  <div style={{ fontWeight: 700 }}>
+                                    {liveVoiceResult.stress_level || liveVoiceResult.predicted_class} ({Number(liveVoiceResult.percentage || 0).toFixed(1)}%)
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
-                      )}
+                      </div>
 
-                      {webcamActive && (
-                        <div style={{marginBottom: '1rem'}}>
-                          <video 
-                            ref={videoRef} 
-                            autoPlay 
-                            muted
-                            playsInline
-                            onLoadedMetadata={() => {
-                              if (videoRef.current) {
-                                videoRef.current.play().catch(() => {});
-                              }
-                            }}
-                            style={{
-                              width: '100%',
-                              minHeight: '260px',
-                              borderRadius: '8px',
-                              background: 'rgba(0, 0, 0, 0.35)',
-                              objectFit: 'cover'
-                            }}
-                          />
-                          <button
-                            onClick={captureWebcam}
-                            className="btn btn-neon w-100 mt-2"
-                          >
-                            📷 Capture Photo
-                          </button>
-                          <button
-                            onClick={analyzeLiveWebcam}
-                            disabled={!serverOnline}
-                            className="btn btn-outline-neon w-100 mt-2"
-                          >
-                            {serverOnline ? '⚡ Analyze Live Frame' : '🔌 Server Offline'}
-                          </button>
-                          <button
-                            onClick={stopWebcam}
-                            className="btn btn-outline-neon w-100 mt-2"
-                          >
-                            Cancel
-                          </button>
+                      {/* Physiological Input */}
+                      <div className="col-12 mb-4">
+                        <div style={{
+                          border: '2px dashed rgba(120, 120, 120, 0.3)',
+                          borderRadius: '12px',
+                          padding: '1.5rem',
+                          background: 'rgba(120, 120, 120, 0.05)'
+                        }}>
+                          <div className="text-center mb-3">
+                            <span style={{ fontSize: '3rem' }}>🧠⚡</span>
+                            <h4>Physiological Data</h4>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                              Enter EEG and GSR data as comma-separated values, or use Muse 2 live stream
+                            </p>
+                          </div>
 
-                          {liveFaceResult && (
-                            <div className="currentResult-panel-card" style={{ marginTop: '0.75rem' }}>
-                              <small>Live Facial Result</small>
-                              <div style={{ fontWeight: 700 }}>
-                                {liveFaceResult.stress_level || liveFaceResult.predicted_class} ({Number(liveFaceResult.percentage || 0).toFixed(1)}%)
+                          <div style={{
+                            marginBottom: '1.5rem',
+                            border: '1px solid rgba(120, 120, 120, 0.3)',
+                            borderRadius: '10px',
+                            padding: '1rem',
+                            background: 'var(--accent-light-bg)'
+                          }}>
+                            <h5 style={{ marginBottom: '0.75rem' }}>Muse 2 Real-Time Stream</h5>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                              Uses muselsl command: python -m muselsl record --duration X --filename uploads/eeg_session.csv
+                            </p>
+
+                            <div className="row">
+                              <div className="col-md-4 mb-2">
+                                <label className="form-label"><strong>Duration (seconds)</strong></label>
+                                <input
+                                  type="number"
+                                  min="5"
+                                  max="1800"
+                                  className="form-control"
+                                  value={museDuration}
+                                  onChange={(e) => setMuseDuration(e.target.value)}
+                                />
+                              </div>
+                              <div className="col-md-8 mb-2">
+                                <label className="form-label"><strong>CSV output path</strong></label>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  value={museFilename}
+                                  onChange={(e) => setMuseFilename(e.target.value)}
+                                  placeholder="uploads/eeg_session.csv"
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={museCollecting}
+                                onClick={startMuseCapture}
+                              >
+                                {museCollecting ? 'Collecting...' : 'Start Muse Stream'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                disabled={!museCollecting}
+                                onClick={stopMuseCapture}
+                              >
+                                Stop Stream
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={pollMuseStatus}
+                              >
+                                Refresh Status
+                              </button>
+                            </div>
+
+                            <div style={{ marginTop: '0.75rem', color: 'var(--text-muted)' }}>
+                              <strong>Status:</strong> {museCollecting ? 'Collecting live data' : 'Idle'} | <strong>Elapsed:</strong> {museElapsed}s
+                            </div>
+
+                            {museSessionError && (
+                              <div style={{ marginTop: '0.5rem', color: '#c74545' }}>
+                                <strong>Error:</strong> {museSessionError}
+                              </div>
+                            )}
+
+                            <div style={{ width: '100%', height: 280, marginTop: '1rem' }}>
+                              <ResponsiveContainer>
+                                <LineChart data={musePoints}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
+                                  <XAxis dataKey="timestamp" tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
+                                  <YAxis tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
+                                  <Tooltip />
+                                  <Legend />
+                                  <Line type="monotone" dataKey="TP9" stroke="#4f772d" dot={false} strokeWidth={2} />
+                                  <Line type="monotone" dataKey="AF7" stroke="#8d9740" dot={false} strokeWidth={2} />
+                                  <Line type="monotone" dataKey="AF8" stroke="#bc6c25" dot={false} strokeWidth={2} />
+                                  <Line type="monotone" dataKey="TP10" stroke="#c74545" dot={false} strokeWidth={2} />
+                                  <Line type="monotone" dataKey="RightAUX" stroke="#6a4c93" dot={false} strokeWidth={2} />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+
+                            <small style={{ color: 'var(--text-muted)' }}>
+                              Expected columns: timestamps, TP9, AF7, AF8, TP10, Right AUX. Prediction is triggered automatically when recording finishes.
+                            </small>
+                          </div>
+
+                          <div className="row">
+                            <div className="col-md-6 mb-3">
+                              <label className="form-label">
+                                <strong>🧠 EEG Data</strong>
+                              </label>
+                              <textarea
+                                value={eegData}
+                                onChange={(e) => handleEegTextChange(e.target.value)}
+                                placeholder="e.g., 0.5, 0.7, 0.6, 0.8, 0.65, 0.72..."
+                                className="form-control"
+                                rows="3"
+                              />
+                              <small style={{ color: 'var(--text-muted)' }}>
+                                Enter brainwave measurement values
+                              </small>
+                              <div style={{ marginTop: '0.5rem' }}>
+                                <input
+                                  type="file"
+                                  accept=".csv,.txt"
+                                  onChange={(e) => handleEegFileUpload(e.target.files[0] || null)}
+                                  className="form-control"
+                                />
+                                <small style={{ color: 'var(--text-muted)' }}>
+                                  Optional: upload EEG machine export (CSV/TXT)
+                                </small>
+                              </div>
+                            </div>
+
+                            <div className="col-md-6 mb-3">
+                              <label className="form-label">
+                                <strong>⚡ GSR Data</strong>
+                              </label>
+                              <textarea
+                                value={gsrData}
+                                onChange={(e) => handleGsrTextChange(e.target.value)}
+                                placeholder="e.g., 2.1, 2.3, 2.5, 2.4, 2.6, 2.2..."
+                                className="form-control"
+                                rows="3"
+                              />
+                              <small style={{ color: 'var(--text-muted)' }}>
+                                Enter skin conductance values
+                              </small>
+                              <div style={{ marginTop: '0.5rem' }}>
+                                <input
+                                  type="file"
+                                  accept=".csv,.txt"
+                                  onChange={(e) => handleGsrFileUpload(e.target.files[0] || null)}
+                                  className="form-control"
+                                />
+                                <small style={{ color: 'var(--text-muted)' }}>
+                                  Optional: upload GSR export (CSV/TXT)
+                                </small>
+                              </div>
+                            </div>
+                          </div>
+
+                          {(eegPreviewData.length > 0 || gsrPreviewData.length > 0) && (
+                            <div className="row mt-2">
+                              <div className="col-md-6 mb-3">
+                                <div className="currentResult-panel-card">
+                                  <h5 className="currentResult-section-title">EEG Preview Chart</h5>
+                                  <div style={{ width: '100%', height: 220 }}>
+                                    <ResponsiveContainer>
+                                      <LineChart data={eegPreviewData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
+                                        <XAxis dataKey="index" tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
+                                        <YAxis tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
+                                        <Tooltip />
+                                        <Legend />
+                                        {eegPreviewKeys.map((key, idx) => (
+                                          <Line
+                                            key={key}
+                                            type="monotone"
+                                            dataKey={key}
+                                            dot={false}
+                                            strokeWidth={2}
+                                            stroke={["#4f772d", "#8d9740", "#bc6c25", "#c74545", "#6a4c93"][idx % 5]}
+                                          />
+                                        ))}
+                                      </LineChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="col-md-6 mb-3">
+                                <div className="currentResult-panel-card">
+                                  <h5 className="currentResult-section-title">GSR Preview Chart</h5>
+                                  <div style={{ width: '100%', height: 220 }}>
+                                    <ResponsiveContainer>
+                                      <LineChart data={gsrPreviewData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
+                                        <XAxis dataKey="index" tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
+                                        <YAxis tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
+                                        <Tooltip />
+                                        <Legend />
+                                        {gsrPreviewKeys.map((key, idx) => (
+                                          <Line
+                                            key={key}
+                                            type="monotone"
+                                            dataKey={key}
+                                            dot={false}
+                                            strokeWidth={2}
+                                            stroke={["#8d9740", "#4f772d", "#bc6c25"][idx % 3]}
+                                          />
+                                        ))}
+                                      </LineChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           )}
                         </div>
-                      )}
-
-                      {!webcamActive && !facePreview && (
-                        <>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFaceUpload}
-                            className="form-control mb-2"
-                          />
-                          <button
-                            onClick={startWebcam}
-                            className="btn btn-outline-neon w-100"
-                          >
-                            📹 Use Webcam
-                          </button>
-                        </>
-                      )}
-                      <canvas ref={canvasRef} style={{display: 'none'}} />
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Voice Input */}
-                  <div className="col-md-6 mb-4">
-                    <div style={{
-                      border: '2px dashed rgba(120, 120, 120, 0.3)',
-                      borderRadius: '12px',
-                      padding: '1.5rem',
-                      background: 'rgba(120, 120, 120, 0.05)'
-                    }}>
-                      <div className="text-center mb-3">
-                        <span style={{fontSize: '3rem'}}>🎤</span>
-                        <h4>Voice Analysis</h4>
-                        <p style={{color: 'var(--text-muted)', fontSize: '0.9rem'}}>
-                          Upload an audio recording
-                        </p>
-                      </div>
-
-                      {voicePreviewUrl && (
-                        <div style={{marginBottom: '1rem'}}>
-                          <audio 
-                            controls 
-                            src={voicePreviewUrl} 
-                            style={{width: '100%', marginBottom: '0.5rem'}} 
-                          />
-                          <button
-                            onClick={() => {
-                              setVoiceFile(null);
-                              setVoicePreviewUrl(null);
-                            }}
-                            className="btn btn-danger w-100"
-                            style={{fontSize: '0.875rem'}}
-                          >
-                            Remove Audio
-                          </button>
-                        </div>
-                      )}
-
-                      {!voicePreviewUrl && (
-                        <>
-                          <input
-                            type="file"
-                            accept="audio/*"
-                            onChange={handleVoiceUpload}
-                            className="form-control"
-                          />
-                          <small style={{color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem'}}>
-                            Supported: WAV, MP3, OGG, M4A, WEBM
-                          </small>
-
-                          <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              className="btn btn-neon"
-                              onClick={startMicRecording}
-                              disabled={isMicRecording}
-                            >
-                              🎙️ Start Mic
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-outline-neon"
-                              onClick={() => stopMicRecording(true)}
-                              disabled={!isMicRecording}
-                            >
-                              ⏹️ Stop & Analyze
-                            </button>
-                          </div>
-
-                          <div style={{ width: '100%', height: 100, marginTop: '0.75rem' }}>
-                            <canvas
-                              ref={micCanvasRef}
-                              width={320}
-                              height={100}
-                              style={{ width: '100%', height: 100, display: 'block', background: 'var(--chat-bg)', borderRadius: 8 }}
-                            />
-                          </div>
-
-                          {liveVoiceResult && (
-                            <div className="currentResult-panel-card" style={{ marginTop: '0.75rem' }}>
-                              <small>Live Voice Result</small>
-                              <div style={{ fontWeight: 700 }}>
-                                {liveVoiceResult.stress_level || liveVoiceResult.predicted_class} ({Number(liveVoiceResult.percentage || 0).toFixed(1)}%)
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
+                    {/* Action Buttons */}
+                    <div className="text-center mt-4" style={{ marginBottom: '1.5rem' }}>
+                      <button
+                        onClick={analyzeMultimodal}
+                        disabled={(phase === 'analyzing' || phase === 'reanalyzing') || !serverOnline}
+                        className="btn btn-primary"
+                        style={{
+                          padding: '0.75rem 3rem',
+                          fontSize: '1.1rem',
+                          marginRight: '1rem',
+                          borderRadius: '30px'
+                        }}
+                      >
+                        Analyze Stress
+                      </button>
+                      <button
+                        onClick={clearAll}
+                        className="btn btn-secondary"
+                        style={{
+                          padding: '0.75rem 2rem',
+                          fontSize: '1.1rem',
+                          borderRadius: '30px'
+                        }}
+                      >
+                        Clear All
+                      </button>
                     </div>
+
+
                   </div>
-
-                  {/* Physiological Input */}
-                  <div className="col-12 mb-4">
-                    <div style={{
-                      border: '2px dashed rgba(120, 120, 120, 0.3)',
-                      borderRadius: '12px',
-                      padding: '1.5rem',
-                      background: 'rgba(120, 120, 120, 0.05)'
-                    }}>
-                      <div className="text-center mb-3">
-                        <span style={{fontSize: '3rem'}}>🧠⚡</span>
-                        <h4>Physiological Data</h4>
-                        <p style={{color: 'var(--text-muted)', fontSize: '0.9rem'}}>
-                          Enter EEG and GSR data as comma-separated values, or use Muse 2 live stream
-                        </p>
-                      </div>
-
-                      <div style={{
-                        marginBottom: '1.5rem',
-                        border: '1px solid rgba(120, 120, 120, 0.3)',
-                        borderRadius: '10px',
-                        padding: '1rem',
-                        background: 'var(--accent-light-bg)'
-                      }}>
-                        <h5 style={{ marginBottom: '0.75rem' }}>Muse 2 Real-Time Stream</h5>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                          Uses muselsl command: python -m muselsl record --duration X --filename uploads/eeg_session.csv
-                        </p>
-
-                        <div className="row">
-                          <div className="col-md-4 mb-2">
-                            <label className="form-label"><strong>Duration (seconds)</strong></label>
-                            <input
-                              type="number"
-                              min="5"
-                              max="1800"
-                              className="form-control"
-                              value={museDuration}
-                              onChange={(e) => setMuseDuration(e.target.value)}
-                            />
-                          </div>
-                          <div className="col-md-8 mb-2">
-                            <label className="form-label"><strong>CSV output path</strong></label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={museFilename}
-                              onChange={(e) => setMuseFilename(e.target.value)}
-                              placeholder="uploads/eeg_session.csv"
-                            />
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                          <button
-                            type="button"
-                            className="btn btn-neon"
-                            disabled={museCollecting}
-                            onClick={startMuseCapture}
-                          >
-                            {museCollecting ? 'Collecting...' : 'Start Muse Stream'}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline-neon"
-                            disabled={!museCollecting}
-                            onClick={stopMuseCapture}
-                          >
-                            Stop Stream
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline-neon"
-                            onClick={pollMuseStatus}
-                          >
-                            Refresh Status
-                          </button>
-                        </div>
-
-                        <div style={{ marginTop: '0.75rem', color: 'var(--text-muted)' }}>
-                          <strong>Status:</strong> {museCollecting ? 'Collecting live data' : 'Idle'} | <strong>Elapsed:</strong> {museElapsed}s
-                        </div>
-
-                        {museSessionError && (
-                          <div style={{ marginTop: '0.5rem', color: '#c74545' }}>
-                            <strong>Error:</strong> {museSessionError}
-                          </div>
-                        )}
-
-                        <div style={{ width: '100%', height: 280, marginTop: '1rem' }}>
-                          <ResponsiveContainer>
-                            <LineChart data={musePoints}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
-                              <XAxis dataKey="timestamp" tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
-                              <YAxis tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
-                              <Tooltip />
-                              <Legend />
-                              <Line type="monotone" dataKey="TP9" stroke="#4f772d" dot={false} strokeWidth={2} />
-                              <Line type="monotone" dataKey="AF7" stroke="#8d9740" dot={false} strokeWidth={2} />
-                              <Line type="monotone" dataKey="AF8" stroke="#bc6c25" dot={false} strokeWidth={2} />
-                              <Line type="monotone" dataKey="TP10" stroke="#c74545" dot={false} strokeWidth={2} />
-                              <Line type="monotone" dataKey="RightAUX" stroke="#6a4c93" dot={false} strokeWidth={2} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-
-                        <small style={{ color: 'var(--text-muted)' }}>
-                          Expected columns: timestamps, TP9, AF7, AF8, TP10, Right AUX. Prediction is triggered automatically when recording finishes.
-                        </small>
-                      </div>
-
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">
-                            <strong>🧠 EEG Data</strong>
-                          </label>
-                          <textarea
-                            value={eegData}
-                            onChange={(e) => handleEegTextChange(e.target.value)}
-                            placeholder="e.g., 0.5, 0.7, 0.6, 0.8, 0.65, 0.72..."
-                            className="form-control"
-                            rows="3"
-                          />
-                          <small style={{color: 'var(--text-muted)'}}>
-                            Enter brainwave measurement values
-                          </small>
-                          <div style={{marginTop: '0.5rem'}}>
-                            <input
-                              type="file"
-                              accept=".csv,.txt"
-                              onChange={(e) => handleEegFileUpload(e.target.files[0] || null)}
-                              className="form-control"
-                            />
-                            <small style={{color: 'var(--text-muted)'}}>
-                              Optional: upload EEG machine export (CSV/TXT)
-                            </small>
-                          </div>
-                        </div>
-
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">
-                            <strong>⚡ GSR Data</strong>
-                          </label>
-                          <textarea
-                            value={gsrData}
-                            onChange={(e) => handleGsrTextChange(e.target.value)}
-                            placeholder="e.g., 2.1, 2.3, 2.5, 2.4, 2.6, 2.2..."
-                            className="form-control"
-                            rows="3"
-                          />
-                          <small style={{color: 'var(--text-muted)'}}>
-                            Enter skin conductance values
-                          </small>
-                          <div style={{marginTop: '0.5rem'}}>
-                            <input
-                              type="file"
-                              accept=".csv,.txt"
-                              onChange={(e) => handleGsrFileUpload(e.target.files[0] || null)}
-                              className="form-control"
-                            />
-                            <small style={{color: 'var(--text-muted)'}}>
-                              Optional: upload GSR export (CSV/TXT)
-                            </small>
-                          </div>
-                        </div>
-                      </div>
-
-                      {(eegPreviewData.length > 0 || gsrPreviewData.length > 0) && (
-                        <div className="row mt-2">
-                          <div className="col-md-6 mb-3">
-                            <div className="currentResult-panel-card">
-                              <h5 className="currentResult-section-title">EEG Preview Chart</h5>
-                              <div style={{ width: '100%', height: 220 }}>
-                                <ResponsiveContainer>
-                                  <LineChart data={eegPreviewData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
-                                    <XAxis dataKey="index" tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                                    <YAxis tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                                    <Tooltip />
-                                    <Legend />
-                                    {eegPreviewKeys.map((key, idx) => (
-                                      <Line
-                                        key={key}
-                                        type="monotone"
-                                        dataKey={key}
-                                        dot={false}
-                                        strokeWidth={2}
-                                        stroke={["#4f772d", "#8d9740", "#bc6c25", "#c74545", "#6a4c93"][idx % 5]}
-                                      />
-                                    ))}
-                                  </LineChart>
-                                </ResponsiveContainer>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="col-md-6 mb-3">
-                            <div className="currentResult-panel-card">
-                              <h5 className="currentResult-section-title">GSR Preview Chart</h5>
-                              <div style={{ width: '100%', height: 220 }}>
-                                <ResponsiveContainer>
-                                  <LineChart data={gsrPreviewData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
-                                    <XAxis dataKey="index" tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                                    <YAxis tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                                    <Tooltip />
-                                    <Legend />
-                                    {gsrPreviewKeys.map((key, idx) => (
-                                      <Line
-                                        key={key}
-                                        type="monotone"
-                                        dataKey={key}
-                                        dot={false}
-                                        strokeWidth={2}
-                                        stroke={["#8d9740", "#4f772d", "#bc6c25"][idx % 3]}
-                                      />
-                                    ))}
-                                  </LineChart>
-                                </ResponsiveContainer>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="text-center mt-4" style={{ marginBottom: '1.5rem' }}>
-                  <button
-                    onClick={analyzeMultimodal}
-                    disabled={(phase === 'analyzing' || phase === 'reanalyzing') || !serverOnline}
-                    className="btn btn-neon"
-                    style={{
-                      padding: '0.75rem 3rem',
-                      fontSize: '1.1rem',
-                      marginRight: '1rem',
-                      borderRadius: '30px'
-                    }}
-                  >
-                    Analyze Stress
-                  </button>
-                  <button
-                    onClick={clearAll}
-                    className="btn btn-outline-neon"
-                    style={{
-                      padding: '0.75rem 2rem',
-                      fontSize: '1.1rem',
-                      borderRadius: '30px'
-                    }}
-                  >
-                    Clear All
-                  </button>
-                </div>
-
-
-              </div>
-            </div>
-          </div>
-
-          {/* How to Use Section */}
-          <div className="row mt-5">
-            <div className="col-12">
-              <div className="neon-card">
-                <h3 className="text-center mb-4">How to Use the Dashboard</h3>
-                <div className="row">
-                  <div className="col-md-4">
-                    <h4>📸 Facial Data</h4>
-                    <ul className="list-unstyled">
-                      <li>• Upload a clear photo of your face</li>
-                      <li>• Or use webcam for live capture</li>
-                      <li>• Ensure good lighting</li>
-                      <li>• Look directly at camera</li>
-                    </ul>
-                  </div>
-                  <div className="col-md-4">
-                    <h4>🎤 Voice Data</h4>
-                    <ul className="list-unstyled">
-                      <li>• Upload a voice recording</li>
-                      <li>• Speak naturally for 3-5 seconds</li>
-                      <li>• Minimize background noise</li>
-                      <li>• Use standard audio formats</li>
-                    </ul>
-                  </div>
-                  <div className="col-md-4">
-                    <h4>⚡ Physiological Data</h4>
-                    <ul className="list-unstyled">
-                      <li>• Enter comma-separated values</li>
-                      <li>• EEG: Brainwave measurements</li>
-                      <li>• GSR: Skin conductance values</li>
-                      <li>• Use sensor device outputs</li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="alert" style={{
-                  background: 'var(--accent-light-bg)',
-                  border: '1px solid rgba(120, 120, 120, 0.3)',
-                  marginTop: '1.5rem',
-                  textAlign: 'center',
-                  color: 'var(--text-color)'
-                }}>
-                  <strong>💡 Pro Tip:</strong> For best results, provide multiple data sources. 
-                  The system uses advanced multimodal fusion to combine insights from all available inputs.
                 </div>
               </div>
-            </div>
-          </div>
-          </>
+
+              {/* How to Use Section */}
+              <div className="row mt-5">
+                <div className="col-12">
+                  <div className="neon-card">
+                    <h3 className="text-center mb-4">How to Use the Dashboard</h3>
+                    <div className="row">
+                      <div className="col-md-4">
+                        <h4>📸 Facial Data</h4>
+                        <ul className="list-unstyled">
+                          <li>• Upload a clear photo of your face</li>
+                          <li>• Or use webcam for live capture</li>
+                          <li>• Ensure good lighting</li>
+                          <li>• Look directly at camera</li>
+                        </ul>
+                      </div>
+                      <div className="col-md-4">
+                        <h4>🎤 Voice Data</h4>
+                        <ul className="list-unstyled">
+                          <li>• Upload a voice recording</li>
+                          <li>• Speak naturally for 3-5 seconds</li>
+                          <li>• Minimize background noise</li>
+                          <li>• Use standard audio formats</li>
+                        </ul>
+                      </div>
+                      <div className="col-md-4">
+                        <h4>⚡ Physiological Data</h4>
+                        <ul className="list-unstyled">
+                          <li>• Enter comma-separated values</li>
+                          <li>• EEG: Brainwave measurements</li>
+                          <li>• GSR: Skin conductance values</li>
+                          <li>• Use sensor device outputs</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="alert" style={{
+                      background: 'var(--accent-light-bg)',
+                      border: '1px solid rgba(120, 120, 120, 0.3)',
+                      marginTop: '1.5rem',
+                      textAlign: 'center',
+                      color: 'var(--text-color)'
+                    }}>
+                      <strong>💡 Pro Tip:</strong> For best results, provide multiple data sources.
+                      The system uses advanced multimodal fusion to combine insights from all available inputs.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </>
-      )}
+      )
+      }
 
       <StressChatbot
         stressLevel={currentResult?.stress_level || 'Moderate'}
         stressPercentage={currentResult ? currentResult.fused_score * 100 : null}
       />
-    </div>
+    </div >
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API_BASE } from "../config";
 
 export default function StressChatbot({ stressLevel, stressPercentage }) {
   const [open, setOpen] = useState(false);
@@ -22,7 +23,7 @@ export default function StressChatbot({ stressLevel, stressPercentage }) {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/chat/stress", {
+      const response = await fetch(`${API_BASE}/api/chat/stress`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -61,13 +62,32 @@ export default function StressChatbot({ stressLevel, stressPercentage }) {
     }
   };
 
+  const renderMessage = (text) => {
+    if (!text) return null;
+    
+    // 1. Escape raw HTML to prevent browser from swallowing <tags>
+    let html = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // 2. Replace **text** with <strong>text</strong>
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // 3. Replace '* text' list items with a styled div
+    html = html.replace(/(?:^|\s)\* (.*?)(?=(?:\s\* |$))/g, '<div style="margin-top: 6px; margin-left: 12px;">• $1</div>');
+    // 4. Replace newlines with <br/>
+    html = html.replace(/\n/g, '<br/>');
+    
+    return <span dangerouslySetInnerHTML={{ __html: html }} />;
+  };
+
   return (
     <div className="stress-chatbot-shell">
       {open && (
         <div className="stress-chatbot-panel">
           <div className="stress-chatbot-header">
             <strong>Stress Assistant</strong>
-            <button className="btn btn-outline-neon" onClick={() => setOpen(false)}>
+            <button className="btn btn-secondary" onClick={() => setOpen(false)}>
               Close
             </button>
           </div>
@@ -84,7 +104,7 @@ export default function StressChatbot({ stressLevel, stressPercentage }) {
                 key={`${msg.role}-${idx}`}
                 className={msg.role === "user" ? "chat-msg-user" : "chat-msg-bot"}
               >
-                {msg.text}
+                {renderMessage(msg.text)}
               </div>
             ))}
             {loading && <div className="chat-msg-bot">Thinking...</div>}
@@ -103,7 +123,7 @@ export default function StressChatbot({ stressLevel, stressPercentage }) {
                 }
               }}
             />
-            <button className="btn btn-neon" onClick={sendMessage} disabled={loading || !input.trim()}>
+            <button className="btn btn-primary" onClick={sendMessage} disabled={loading || !input.trim()}>
               Send
             </button>
           </div>
@@ -111,7 +131,7 @@ export default function StressChatbot({ stressLevel, stressPercentage }) {
       )}
 
       {!open && (
-        <button className="btn btn-neon stress-chatbot-open" onClick={() => setOpen(true)}>
+        <button className="btn btn-primary stress-chatbot-open" onClick={() => setOpen(true)}>
           Stress Chat
         </button>
       )}

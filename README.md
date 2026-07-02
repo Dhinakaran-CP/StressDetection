@@ -1,4 +1,4 @@
-# Multimodal Stress Detection System
+# Multimodal Stress Intelligence Platform
 
 A real-time stress detection system that uses three physiological modalities — **facial expressions**, **voice acoustics**, and **physiological signals** — to detect and quantify stress levels using machine learning.
 
@@ -6,7 +6,7 @@ A real-time stress detection system that uses three physiological modalities —
 
 ## 📖 Overview
 
-The **Multimodal Stress Detection System** aims to accurately identify human stress levels by fusing multiple streams of biological telemetry. By observing users through their webcam and microphone—as well as optionally analyzing uploaded EEG and GSR data—the application acts as an intelligent health monitoring dashboard. It not only predicts the likelihood of stress but also explicitly tells users *why* they are stressed using Explainable AI (XAI).
+The **Multimodal Stress Intelligence Platform** aims to accurately identify human stress levels by fusing multiple streams of biological telemetry. By observing users through their webcam and microphone—as well as optionally analyzing uploaded EEG and GSR data—the application acts as an intelligent health monitoring dashboard. It not only predicts the likelihood of stress but also explicitly tells users *why* they are stressed using Explainable AI (XAI).
 
 ## ✨ Key Features
 
@@ -69,7 +69,7 @@ Results from the distinct models are aggregated via a **weighted confidence engi
 ## 📂 Project Structure
 
 ```text
-StressDetectionUsingML/
+StressIntelligencePlatform/
 │
 ├── run.bat                       # One-click launcher (starts backend + frontend)
 ├── README.md

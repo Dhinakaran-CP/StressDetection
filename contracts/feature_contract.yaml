@@ -43,3 +43,14 @@ modalities:
       - "voiced_fraction"
     scaling: "StandardScaler"
     missing_value_strategy: "zero_fill"
+    
+  physio:
+    input_shape: 5
+    features:
+      - "ecg_rate_mean"
+      - "ecg_hrv_rmssd"
+      - "ecg_hrv_sdnn"
+      - "eda_scl_mean"
+      - "resp_rate_mean"
+    scaling: "StandardScaler"
+    missing_value_strategy: "mean_fill"

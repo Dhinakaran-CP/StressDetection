@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { API_BASE } from '../config';
 
 const PHASES = [
     {
@@ -74,7 +75,7 @@ export default function CalibrationWizard({ userId = 'default', onComplete, sile
         if (currentPhase.key === 'silence' && silenceRmsRef && silenceRmsRef.current.length > 0) {
             const noiseRms = silenceRmsRef.current.reduce((a, b) => a + b, 0) / silenceRmsRef.current.length;
             try {
-                await fetch('http://127.0.0.1:5000/api/calibrate/silence', {
+                await fetch(`${API_BASE}/api/calibrate/silence`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, noise_rms: noiseRms }),
@@ -90,7 +91,7 @@ export default function CalibrationWizard({ userId = 'default', onComplete, sile
         } else {
             // All phases done — finalize
             try {
-                const res = await fetch('http://127.0.0.1:5000/api/calibrate/finalize', {
+                const res = await fetch(`${API_BASE}/api/calibrate/finalize`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId }),
@@ -119,7 +120,7 @@ export default function CalibrationWizard({ userId = 'default', onComplete, sile
                 </p>
                 <button
                     onClick={() => onComplete && onComplete()}
-                    className="btn btn-neon"
+                    className="btn btn-primary"
                     style={{ padding: '12px 36px', fontSize: '1.05rem' }}
                 >
                     Start Monitoring
@@ -174,7 +175,7 @@ export default function CalibrationWizard({ userId = 'default', onComplete, sile
             {!running && (
                 <button
                     onClick={startPhase}
-                    className="btn btn-neon"
+                    className="btn btn-primary"
                     style={{
                         display: 'block', width: '100%',
                         padding: '14px', borderRadius: 8,
