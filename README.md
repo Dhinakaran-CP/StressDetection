@@ -82,11 +82,15 @@ StressIntelligencePlatform/
 │   ├── voice_worker.py           # High-speed vocal feature extraction
 │   ├── calibration.py            # Per-user baseline calibration engine
 │   ├── score_buffer.py           # Rolling score buffer with smoothing
-│   ├── requirements.txt          # Python dependencies
-│   │
-│   ├── expert_models/            # Production lightweight models (~1-2 MB each)
-│   ├── tests/                    # API, health, and streaming test scripts
-│   └── uploads/                  # Temporary file uploads (auto-cleaned)
+│   └── requirements.txt          # Python dependencies
+│
+├── models/                       # Production lightweight models & bundles
+├── training/                     # ML training, experimental code and pipelines
+├── configs/                      # Contract yaml schemas and environment configs
+├── tests/                        # API, health, and streaming test scripts
+├── data/                         # Raw datasets and evaluation data
+├── certified_data/               # Pre-processed certified datasets for final training
+├── quarantine/                   # Archived/obsolete scripts and artifacts
 │
 ├── frontend/                     # React application
 │   ├── public/

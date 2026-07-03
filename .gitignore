@@ -31,7 +31,7 @@ env/
 
 # ===========================================
 # ML Models & Large Binary Files
-# Models are stored in backend/expert_models/ (lightweight, ~1-2MB each)
+# Models are stored in models/ (lightweight, ~1-2MB each)
 # The full-size legacy models at backend root are NOT committed (100MB+)
 # ===========================================
 backend/facial_expert_model.pkl
@@ -46,9 +46,12 @@ backend/physio_expert_model.pkl
 # ===========================================
 # Training Data (large, not versioned)
 # ===========================================
-backend/training/Dataset/ravdess/
-backend/training/Feature Extraction/Features/*.csv
+training/Dataset/ravdess/
+training/Feature Extraction/Features/*.csv
 datasets/
+data/
+certified_data/*.csv
+!certified_data/*.json
 
 # ===========================================
 # Uploads & Temp Files
@@ -86,6 +89,6 @@ reports/*
 # ===========================================
 # Archived / Obsolete Files
 # ===========================================
+quarantine/
 _archive/
-backend/train_ensemble_models.py
 Physiological/
