@@ -19,7 +19,7 @@ from backend.explainability.explainability_contract import (
 
 DEFAULT_BUNDLE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "expert_models", "explainability_bundle.json"
+    "models", "explainability_bundle.json"
 )
 
 
@@ -145,6 +145,8 @@ class ExplainabilityEngine:
         ]
 
         for mod, feats in modality_inputs:
+            if feats is None:
+                continue
             result = self.explain_modality(mod, feats)
             modalities_out.append(result)
 

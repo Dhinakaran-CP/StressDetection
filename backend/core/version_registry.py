@@ -10,7 +10,7 @@ class VersionRegistry:
     
     In Phase 8, it also maintains a history of registered versions and supports rollbacks.
     """
-    def __init__(self, registry_path="backend/expert_models/registry.json"):
+    def __init__(self, registry_path="models/registry.json"):
         self.registry_path = registry_path
         self._registry = self._load_registry()
 

@@ -53,12 +53,12 @@ class MultimodalStressDetector:
         self.voice_extractor = VoiceExtractor()
         
         # Ensures all runtime vectors match the exact training transformations
-        self.feature_lock = FeatureRuntimeLock("contracts/feature_contract.yaml")
+        self.feature_lock = FeatureRuntimeLock("configs/feature_contract.yaml")
 
     def load_model(self, base_path='.'):
         """Loads models (Note: Phase 7 will replace this with VersionRegistry)"""
         self.load_errors = {}
-        models_dir = os.path.join(base_path, 'expert_models')
+        models_dir = os.path.join(base_path, 'models')
         
         def _safe_load(path, name):
             if not os.path.exists(path):

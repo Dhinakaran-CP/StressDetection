@@ -31,8 +31,8 @@ _MODEL_FILES = {
     "physio_expert": ("physio_expert_lightweight.pkl","physio_scaler_lightweight.pkl"),
 }
 
-EXPERT_MODELS_DIR = os.path.join(ROOT, "backend", "expert_models")
-CONTRACT_PATH     = os.path.join(ROOT, "contracts", "feature_contract.yaml")
+EXPERT_MODELS_DIR = os.path.join(ROOT, "models")
+CONTRACT_PATH     = os.path.join(ROOT, "configs", "feature_contract.yaml")
 
 
 # ── Custom unpickler (handles sklearn internal renames) ────────────────────────

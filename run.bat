@@ -15,22 +15,22 @@ echo [1/2] Checking Python environment and starting Backend Server (Flask)...
 :: Detect virtual environment
 set PYTHON_CMD=python
 if exist venv\Scripts\python.exe (
-    set PYTHON_CMD=..\venv\Scripts\python.exe
+    set PYTHON_CMD=venv\Scripts\python.exe
     echo Found virtual environment in root: venv
 ) else if exist .venv\Scripts\python.exe (
-    set PYTHON_CMD=..\.venv\Scripts\python.exe
+    set PYTHON_CMD=.venv\Scripts\python.exe
     echo Found virtual environment in root: .venv
 ) else if exist backend\venv\Scripts\python.exe (
-    set PYTHON_CMD=venv\Scripts\python.exe
+    set PYTHON_CMD=backend\venv\Scripts\python.exe
     echo Found virtual environment in backend: venv
 ) else if exist backend\.venv\Scripts\python.exe (
-    set PYTHON_CMD=.venv\Scripts\python.exe
+    set PYTHON_CMD=backend\.venv\Scripts\python.exe
     echo Found virtual environment in backend: .venv
 ) else (
     echo No virtual environment found. Using system global 'python'.
 )
 
-start "Backend Server" cmd /k "cd backend && %PYTHON_CMD% app.py"
+start "Backend Server" cmd /k "set PYTHONPATH=%cd% && %PYTHON_CMD% backend\app.py"
 
 echo.
 echo [2/2] Starting Frontend Application (React)...

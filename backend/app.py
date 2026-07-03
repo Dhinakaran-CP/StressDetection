@@ -3,6 +3,11 @@ eventlet.monkey_patch()
 
 import sys
 import builtins
+import os
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
 # Force all print statements to flush immediately to avoid buffering in standard terminals/IDE logs
 def print(*args, **kwargs):
@@ -12,8 +17,7 @@ def print(*args, **kwargs):
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
-from realtime_core import StressStreamProcessor
-import os
+from backend.realtime_core import StressStreamProcessor
 import numpy as np
 import threading
 import csv
@@ -24,10 +28,12 @@ from werkzeug.utils import secure_filename
 import tempfile
 import cv2
 import librosa
-from model import MultimodalStressDetector, safe_pickle_load
+from backend.model import MultimodalStressDetector, safe_pickle_load
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000"]}})
+# Secure CORS for production compatibility
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+CORS(app, resources={r"/api/*": {"origins": [FRONTEND_URL]}})
 socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=60, ping_interval=25, max_http_buffer_size=100000000)
 
 # Initialize global stream processor (will be injected after runtime_engine is ready)
@@ -63,8 +69,8 @@ import time
 import json
 import urllib.request
 import urllib.error
-from voice_worker import extract_voice_stress_indicators
-from score_buffer import score_buffer
+from backend.voice_worker import extract_voice_stress_indicators
+from backend.score_buffer import score_buffer
 
 try:
     import shap
@@ -1374,29 +1380,6 @@ def shutdown_backend():
     import threading
     threading.Thread(target=kill_self).start()
     return jsonify({'status': 'success', 'message': 'Backend is shutting down...'})
-
-@app.route('/api/shutdown/all', methods=['POST'])
-def shutdown_all():
-    if request.remote_addr != '127.0.0.1':
-        return jsonify({'status': 'error', 'message': 'Forbidden'}), 403
-    print("[Shutdown] Shutting down entire application (frontend + backend)...")
-    def kill_all():
-        import time, os, subprocess
-        time.sleep(1)
-        try:
-            if os.name == 'nt':
-                # Find and kill the process listening on port 3000 (React frontend)
-                cmd = 'for /f "tokens=5" %a in (\'netstat -aon ^| findstr :3000\') do taskkill /F /PID %a'
-                subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            else:
-                subprocess.run('kill -9 $(lsof -t -i:3000)', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception as e:
-            print(f"[Shutdown] Failed to kill frontend: {e}")
-        # Kill backend
-        os._exit(0)
-    import threading
-    threading.Thread(target=kill_all).start()
-    return jsonify({'status': 'success', 'message': 'Entire app is shutting down...'})
 
 if __name__ == '__main__':
     print("Starting Multimodal Stress Detection API...")

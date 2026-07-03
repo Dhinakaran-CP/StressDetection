@@ -4,7 +4,7 @@ Defines the schema, feature labels, and bundle structure for the
 Phase 6 Explainability Release Pipeline.
 
 All feature label lists MUST stay in sync with:
-  - contracts/feature_contract.yaml  (ordering)
+  - configs/feature_contract.yaml  (ordering)
   - backend/core/feature_runtime_lock.py (dim assertions)
 """
 

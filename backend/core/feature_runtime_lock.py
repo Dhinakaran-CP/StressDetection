@@ -6,7 +6,7 @@ class FeatureRuntimeLock:
     Guarantees that offline training and live webcam inference use the exact
     same mathematical transformations, feature dimensions, and null handling.
     """
-    def __init__(self, contract_path="contracts/feature_contract.yaml"):
+    def __init__(self, contract_path="configs/feature_contract.yaml"):
         with open(contract_path, "r") as f:
             self.contract = yaml.safe_load(f)
             

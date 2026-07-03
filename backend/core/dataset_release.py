@@ -8,10 +8,10 @@ from backend.core.version_registry import VersionRegistry
 def release_datasets():
     """
     Reads the raw datasets, certifies them, computes hashes, and releases them 
-    into the 'dataset_certified/' directory.
+    into the 'certified_data/' directory.
     """
     RAW_DIR = "dataset_extracted"
-    CERTIFIED_DIR = "dataset_certified"
+    CERTIFIED_DIR = "certified_data"
     os.makedirs(CERTIFIED_DIR, exist_ok=True)
     
     face_raw_path = os.path.join(RAW_DIR, "face_indicators_stressid.csv")

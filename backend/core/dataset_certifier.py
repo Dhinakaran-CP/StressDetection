@@ -3,7 +3,7 @@ import yaml
 import pandas as pd
 
 class DatasetCertifier:
-    def __init__(self, schema_path="contracts/schema_contract.yaml"):
+    def __init__(self, schema_path="configs/schema_contract.yaml"):
         self.schema_path = schema_path
         with open(schema_path, "r") as f:
             self.schema = yaml.safe_load(f)

@@ -4,7 +4,7 @@ Phase 6 offline script — run once after expert models are trained.
 
 Computes SHAP TreeExplainer values for each expert model using a
 representative sample from certified datasets, then saves a versioned
-explainability_bundle.json to backend/expert_models/.
+explainability_bundle.json to models/.
 
 Usage:
     python -m backend.explainability.build_explainability_bundle
@@ -29,8 +29,8 @@ from backend.explainability.explainability_contract import (
     MODALITY_LABELS, MODALITY_GROUPS,
 )
 
-EXPERT_MODELS_DIR = os.path.join(ROOT, "backend", "expert_models")
-CERTIFIED_DIR     = os.path.join(ROOT, "dataset_certified")
+EXPERT_MODELS_DIR = os.path.join(ROOT, "models")
+CERTIFIED_DIR     = os.path.join(ROOT, "certified_data")
 OUTPUT_PATH       = os.path.join(EXPERT_MODELS_DIR, "explainability_bundle.json")
 
 # Models to explain: (modality_key, model_file, scaler_file, certified_csv, feature_cols_start)
@@ -240,7 +240,7 @@ def build_bundle():
             bundle["models"][modality] = result
 
     if not bundle["models"]:
-        print("\nNo modality bundles could be built. Check expert_models/ and dataset_certified/.")
+        print("\nNo modality bundles could be built. Check expert_models/ and certified_data/.")
         return False
 
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:

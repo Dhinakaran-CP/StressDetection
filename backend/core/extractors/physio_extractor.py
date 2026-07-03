@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore")
 
 PHYSIO_DIR = "Physiological"
 LABELS_PATH = "backend/training/Dataset/labels.csv"
-OUTPUT_PATH = "dataset_certified/physio_certified.csv"
+OUTPUT_PATH = "certified_data/physio_certified.csv"
 FS = 500  # 500 Hz
 
 def extract_physio_features(raw_file_path, subject_id, task_id, label, window_length=1.0, hop_length=0.5, context_length=10.0):

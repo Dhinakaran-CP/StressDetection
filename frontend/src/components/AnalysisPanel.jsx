@@ -18,8 +18,10 @@ import {
 
 const MODALITY_CONFIG = {
   facial:   { icon: '👁',  label: 'Facial Expression', color: '#3182ce' },
-  voice:  { icon: '🎙',  label: 'Vocal Strain',      color: '#805ad5' },
+  face:     { icon: '👁',  label: 'Facial Expression', color: '#3182ce' },
+  voice:    { icon: '🎙',  label: 'Vocal Strain',      color: '#805ad5' },
   physiological: { icon: '📈',  label: 'Physiological',     color: '#319795' },
+  physio:   { icon: '📈',  label: 'Physiological',     color: '#319795' },
 };
 
 const FEATURE_LABELS = {
@@ -180,9 +182,9 @@ export default function AnalysisPanel({ result, onRequestGame, previousResult, t
   const confidence_score = clamp(result?.confidence || 0.9, 0, 1);
   const explainability = result?.explainability;
   const individual = result?.individual_predictions || {};
-  const face_score = individual.facial;
+  const face_score = individual.facial ?? individual.face;
   const voice_score = individual.voice;
-  const physio_score = individual.physiological;
+  const physio_score = individual.physiological ?? individual.physio;
 
 
   // Before vs After comparison
