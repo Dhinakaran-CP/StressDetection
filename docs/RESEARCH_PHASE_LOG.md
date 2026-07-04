@@ -57,3 +57,24 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
 - Risks: Voice modality baseline metrics are surprisingly high (F1 > 0.82), which might indicate sample imbalance or a bias in the Voice dataset class labels, whereas training a heavier tuned model on it causes massive overfitting/performance drop (Accuracy drops to 51.68%).
 - Decision: Approved Phase 2 results. Proceeding to Phase 3 (Temporal and Calibration Checks).
 
+## Phase 3 Log
+
+- Date: 2026-07-04
+- Branch: `research-loso-pipeline`
+- Commit: `phase3: calibration and temporal aggregation`
+- Objective: Confirm the effect of temporal aggregation, probability calibration, and compare naive average against stacking.
+- Changes:
+  - Executed [training/phase6_multimodal_research.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/phase6_multimodal_research.py) to train calibrated base classifiers (Face MLP, Voice RF, Physio GBM) under GroupKFold with temporal rolling windows (window=3).
+- Metrics:
+  - **Calibrated Base Models**:
+    - Face-Only (MLP): 0.5821 (± 0.0387)
+    - Voice-Only (RF): 0.5872 (± 0.0545)
+    - Physio-Only (GBM): 0.5541 (± 0.0602)
+  - **Calibrated Fusion Results**:
+    - Naive Average (3-Way): 0.6463 (± 0.0181)
+    - Meta-Fusion Stacking (3-Way): 0.6302 (± 0.0497)
+- Validation: 5-fold GroupKFold cross-validation (strict subject-independent).
+- Risks: Meta-fusion stacking performs slightly worse and has higher fold variance than naive average, showing that learned meta-learners can overfit to specific subjects even under grouped validation.
+- Decision: Confirmed the calibrated naive average 3-way configuration as the best classical baseline. Proceeding to Phase 4 (Deep Modality Encoders).
+
+
