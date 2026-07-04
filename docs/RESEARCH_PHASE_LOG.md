@@ -31,3 +31,29 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
   - **Identity Leakage**: Occurs if subject scaling/normalization is computed across the entire dataset rather than within training folds or per-subject calm periods.
   - **Code Clutter**: Multiple versions of training scripts exist, some of which are untracked draft files.
 - Decision: Approved Phase 1 audit. Proceeding to Phase 2 to run a subject-safe classical pipeline with strict validation.
+
+## Phase 2 Log
+
+- Date: 2026-07-04
+- Branch: `research-loso-pipeline`
+- Commit: `phase2: subject-safe classical pipeline`
+- Objective: Establish a subject-safe classical baseline and verify the impact of subject-aware normalization and temporal windowing.
+- Changes:
+  - Verified and executed [training/phase4_experiments.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/phase4_experiments.py).
+- Metrics:
+  - **Face Modality**:
+    - Raw Baseline: Accuracy = 66.24%, F1 = 57.58%
+    - Subject-Aware Norm: Accuracy = 69.04%, F1 = 59.57%
+    - Temporal Windowing: Accuracy = 69.37%, F1 = 60.43%
+  - **Voice Modality**:
+    - Raw Baseline: Accuracy = 70.98%, F1 = 82.81%
+    - Subject-Aware Norm: Accuracy = 70.70%, F1 = 82.75%
+    - Temporal Windowing: Accuracy = 70.56%, F1 = 82.64%
+  - **Physio Modality**:
+    - Raw Baseline: Accuracy = 59.58%, F1 = 42.01%
+    - Subject-Aware Norm: Accuracy = 67.22%, F1 = 57.05%
+    - Temporal Windowing: Accuracy = 67.39%, F1 = 57.64%
+- Validation: 3-fold GroupKFold cross-validation (subject-independent).
+- Risks: Voice modality baseline metrics are surprisingly high (F1 > 0.82), which might indicate sample imbalance or a bias in the Voice dataset class labels, whereas training a heavier tuned model on it causes massive overfitting/performance drop (Accuracy drops to 51.68%).
+- Decision: Approved Phase 2 results. Proceeding to Phase 3 (Temporal and Calibration Checks).
+
