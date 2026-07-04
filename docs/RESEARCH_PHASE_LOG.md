@@ -77,4 +77,24 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
 - Risks: Meta-fusion stacking performs slightly worse and has higher fold variance than naive average, showing that learned meta-learners can overfit to specific subjects even under grouped validation.
 - Decision: Confirmed the calibrated naive average 3-way configuration as the best classical baseline. Proceeding to Phase 4 (Deep Modality Encoders).
 
+## Phase 4 Log
+
+- Date: 2026-07-04
+- Branch: `research-loso-pipeline`
+- Commit: `phase4: deep modality encoders`
+- Objective: Train compact 1D-CNN + GRU deep unimodal encoders and evaluate deep unimodal performance under strict subject-independent validation.
+- Changes:
+  - Executed [training/phase7_deep_learning_research.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/phase7_deep_learning_research.py) to train PyTorch-based sequence models (`seq_len=5`) using 1D-CNN + GRU architectures on individual modalities (Face, Voice, Physio) and a gated attention fusion network.
+- Metrics:
+  - **Deep Unimodal Encoders**:
+    - Face-Only: 0.6630 (± 0.0325)
+    - Voice-Only: 0.6069 (± 0.0433)
+    - Physio-Only: 0.6494 (± 0.0276)
+  - **Deep Gated Fusion Results**:
+    - Gated Attention Fusion: 0.6744 (± 0.0290)
+- Validation: 5-fold GroupKFold cross-validation (strict subject-independent, sliding window sequence length = 5).
+- Risks: Training CNN-GRU sequence models on CPU is slow (~25 minutes), but yields significantly better unimodal representation learning, especially for Face (+8.1% accuracy gain) and Physio (+9.5% accuracy gain) over classical manual features.
+- Decision: Confirmed the superiority of deep learning representation encoders for Face and Physio. Proceeding to Phase 5 (Best-Expert Selection).
+
+
 
