@@ -129,6 +129,27 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
 - Risks: Static weighted average is simpler, but Dynamic Pairwise fusion provides a +1.8% accuracy gain and remains low-latency since the router MLP is extremely compact.
 - Decision: Select the Dynamic Pairwise (Face + Physio) router MLP as the fusion engine. Voice is dropped from the active runtime fusion pipeline. Proceeding to Phase 7 (Augmentation Comparison).
 
+## Phase 7 Log
+
+- Date: 2026-07-05
+- Branch: `research-loso-pipeline`
+- Commit: `phase7: augmentation comparison`
+- Objective: Systematically compare allowed augmentation strategies on training folds only to select the best performer.
+- Changes:
+  - Created modular [training/augmentation.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/augmentation.py) containing implementation of sequence-level jittering, scaling, time masking, and modality dropout.
+  - Executed [training/run_augmentation_experiments.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/run_augmentation_experiments.py) to run comparative LOSO trials.
+- Metrics (15-subject subset):
+  - No Augmentation (None): 0.6260 (± 0.0704)
+  - Jittering: 0.6124 (± 0.0670) [Delta: -0.0136]
+  - Scaling: 0.6034 (± 0.0879) [Delta: -0.0226]
+  - Time Masking: 0.6316 (± 0.0553) [Delta: +0.0056]
+  - Modality Dropout: 0.6080 (± 0.0844) [Delta: -0.0180]
+  - Combined: 0.6191 (± 0.0696) [Delta: -0.0069]
+- Validation: 5-fold GroupKFold (subject-independent).
+- Risks: Adding noise (jittering, scaling, or modality dropout) corrupts the subtle stress indicators in facial and physiological signals, degrading generalization performance.
+- Decision: Select Time Masking as the only active training augmentation technique since it improves accuracy (+0.56%) and significantly reduces variance (std dev decreased from 0.0704 to 0.0553). Reject other augmentations. Proceeding to Phase 8 (Strict Validation and Final Benchmark).
+
+
 
 
 
