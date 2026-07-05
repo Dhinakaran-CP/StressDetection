@@ -929,9 +929,9 @@ def stream_voice():
         cal = get_or_create(user_id)
         
         # Adjust silence threshold based on noise floor if calibrated
-        threshold = 0.015
+        threshold = 0.003
         if cal.is_complete and cal.noise_floor is not None:
-            threshold = max(0.015, cal.noise_floor * 1.5)
+            threshold = max(0.003, cal.noise_floor * 1.5)
             
         if rms < threshold:
             score_buffer.clear('voice')
@@ -1402,7 +1402,7 @@ if __name__ == '__main__':
     
     # Waitress does not support WebSockets/Socket.IO, so we use eventlet via socketio.run
     print("Starting SocketIO server on http://localhost:5000...")
-    socketio.run(app, debug=False, host='127.0.0.1', port=5000, use_reloader=False, minimum_chunk_size=1)
+    socketio.run(app, debug=False, host='0.0.0.0', port=5000, use_reloader=False, minimum_chunk_size=1)
 
 
 # --- Phase 8: Admin & Monitoring Endpoints ---

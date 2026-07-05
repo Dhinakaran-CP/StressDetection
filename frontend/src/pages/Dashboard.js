@@ -72,7 +72,26 @@ function writeString(view, offset, string) {
 
 export default function Dashboard({ theme, toggleTheme }) {
   const [mode, setMode] = useState('upload'); // 'upload' or 'realtime'
-  const [serverOnline, setServerOnline] = useState(true);
+  const [serverOnline, setServerOnline] = useState(false);
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/health`);
+        if (response.ok) {
+          const data = await response.json();
+          setServerOnline(data.status === 'ok');
+        } else {
+          setServerOnline(false);
+        }
+      } catch (err) {
+        setServerOnline(false);
+      }
+    };
+    checkHealth();
+    const interval = setInterval(checkHealth, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // File states
   const [faceImage, setFaceImage] = useState(null);

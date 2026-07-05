@@ -415,41 +415,6 @@ export default function RealtimeMonitor() {
               )}
             </div>
           )}
-          
-          {/* Server Connection Status Badge */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: '0.75rem',
-            padding: '6px 14px',
-            borderRadius: 20,
-            background: 'var(--accent-light-bg)',
-            border: `1px solid ${
-              serverStatus === 'connected' ? 'var(--primary-color)' :
-              serverStatus === 'connecting' ? 'rgba(255, 152, 0, 0.35)' : 'rgba(244, 67, 54, 0.35)'
-            }`,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            transition: 'border-color 0.3s ease'
-          }}>
-            <span style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: serverStatus === 'connected' ? 'var(--primary-color)' : serverStatus === 'connecting' ? '#FF9800' : '#F44336',
-              display: 'inline-block',
-              animation: serverStatus !== 'disconnected' ? 'pulseGlow 1.8s infinite ease-in-out' : 'none',
-              boxShadow: `0 0 8px ${serverStatus === 'connected' ? 'var(--primary-color)' : serverStatus === 'connecting' ? '#FF9800' : '#F44336'}`
-            }} />
-            <span style={{
-              color: serverStatus === 'connected' ? 'var(--primary-color)' : serverStatus === 'connecting' ? '#FF9800' : '#F44336',
-              fontWeight: 700,
-              letterSpacing: '0.6px',
-              fontFamily: 'monospace'
-            }}>
-              {serverStatus === 'connected' ? 'SERVER ACTIVE' : serverStatus === 'connecting' ? 'CONNECTING...' : 'SERVER OFFLINE'}
-            </span>
-          </div>
         </div>
 
         {active && !calibrating && result && result.status === 'active' && (

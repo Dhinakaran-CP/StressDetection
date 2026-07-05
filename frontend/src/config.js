@@ -1,4 +1,4 @@
-export const API_BASE = process.env.REACT_APP_API_BASE || "http://127.0.0.1:5000";
+export const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5000";
 
 export const STRESS_LEVELS = {
   Extreme: { label: 'Extreme', color: 'var(--accent-red)' },

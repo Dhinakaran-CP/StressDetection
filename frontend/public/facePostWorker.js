@@ -14,8 +14,8 @@ self.onmessage = async function(e) {
     pendingPost = true;
     try {
         const url = calibrationMode 
-            ? 'http://127.0.0.1:5000/api/calibrate/face_sample' 
-            : 'http://127.0.0.1:5000/api/stream/face';
+            ? 'http://localhost:5000/api/calibrate/face_sample' 
+            : 'http://localhost:5000/api/stream/face';
             
         const response = await fetch(url, {
             method: 'POST',
