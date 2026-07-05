@@ -2,10 +2,10 @@
     "artifact_id": "voice_expert_v2",
     "artifact_type": "model",
     "version": "2.0.0",
-    "timestamp": 1783233701.2528994,
-    "hash": "db41acbc550915d476ba56b06c76c21d27cb4822b06aad49f5579ff5c1ec677e",
+    "timestamp": 1783254451.0147855,
+    "hash": "ba863cfeb1309b38b5f52d8e9c5ffd91d0dcd7526931c666503777de496c8ec9",
     "metadata": {
-        "accuracy": 0.6146442187380659,
+        "accuracy": 0.6242514354920219,
         "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
         "framework": "PyTorch (1D-CNN+GRU)"
     }

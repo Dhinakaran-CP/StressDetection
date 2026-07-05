@@ -1,0 +1,12 @@
+{
+    "artifact_id": "adv_voice_expert_v2",
+    "artifact_type": "model",
+    "version": "2.0.0",
+    "timestamp": 1783254451.0764928,
+    "hash": "1aa60d44bfc484279dc58ac4295c9f254bc1c2641ab38f1b8814dd08ec2b76c8",
+    "metadata": {
+        "accuracy": 0.6186114426049878,
+        "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+        "framework": "PyTorch (Adversarial CNN-GRU)"
+    }
+}

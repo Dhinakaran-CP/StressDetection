@@ -192,6 +192,9 @@ class RuntimeEngine:
     def _load_artifacts(self):
         """Load model+scaler pairs for all registered experts (supporting both deep learning and classical)."""
         config_path = os.path.join(EXPERT_MODELS_DIR, "deep_fusion_config.json")
+        self.strategy_used = "standard"
+        self.use_deep = False
+        
         if os.path.exists(config_path) and TORCH_AVAILABLE:
             import json
             try:
@@ -199,6 +202,19 @@ class RuntimeEngine:
                     deep_cfg = json.load(f)
                 if deep_cfg.get("use_dynamic_router"):
                     self.use_deep = True
+                    primary_strategy = deep_cfg.get("primary_strategy", "adversarial")
+                    
+                    if primary_strategy == "adversarial":
+                        # Check if all adversarial files are present
+                        adv_files = [
+                            os.path.join(EXPERT_MODELS_DIR, "adv_face_expert.pt"),
+                            os.path.join(EXPERT_MODELS_DIR, "adv_voice_expert.pt"),
+                            os.path.join(EXPERT_MODELS_DIR, "adv_physio_expert.pt"),
+                            os.path.join(EXPERT_MODELS_DIR, "adv_fusion_router.pt")
+                        ]
+                        if all(os.path.exists(f) for f in adv_files):
+                            self.strategy_used = "adversarial"
+                    
                     self._load_deep_artifacts()
             except Exception as exc:
                 print(f"[RuntimeEngine] Error reading deep_fusion_config.json: {exc}")
@@ -214,7 +230,8 @@ class RuntimeEngine:
             
             # If use_deep is active, we will load the deep scalers instead for active modalities
             if self.use_deep and modality in ["face", "voice", "physio"]:
-                deep_scaler_file = f"deep_{modality}_scaler.pkl"
+                prefix = "adv_" if self.strategy_used == "adversarial" else "deep_"
+                deep_scaler_file = f"{prefix}{modality}_scaler.pkl"
                 scaler_path = os.path.join(EXPERT_MODELS_DIR, deep_scaler_file)
                 if os.path.exists(scaler_path):
                     try:
@@ -270,44 +287,49 @@ class RuntimeEngine:
         if loaded:
             print(f"[RuntimeEngine] Loaded modalities: {loaded}")
             if self.use_deep:
-                print("[RuntimeEngine] Deep Learning sequence models and Router active for fusion!")
+                print(f"[RuntimeEngine] Deep Learning {self.strategy_used.upper()} sequence models and Router active for fusion!")
         else:
             print("[RuntimeEngine] WARNING: No models loaded.")
 
     def _load_deep_artifacts(self):
         """Loads Phase 8 PyTorch sequence models and dynamic router."""
+        prefix = "adv_" if self.strategy_used == "adversarial" else "deep_"
         try:
-            face_path = os.path.join(EXPERT_MODELS_DIR, "deep_face_expert.pt")
+            face_path = os.path.join(EXPERT_MODELS_DIR, f"{prefix}face_expert.pt")
             self.deep_models["face"] = ModalityEncoder(18, 16)
             self.deep_models["face"].load_state_dict(torch.load(face_path, map_location="cpu"))
             self.deep_models["face"].eval()
-            reg_f = self.registry.get_active_model("face_expert")
+            reg_key_f = "adv_face_expert" if self.strategy_used == "adversarial" else "face_expert"
+            reg_f = self.registry.get_active_model(reg_key_f)
             if reg_f:
-                self._verify_hash(face_path, reg_f.get("hash"), "deep_face_expert")
+                self._verify_hash(face_path, reg_f.get("hash"), f"{prefix}face_expert")
 
-            voice_path = os.path.join(EXPERT_MODELS_DIR, "deep_voice_expert.pt")
+            voice_path = os.path.join(EXPERT_MODELS_DIR, f"{prefix}voice_expert.pt")
             self.deep_models["voice"] = ModalityEncoder(12, 16)
             self.deep_models["voice"].load_state_dict(torch.load(voice_path, map_location="cpu"))
             self.deep_models["voice"].eval()
-            reg_v = self.registry.get_active_model("voice_expert")
+            reg_key_v = "adv_voice_expert" if self.strategy_used == "adversarial" else "voice_expert"
+            reg_v = self.registry.get_active_model(reg_key_v)
             if reg_v:
-                self._verify_hash(voice_path, reg_v.get("hash"), "deep_voice_expert")
+                self._verify_hash(voice_path, reg_v.get("hash"), f"{prefix}voice_expert")
 
-            physio_path = os.path.join(EXPERT_MODELS_DIR, "deep_physio_expert.pt")
+            physio_path = os.path.join(EXPERT_MODELS_DIR, f"{prefix}physio_expert.pt")
             self.deep_models["physio"] = ModalityEncoder(5, 16)
             self.deep_models["physio"].load_state_dict(torch.load(physio_path, map_location="cpu"))
             self.deep_models["physio"].eval()
-            reg_p = self.registry.get_active_model("physio_expert")
+            reg_key_p = "adv_physio_expert" if self.strategy_used == "adversarial" else "physio_expert"
+            reg_p = self.registry.get_active_model(reg_key_p)
             if reg_p:
-                self._verify_hash(physio_path, reg_p.get("hash"), "deep_physio_expert")
+                self._verify_hash(physio_path, reg_p.get("hash"), f"{prefix}physio_expert")
 
-            router_path = os.path.join(EXPERT_MODELS_DIR, "deep_fusion_router.pt")
+            router_path = os.path.join(EXPERT_MODELS_DIR, f"{prefix}fusion_router.pt")
             self.deep_models["router"] = DynamicRouter(num_modalities=3)
             self.deep_models["router"].load_state_dict(torch.load(router_path, map_location="cpu"))
             self.deep_models["router"].eval()
-            reg_r = self.registry.get_active_model("deep_fusion_router")
+            reg_key_r = "adv_fusion_router" if self.strategy_used == "adversarial" else "deep_fusion_router"
+            reg_r = self.registry.get_active_model(reg_key_r)
             if reg_r:
-                self._verify_hash(router_path, reg_r.get("hash"), "deep_fusion_router")
+                self._verify_hash(router_path, reg_r.get("hash"), f"{prefix}fusion_router")
         except Exception as exc:
             self.use_deep = False
             print(f"[RuntimeEngine] Failed to load deep learning artifacts, falling back: {exc}")
@@ -496,15 +518,15 @@ class RuntimeEngine:
                            w_v_norm * raw_probs.get("voice", 0.0) + \
                            w_p_norm * raw_probs.get("physio", 0.0)
                            
-                fusion_weights = {"face": round(w_f_norm, 3), "voice": round(w_v_norm, 3), "physio": round(w_p_norm, 3)}
+                fusion_weights = {"face": w_f_norm, "voice": w_v_norm, "physio": w_p_norm}
             except Exception as exc:
                 print(f"[RuntimeEngine] Deep router failed: {exc}, falling back to average")
                 num_active = sum(masks)
                 fallback_w = 1.0 / num_active if num_active > 0 else 0.33
                 fusion_weights = {
-                    "face": round(fallback_w * masks[0], 3),
-                    "voice": round(fallback_w * masks[1], 3),
-                    "physio": round(fallback_w * masks[2], 3)
+                    "face": fallback_w * masks[0],
+                    "voice": fallback_w * masks[1],
+                    "physio": fallback_w * masks[2]
                 }
                 avg_prob = sum(raw_probs[m] * fusion_weights[m] for m in raw_probs)
 

@@ -2,10 +2,10 @@
     "artifact_id": "deep_fusion_router_v2",
     "artifact_type": "model",
     "version": "2.0.0",
-    "timestamp": 1783233701.2870364,
-    "hash": "a562be250cd15d607d3c79f93f5f96bce3314c89b3839c047e186526852d48c2",
+    "timestamp": 1783254451.0455978,
+    "hash": "e892ef6421e256eb0b80697430b72fbc53dace036e1895b0a0a7c73edb7ff387",
     "metadata": {
-        "accuracy_all_present": 0.582574927657167,
+        "accuracy": 0.6724004417667959,
         "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
         "framework": "PyTorch (MLP Flex-Router)"
     }

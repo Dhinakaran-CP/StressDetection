@@ -1,0 +1,12 @@
+{
+    "artifact_id": "adv_fusion_router_v2",
+    "artifact_type": "model",
+    "version": "2.0.0",
+    "timestamp": 1783254451.1229103,
+    "hash": "d850ee84a2497acea86f4e425a74b9b42b8975ee812c961c658d615e52a5f5e6",
+    "metadata": {
+        "accuracy": 0.6735747408267037,
+        "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+        "framework": "PyTorch (Adversarial Flex-Router)"
+    }
+}

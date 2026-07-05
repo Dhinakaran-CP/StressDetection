@@ -2,10 +2,10 @@
     "artifact_id": "physio_expert_v2",
     "artifact_type": "model",
     "version": "2.0.0",
-    "timestamp": 1783233701.2651267,
-    "hash": "b7e7568ef077352aa67415d4cacc45e26945864dc414d059edb6fce8aa566623",
+    "timestamp": 1783254451.0324893,
+    "hash": "e387d8fba0d1a399387af87598de3d95b3793ee9eb8130d9c2caa0c54f57e8e8",
     "metadata": {
-        "accuracy": 0.5894680709342462,
+        "accuracy": 0.6556460351110042,
         "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
         "framework": "PyTorch (1D-CNN+GRU)"
     }

@@ -1,0 +1,12 @@
+{
+    "artifact_id": "adv_physio_expert_v2",
+    "artifact_type": "model",
+    "version": "2.0.0",
+    "timestamp": 1783254451.1056786,
+    "hash": "0c4e1e5a134c216e0896b91d69b2ecb565da2b74f3ffbe466e2b7aa58e028f9d",
+    "metadata": {
+        "accuracy": 0.6424431492396934,
+        "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+        "framework": "PyTorch (Adversarial CNN-GRU)"
+    }
+}
