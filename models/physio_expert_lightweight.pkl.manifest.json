@@ -2,19 +2,19 @@
     "artifact_id": "physio_expert_v1",
     "artifact_type": "model",
     "version": "1.0.0",
-    "timestamp": 1782919711.0979605,
-    "hash": "ee5a649675eec58ed5edbeda059a99ad60aa52c8f6f97521e0fa294e482aede3",
+    "timestamp": 1783181873.30742,
+    "hash": "79c7e0905649f28582bdf8b260f17f07b2019527930cc39388f0380e4e153d35",
     "metadata": {
-        "accuracy": 0.6003778742563113,
-        "f1_score_stress": 0.31672279881778814,
+        "accuracy": 0.7050972825213057,
+        "f1_score_stress": 0.6087883959044369,
         "confusion_matrix": [
             [
-                12631,
-                1868
+                11832,
+                2667
             ],
             [
-                8073,
-                2304
+                4669,
+                5708
             ]
         ],
         "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"

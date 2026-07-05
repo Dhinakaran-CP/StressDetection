@@ -2,19 +2,19 @@
     "artifact_id": "face_expert_v1",
     "artifact_type": "model",
     "version": "1.0.0",
-    "timestamp": 1782912619.667459,
-    "hash": "d7c004fade932602082fc7e088a1e701f80b0135897b1819acbb4654d3069d42",
+    "timestamp": 1783181856.3133824,
+    "hash": "a2027fcf87fc74580e7448cd1a948d4d23af719a6ddda5d9341a907e8bc51f27",
     "metadata": {
-        "accuracy": 0.631214234620887,
-        "f1_score_stress": 0.546583850931677,
+        "accuracy": 0.5698766094420601,
+        "f1_score_stress": 0.5605444662677568,
         "confusion_matrix": [
             [
-                9147,
-                1951
+                6611,
+                4487
             ],
             [
-                6298,
-                4972
+                5134,
+                6136
             ]
         ],
         "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"

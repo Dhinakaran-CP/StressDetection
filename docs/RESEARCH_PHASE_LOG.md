@@ -188,6 +188,26 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
 - Risks: Adding sparse modalities like Voice can introduce noise during silent tasks (causing Face + Voice to drop to 0.5557). However, the 3-Way Dynamic Router with Modality Dropout minimizes this by learning to re-normalize weights on active inputs.
 - Decision: Set the 3-Way Flex-Modality Dynamic Fusion as the project production baseline to support flexible multi-sensor configurations.
 
+## Phase 8.2 Log: Generalization and Identity Leakage Audit
+
+- Date: 2026-07-05
+- Branch: `research-loso-pipeline`
+- Commit: `phase8.2: generalization and identity leakage audit`
+- Objective: Audit identity leakage gaps across 5 strategies, applying subject-safe normalization, feature filtering, and subject-adversarial identity suppression.
+- Changes:
+  - Created [training/generalization_research.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/generalization_research.py) to run ablation tests.
+  - Mapped and filtered out identity-adjacent features (`face_height_norm`, `landmark_confidence`, `f0_mean`, `f0_range`, `eda_scl_mean`).
+  - Implemented Subject-Adversarial Identity Suppression training using negative subject-classification loss during GRU backpropagation.
+  - Generated generalization audit report in [reports/generalization_leakage_audit.md](file:///e:/Document/GitHub/StressDetectionUsingML/reports/generalization_leakage_audit.md).
+- Metrics:
+  - **Strategy 2 (Subject-Normalized RF)**: Random = 0.8593 | LOSO = 0.6694 | Leakage Gap = 0.1899
+  - **Strategy 4 (Deep CNN-GRU)**: Random = 0.7452 | LOSO = 0.6691 (± 0.0232) | Leakage Gap = 0.0762
+  - **Strategy 5 (Adversarial Deep)**: Random = 0.7308 | LOSO = 0.6564 (± 0.0286) | Leakage Gap = 0.0743
+- Validation: 5-Fold KFold (Random Split) vs. 5-Fold GroupKFold (Strict LOSO).
+- Risks: Subject-Adversarial suppression slightly limits absolute score (0.6564 vs 0.6691) but establishes the most robust and leakage-free embedding.
+- Decision: Select Strategy 4 (Deep CNN-GRU sequence models with subject-adaptive calibration) as the production pipeline. It achieves the optimal balance of strict unseen accuracy (66.91%) and low leakage gap (0.0762).
+
+
 
 
 

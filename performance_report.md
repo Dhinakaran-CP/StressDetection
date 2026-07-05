@@ -8,15 +8,15 @@
 
 ## Results
 ### Video Pipeline (Image -> Features -> Predict)
-- **Average Latency**: 31.35 ms
-- **Min Latency**: 19.42 ms
-- **Max Latency**: 174.28 ms
-- **FPS Capacity**: 31.9 FPS
+- **Average Latency**: 73.54 ms
+- **Min Latency**: 35.17 ms
+- **Max Latency**: 657.79 ms
+- **FPS Capacity**: 13.6 FPS
 
 ### Audio Pipeline (Waveform -> Features -> Predict)
-- **Average Latency**: 549.99 ms
-- **Min Latency**: 182.25 ms
-- **Max Latency**: 4961.32 ms
+- **Average Latency**: 911.37 ms
+- **Min Latency**: 240.12 ms
+- **Max Latency**: 10936.88 ms
 
 ## Benchmark
 - **Target Video Latency**: < 200ms (Achieved: YES)

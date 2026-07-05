@@ -2,19 +2,19 @@
     "artifact_id": "voice_expert_v1",
     "artifact_type": "model",
     "version": "1.0.0",
-    "timestamp": 1782912612.5660746,
-    "hash": "ec90e43716362a5a7c473b0fc219ca6357e1dcfc85202bb670c094e2671a442c",
+    "timestamp": 1783181862.2791233,
+    "hash": "5a1df684fc3fd167b996c83aa1168a75207c7ead6282ed66b88651b0345efc0a",
     "metadata": {
-        "accuracy": 0.5639855942376951,
-        "f1_score_stress": 0.6389662027833002,
+        "accuracy": 0.5951980792316927,
+        "f1_score_stress": 0.704625087596356,
         "confusion_matrix": [
             [
-                1484,
-                1372
+                936,
+                1920
             ],
             [
-                2260,
-                3214
+                1452,
+                4022
             ]
         ],
         "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
