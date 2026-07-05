@@ -168,6 +168,27 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
 - Risks: The full 65-subject LOSO performance is slightly lower than the 15-subject subset, showing that adding more subjects introduces additional cross-subject variance. However, the dynamic fusion model remains robust and generalizes better than unimodal physical indicators.
 - Decision: Confirmed the Time-Masked Face & Physio Deep Encoders + Dynamic Router MLP as the production stress detection pipeline. Voice is permanently excluded from fusion due to its bottlenecks.
 
+## Phase 8.1 Log: Methodology History and Memory Audit
+
+- Date: 2026-07-05
+- Branch: `research-loso-pipeline`
+- Commit: `phase8.1: methodology history and memory audit`
+- Objective: Audit all previous methods, investigate performance drop, and fully integrate Voice in a 3-way flexible modality fusion router.
+- Changes:
+  - Re-integrated Voice deep sequence encoder alongside Face and Physio modality experts.
+  - Implemented **Modality Dropout** during router training to support dynamic weighting for any subset of active sensors (face, voice, physio).
+  - Conducted 3-way 5-Fold LOSO cross-validation on all 65 subjects and output results to [reports/phase8_final_fusion_benchmark.md](file:///e:/Document/GitHub/StressDetectionUsingML/reports/phase8_final_fusion_benchmark.md).
+  - Saved full methodology comparison to [docs/stress_detection_architecture_report.md](file:///e:/Document/GitHub/StressDetectionUsingML/docs/stress_detection_architecture_report.md).
+- Metrics (Full 65 Subjects under Strict LOSO):
+  - Face-Only CNN-GRU: 0.5510 (± 0.0458)
+  - Voice-Only CNN-GRU: 0.6146 (± 0.0314)
+  - Physio-Only CNN-GRU: 0.5895 (± 0.0448)
+  - **3-Way Flexible Fusion**: **0.5826 (± 0.0303)**
+- Validation: Strict Leave-One-Subject-Out GroupKFold.
+- Risks: Adding sparse modalities like Voice can introduce noise during silent tasks (causing Face + Voice to drop to 0.5557). However, the 3-Way Dynamic Router with Modality Dropout minimizes this by learning to re-normalize weights on active inputs.
+- Decision: Set the 3-Way Flex-Modality Dynamic Fusion as the project production baseline to support flexible multi-sensor configurations.
+
+
 
 
 
