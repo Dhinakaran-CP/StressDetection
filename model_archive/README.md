@@ -1,4 +1,4 @@
-﻿# 🧠 StressDetectionUsingML — Model Archive & Preservation Record
+# 🧠 StressDetectionUsingML — Model Archive & Preservation Record
 
 > **Purpose**: This folder is the permanent preservation archive for all trained model artifacts in the StressDetectionUsingML project. It serves as an evidence record of every model version, their training history, architecture details, and validated performance metrics. No model files in this folder should ever be deleted or overwritten.
 
@@ -27,6 +27,21 @@ model_archive/
 │   ├── physio_expert_lightweight.pkl  ← Physio classical expert
 │   ├── physio_scaler_lightweight.pkl  ← StandardScaler for classical Physio features
 │   └── CLASSICAL_MODELS_DETAIL.md    ← Detailed per-model documentation
+├── training_scripts/                  ← All Python scripts used to train the models
+│   ├── phase4_experiments.py          ← Phase 2-4 classical ML ablations
+│   ├── train_phase4_release.py        ← Trains & registers all classical baseline models
+│   ├── train_face_expert_release.py   ← Trains Face classical expert only
+│   ├── train_voice_expert_release.py  ← Trains Voice classical expert only
+│   ├── train_physio_expert_release.py ← Trains Physio classical expert only
+│   ├── release_expert_model.py        ← Registers model into registry.json
+│   ├── augmentation.py                ← Data augmentation utilities
+│   ├── run_augmentation_experiments.py← Ablation: 5 augmentation strategies
+│   ├── phase6_multimodal_research.py  ← Fusion strategy comparisons
+│   ├── phase7_deep_learning_research.py← Deep CNN-GRU research (15-subject subset)
+│   ├── phase8_best_expert_fusion.py   ← Intermediate 2-way fusion
+│   ├── package_phase8_production.py   ← FINAL production training (all 65 subjects)
+│   ├── generalization_research.py     ← Identity leakage audit (5 strategies)
+│   └── TRAINING_SCRIPTS.md           ← Detailed per-script documentation
 ├── reports/                           ← All benchmark and research reports
 │   ├── phase8_final_fusion_benchmark.md
 │   ├── generalization_leakage_audit.md
