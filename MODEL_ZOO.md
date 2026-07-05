@@ -106,42 +106,64 @@ The final production models are locked and saved under the following registry pa
 
 ## 5. End-to-End 1D-CNN + GRU Pipeline Architecture
 
-For academic review, here is the technical processing sequence explaining how the system extracts, temporalizes, and processes bio-signals to make a classification.
+To explain this clearly to an academic guide, you can present the 1D-CNN + GRU architecture as a two-stage temporal feature extraction pipeline.
 
-```
-Incoming Biomarkers (Face, Voice, Physio)
-                  │
-                  ▼
-   Subject-Adaptive Calibration
-  (Subtract Per-Subject Calm Mean)
-                  │
-                  ▼
-  Temporal Sequence Creation (SeqLen=5)
-                  │
-                  ▼
-    1D-CNN Spatial Filter Layer
- (Combines features within adjacent steps)
-                  │
-                  ▼
-    GRU Recurrent Temporal Layer
-(Learns rising/falling biomarker trends)
-                  │
-                  ▼
-  Fully Connected Classifier (Logits)
-                  │
-                  ▼
-    MLP-Based Gated Fusion Router
- (Applies Availability Mask & Re-normalizes)
-                  │
-                  ▼
-          Fused Stress Score
-```
+In simple terms:
+*   The **1D-CNN (Convolutional Neural Network)** acts as the **"feature consolidator"** (looking at relationships between biomarkers within each frame).
+*   The **GRU (Gated Recurrent Unit)** acts as the **"storyteller"** (tracking how those biomarkers rise, fall, or fluctuate over a 5-frame sequence).
 
-### Detailed Sequence Breakdown:
-1. **Calibration (Biometric Leveling)**: Every incoming feature $x_{\text{raw}}$ is normalized by subtracting the subject's baseline resting mean ($\mu_{\text{calm}}$) and dividing by their baseline variance ($\sigma_{\text{calm}}$). This calibrates the inputs into "relative deviations from calm".
-2. **Sequence Creation**: Stacks the latest 5 calibrated frames into a sequence matrix of shape `[Sequence Length = 5, Number of Features]`.
-3. **1D-CNN (Local Pattern Consolidation)**: Slides convolution kernels along the sequence axis to learn short-term spatial and pattern relationships between adjacent frames.
-4. **GRU (Temporal Tracking)**: Evaluates the output of the 1D-CNN sequence. Uses recurrent Update and Reset memory gates to track long-term trajectories (e.g., *is heart rate rising continuously over the 5 steps?*). It outputs a consolidated sequence history vector.
-5. **Adversarial Head (suppression)**: During training, the gradients from a parallel subject identity classifier branch are reversed via a Gradient Reversal Layer (GRL) with weight $\lambda_{\text{adv}} = 0.02$. This penalizes the model if it tries to identify the subject's anatomy, scrubbing identity traits from the representation.
-6. **Flex Late Fusion Router**: Takes modality stress predictions, applies an availability mask (zeroing out missing sensors), and dynamically outputs normalized weights to sum to exactly 1.0. This outputs a stable, fused stress index (0-100%).
+Here is the complete end-to-end processing pipeline, from raw sensor to final fused stress prediction.
+
+### 🛠️ Step-by-Step Processing Pipeline
+
+#### Step 1: Raw Feature Capture
+At any given instant, the system captures raw biomarkers across three streams:
+*   **Face (18 dimensions)**: 18 Facial Action Units (like eyebrow furrowing, jaw clenching, lip tension) extracted via MediaPipe.
+*   **Voice (12 dimensions)**: 12 acoustic features (MFCCs, spectral contrast, pitch, chroma) extracted via Librosa.
+*   **Physio (5 dimensions)**: 5 physiological metrics (EDA/skin conductance, HRV/heart rate variability, EEG frequency bands, BVP) via biosensors.
+
+#### Step 2: Subject-Adaptive Calibration (The Normalization Layer)
+Before the neural network sees the data, it must be calibrated to cancel out the user's natural physiology.
+*   **Why**: A calm person with a naturally fast heart rate might look "stressed" without calibration.
+*   **What we do**: During the first 2 seconds, we record the user's resting averages ($\mu_{\text{calm}}$) and standard deviations ($\sigma_{\text{calm}}$).
+*   **Formula**: Every new incoming raw biomarker $x$ is normalized as:
+    $$x_{\text{calibrated}} = \frac{x_{\text{raw}} - \mu_{\text{calm}}}{\sigma_{\text{calm}}}$$
+    This transforms the input into "deviation from calm." A value of `0` means resting calm, and positive values indicate elevated physiological activation.
+
+#### Step 3: Sequence Creation (Sliding Window of 5 Frames)
+Instead of predicting stress from a single split-second frame (which causes erratic spikes), we stack the last 5 consecutive calibrated frames into a sequence:
+*   **Input Shape**: The input to the network is a 3D tensor of shape: `[Batch Size, Sequence Length = 5, Number of Features]`.
+*   **Face Sequence Shape**: `[5, 18]` (5 steps of 18 features).
+
+#### Step 4: The 1D-CNN Layer (Spatial Feature Consolidation)
+The 5-frame sequence is fed into a 1D Convolutional Neural Network.
+*   **What it does**: In image processing, 2D-CNNs slide kernels over height and width. In our 1D-CNN, the convolution kernel slides temporally along the sequence step axis.
+*   **Why**: It looks at local micro-patterns between adjacent frames. For example, it checks if a sudden eyebrow movement correlates with a micro-clench of the jaw within a 2-frame interval.
+*   **Output**: It compresses the feature representation, reducing noise and highlighting high-frequency micro-behaviors. It outputs a consolidated sequence of latent features.
+
+#### Step 5: The GRU Layer (Tracking the Temporal Trajectory)
+The consolidated sequence output by the 1D-CNN is passed to a Gated Recurrent Unit (GRU).
+*   **What it does**: The GRU is a recurrent neural network (RNN) that has memory gates:
+    *   **Update Gate**: Determines how much of the past frames to remember (e.g., was the heart rate already rising?).
+    *   **Reset Gate**: Determines how much of the past frames to forget (e.g., ignore a brief noise spike in the audio).
+*   **Why**: Stress is a slow-moving physiological wave. An instantaneous spike in heart rate could just be a deep breath. However, a rising trajectory over 5 frames indicates actual physiological activation. The GRU models this temporal trajectory.
+*   **Output**: It outputs a final single vector (e.g., size 16) representing the compressed history of the entire 5-frame sequence.
+
+#### Step 6: Classification & Subject-Adversarial Head (Strategy 5)
+The history vector from the GRU is sent to two branching paths during training:
+*   **Stress Head (Linear Layer)**: Classifies the history vector into stress probabilities ($P(\text{calm})$ vs. $P(\text{stress})$).
+*   **Subject Classifier Head (Linear Layer + Gradient Reversal)**: Tries to guess the subject's identity (1 to 65).
+    *   **The Magic (Adversarial)**: During backpropagation, the gradients from this subject head are multiplied by a negative number ($\lambda_{\text{adv}} = -0.02$).
+    *   **The Result**: If the model starts learning who the person is, the weights are pushed in the opposite direction. This forces the model to ignore user identity traits (like voice pitch or face shape) and focus purely on general stress patterns.
+
+#### Step 7: Gated Late Fusion (The Dynamic Router)
+Now we have three probability predictions: $P(\text{stress}|\text{face})$, $P(\text{stress}|\text{voice})$, and $P(\text{stress}|\text{physio})$.
+*   **The Problem**: If the user turns off the camera, the Face probability will become random garbage.
+*   **The Solution**: We feed the 3 predictions along with an Availability Mask (e.g., `[1.0, 0.0, 1.0]` representing Face = ON, Voice = OFF, Physio = ON) into a Dynamic Router MLP.
+*   **Output**: The Router MLP outputs a dynamic weight for each sensor (e.g., Face = $0.65$, Physio = $0.35$, Voice = $0.0$). The system re-normalizes these active weights to sum to $1.0$, giving you a final, single Fused Stress Score (0–100%).
+
+---
+
+### 💡 Summary to Tell Your Guide
+> *"Our system does not predict stress from static individual moments. Instead, we calibrate the sensors to the user's natural calm baseline, capture sliding sequences of 5 frames, and feed them into a hybrid 1D-CNN + GRU network. The 1D-CNN consolidates features within adjacent time-steps, while the GRU tracks the rising or falling trajectory of the biomarkers over time. We train this using Subject-Adversarial Regularization to scrub identity traits from the weights, ensuring the model generalizes to completely unseen users."*
 
