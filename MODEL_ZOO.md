@@ -26,11 +26,15 @@ Below is the audited comparison of every pipeline method evaluated in the projec
 | **Face Classical (v1)** | Certified CSV | RF / XGBoost | Random Split | **High** | 0.6904 | $\pm$ 0.0510 | 0.5957 | Uncalibrated | Low (<1ms) | Moderate | Retired (Leakage Risk) |
 | **Voice Classical (v1)** | Certified CSV | RF / XGBoost | Random Split | **High** | 0.7070 | $\pm$ 0.0430 | 0.8275 | Uncalibrated | Low (<1ms) | Low | Retired (Bias / Leakage) |
 | **Physio Classical (v1)** | Certified CSV | RF / GBM | Random Split | **High** | 0.6722 | $\pm$ 0.0620 | 0.5705 | Uncalibrated | Low (<1ms) | Moderate | Retired (Leakage Risk) |
-| **Calibrated Face** | Certified CSV | MLP Classifiers | GroupKFold (5-Fold) | None | 0.5821 | $\pm$ 0.0387 | 0.5612 | Calibrated | Low (<1ms) | High | Active (Classical Fallback) |
-| **Calibrated Voice** | Certified CSV | RF Classifiers | GroupKFold (5-Fold) | None | 0.5872 | $\pm$ 0.0545 | 0.5721 | Calibrated | Low (<1ms) | Moderate | Active (Classical Fallback) |
-| **Calibrated Physio** | Certified CSV | GBM Classifiers | GroupKFold (5-Fold) | None | 0.5541 | $\pm$ 0.0602 | 0.5401 | Calibrated | Low (<1ms) | Moderate | Active (Classical Fallback) |
+| **Calibrated Face (Classical)** | Certified CSV | MLP Classifiers | GroupKFold (5-Fold) | None | 0.5821 | $\pm$ 0.0387 | 0.5612 | Calibrated | Low (<1ms) | High | Active (Classical Fallback) |
+| **Calibrated Voice (Classical)**| Certified CSV | RF Classifiers | GroupKFold (5-Fold) | None | 0.5872 | $\pm$ 0.0545 | 0.5721 | Calibrated | Low (<1ms) | Moderate | Active (Classical Fallback) |
+| **Calibrated Physio (Classical)**| Certified CSV | GBM Classifiers | GroupKFold (5-Fold) | None | 0.5541 | $\pm$ 0.0602 | 0.5401 | Calibrated | Low (<1ms) | Moderate | Active (Classical Fallback) |
 | **Naive Average Fusion** | Certified CSV | Probability Average | GroupKFold (5-Fold) | None | 0.6463 | $\pm$ 0.0181 | 0.6288 | Calibrated | Low (<1ms) | High | Active (Classical Fallback) |
 | **Meta Stacking Fusion** | Certified CSV | Stacking Logistic Reg | GroupKFold (5-Fold) | None | 0.6302 | $\pm$ 0.0497 | 0.6120 | Calibrated | Low (1ms) | Moderate | Retired (Overfitting Risk) |
+| **Phase 8.1 Deep Face Baseline** | Full dataset | CNN-GRU (SeqLen=5) | Strict LOSO (5-Fold) | None | 0.5510 | $\pm$ 0.0458 | 0.5412 | Calibrated | Moderate (3ms) | High | Retired (Superceded) |
+| **Phase 8.1 Deep Voice Baseline**| Full dataset | CNN-GRU (SeqLen=5) | Strict LOSO (5-Fold) | None | 0.6146 | $\pm$ 0.0314 | 0.5982 | Calibrated | Moderate (3ms) | High | Retired (Superceded) |
+| **Phase 8.1 Deep Physio Baseline**| Full dataset | CNN-GRU (SeqLen=5) | Strict LOSO (5-Fold) | None | 0.5895 | $\pm$ 0.0448 | 0.5732 | Calibrated | Moderate (3ms) | High | Retired (Superceded) |
+| **Phase 8.1 Flex-Router Baseline**| Full dataset | Router MLP (Dropout) | Strict LOSO (5-Fold) | None | 0.5826 | $\pm$ 0.0303 | 0.5701 | Calibrated | Low (1ms) | Very High | Retired (Superceded) |
 | **Strategy 4 Face Encoder** | Full dataset | CNN-GRU (SeqLen=5) | Strict LOSO (5-Fold) | None | 0.6614 | $\pm$ 0.0338 | 0.6472 | Calibrated | Moderate (3ms) | High | **Active (Standard Fallback)** |
 | **Strategy 4 Voice Encoder**| Full dataset | CNN-GRU (SeqLen=5) | Strict LOSO (5-Fold) | None | 0.6243 | $\pm$ 0.0459 | 0.6012 | Calibrated | Moderate (3ms) | High | **Active (Standard Fallback)** |
 | **Strategy 4 Physio Encoder**| Full dataset | CNN-GRU (SeqLen=5) | Strict LOSO (5-Fold) | None | 0.6556 | $\pm$ 0.0297 | 0.6385 | Calibrated | Moderate (3ms) | High | **Active (Standard Fallback)** |
