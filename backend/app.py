@@ -571,6 +571,21 @@ def analyze_multimodal():
             'message': str(e)
         }), 500
 
+@app.route('/api/runtime/reset', methods=['POST'])
+def reset_runtime():
+    """Reset the calibration baselines for a new user session."""
+    try:
+        runtime_engine.reset_calibration()
+        return jsonify({
+            'status': 'success',
+            'message': 'Calibration baselines and temporal history reset.'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 @app.route('/api/face/upload', methods=['POST'])
 def analyze_face():
     """Facial stress analysis endpoint"""

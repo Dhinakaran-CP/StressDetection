@@ -1,106 +1,133 @@
-# Multimodal Stress Intelligence Platform
+# 🧠 Multimodal Stress Intelligence Platform
 
-A real-time stress detection system that uses three physiological modalities — **facial expressions**, **voice acoustics**, and **physiological signals** — to detect and quantify stress levels using machine learning.
+A real-time, multimodal stress detection system that fuses **facial expressions**, **voice acoustics**, and **physiological signals** using deep sequence learning — giving each sensor dynamic weight based on availability and signal quality.
 
 ---
-
-## 📖 Overview
-
-The **Multimodal Stress Intelligence Platform** aims to accurately identify human stress levels by fusing multiple streams of biological telemetry. By observing users through their webcam and microphone—as well as optionally analyzing uploaded EEG and GSR data—the application acts as an intelligent health monitoring dashboard. It not only predicts the likelihood of stress but also explicitly tells users *why* they are stressed using Explainable AI (XAI).
 
 ## ✨ Key Features
 
-- **Real-Time Telemetry Dashboard:** Stream live stress analysis directly from your webcam and microphone.
-- **Multimodal Uploads:** Support for batch analysis of images, audio files, and physiological CSV data (EEG/GSR).
-- **Explainable AI (XAI):** Uses SHAP (SHapley Additive exPlanations) to break down the exact biometric features driving your stress score (e.g., "Left Brow Tension" or "Vocal Jitter").
-- **Personal Baseline Calibration:** Calibrate the system to your natural resting state before analyzing stress to reduce false positives.
-- **Interactive UI:** Smooth React-based frontend with a toggleable Earthy/Cyber theme and responsive visual plots.
+- **Real-Time Streaming Dashboard** — Live stress analysis from webcam + microphone via WebSocket
+- **3-Way Flex-Modality Fusion** — Works with any combination of Face / Voice / Physio sensors. Missing sensors are gracefully masked; the Dynamic Router re-normalizes weights automatically
+- **Deep Sequence Learning** — 1D-CNN + GRU encoders process temporal windows of 5 frames per modality
+- **Personal Baseline Calibration** — Calibrates to your natural resting state before analysis to cancel out identity bias
+- **Explainable AI (XAI)** — SHAP-based explanations show *which* biometric features drove the stress score (e.g., "Brow Tension +0.18", "Vocal Jitter +0.12")
+- **Stress Support Chatbot** — In-app assistant powered by Gemini 2.5 Flash for stress relief guidance
+- **Modality Uploads** — Batch analysis via image/audio/physiological CSV uploads
 
 ---
 
-## 🛠️ Tech Stack
+## 🏆 Model Performance (Strict LOSO, 65 Subjects)
 
-### Frontend
-- **Framework:** React.js
-- **Visualization:** Recharts (for live radar and bar charts)
-- **Styling:** Custom CSS (glassmorphism UI, dynamic themes)
-- **Web Workers:** Background thread processing for face posture requests.
+All models are validated with **Leave-One-Subject-Out (LOSO) 5-Fold GroupKFold** — no subject appears in both train and test sets. This prevents identity leakage.
 
-### Backend
-- **Framework:** Python, Flask, Flask-CORS
-- **Concurrency:** Eventlet & Socket.IO (for asynchronous workers and SSE/WebSocket streaming)
+| Modality | Architecture | LOSO Accuracy | Notes |
+|---|---|---|---|
+| Face | PyTorch 1D-CNN + GRU | 55.10% ± 4.58% | 18 facial AU + gaze features |
+| Voice | PyTorch 1D-CNN + GRU | **61.46% ± 3.14%** | Best single-modality |
+| Physio | PyTorch 1D-CNN + GRU | 58.95% ± 4.48% | EDA, HRV, EEG, BVP |
+| **3-Way Fusion** | MLP Flex-Router | **58.26% ± 3.03%** | Dynamic weights, Modality Dropout |
 
-### Machine Learning & Data Processing
-- **Core ML:** Scikit-Learn (Ensemble methods, SVM, Random Forest, Gradient Boosting, Calibrated Classifiers)
-- **Computer Vision:** MediaPipe Tasks API (Face Landmarking), OpenCV (Fallback Haar Cascades)
-- **Audio Processing:** Librosa, Custom Fast Autocorrelation
-- **Explainability:** SHAP (TreeExplainer)
-- **Data Manipulation:** NumPy, Pandas
+> **Identity Leakage Gap**: Classical RF models leaked 18–26% between random-split and LOSO accuracy. The deep CNN-GRU pipeline reduces this to **7.62%** — the model learns stress patterns, not who the person is.
+
+> Full benchmarks, ablation results, and training evidence: see [`model_archive/`](model_archive/README.md)
 
 ---
 
-## 🧠 Methodology & Architecture
+## 🏗️ Architecture
 
-The system uses a **three-expert fusion** approach:
+```
+Webcam ──► Face CNN-GRU Encoder ──► P(calm), P(stress) ──┐
+                                                           │
+Microphone ► Voice CNN-GRU Encoder ► P(calm), P(stress) ──► Flex-Modality Dynamic Router MLP
+                                                           │   (masks absent sensors, re-normalizes)
+EEG/GSR ──► Physio CNN-GRU Encoder ► P(calm), P(stress) ──┘
+                                                           │
+                                                      Fused Stress Score
+                                                           │
+                                               Flask/SocketIO → React Dashboard
+```
 
-| Expert | Input | Model | Latency |
-|--------|-------|-------|---------|
-| **Facial** | Webcam frames → MediaPipe 3D Landmarks | Gradient Boosting | ~8 ms |
-| **Voice** | Microphone chunks → 12 Acoustic Biomarkers | Gradient Boosting | ~15 ms |
-| **Physiological** | Uploaded EEG/GSR Signals | Soft-Voting Ensemble (GB + RF) | ~5 ms |
+### Dynamic Router Gating
 
-### 1. Facial Expression Expert
-- Extracts 18 high-level geometric features based on facial action units (Eye Aspect Ratio, Brow Tension, Lip Compression, Jaw Displacement, etc.).
-- Gradient Boosting Classifier trained on augmented face landmark geometries, balanced via SMOTE (Synthetic Minority Over-sampling Technique).
+The router receives a **9-dimensional input**:
 
-### 2. Voice Acoustics Expert
-- Extracts 12 specific acoustic biomarkers including Pitch, Jitter (frequency instability), Shimmer (amplitude instability), and Harmonics-to-Noise Ratio (HNR).
-- Gradient Boosting Classifier utilizing custom autocorrelation with parabolic peak interpolation, achieving a heavily optimized execution time of **<15ms** (down from 4.6s using standard libraries).
+```
+[P_face_calm, P_face_stress, P_voice_calm, P_voice_stress,
+ P_physio_calm, P_physio_stress, mask_face, mask_voice, mask_physio]
+```
 
-### 3. Physiological Signal Expert
-- Analyzes CSV datasets of EEG (Brainwave Alpha/Beta power) and GSR (Skin Conductance rate).
-- Soft-Voting Ensemble (Gradient Boosting + Random Forest) wrapped in a `CalibratedClassifierCV` for highly accurate probabilistic stress mapping.
-
-### ⚙️ Fusion Engine
-Results from the distinct models are aggregated via a **weighted confidence engine**. It applies temporal smoothing and a 15-second decay buffer for voice (ensuring conversation-style scoring continuity while the user takes breaths or pauses). The output is streamed in real-time to the frontend via Server-Sent Events (SSE).
+Active weights are re-normalized: `ŵ_m = w_m · mask_m / Σ(w_k · mask_k)`.  
+Trained with **Modality Dropout** so it handles any sensor subset at runtime.
 
 ---
 
-## 📂 Project Structure
+## 📁 Project Structure
 
-```text
-StressIntelligencePlatform/
+```
+StressDetectionUsingML/
 │
-├── run.bat                       # One-click launcher (starts backend + frontend)
+├── run.bat                         # One-click launcher (backend + frontend)
 ├── README.md
-├── TEST_GUIDE.md                 # Comprehensive testing guide
 │
-├── backend/                      # Flask API server & ML Inference
-│   ├── app.py                    # Main application entry point (API routes, SSE)
-│   ├── model.py                  # Feature extraction + inference logic
-│   ├── realtime_core.py          # Real-time session management & SSE streams
-│   ├── voice_worker.py           # High-speed vocal feature extraction
-│   ├── calibration.py            # Per-user baseline calibration engine
-│   ├── score_buffer.py           # Rolling score buffer with smoothing
-│   └── requirements.txt          # Python dependencies
+├── backend/                        # Flask API server & ML inference engine
+│   ├── app.py                      # Main entry point (API routes, SocketIO)
+│   ├── model.py                    # Feature extraction + classical inference
+│   ├── realtime_core.py            # Real-time session management
+│   ├── voice_worker.py             # High-speed vocal feature extraction
+│   ├── calibration.py              # Per-user baseline calibration engine
+│   ├── score_buffer.py             # Rolling score buffer with smoothing
+│   ├── face_landmarker.task        # MediaPipe face landmark model
+│   ├── requirements.txt            # Python dependencies
+│   ├── core/                       # Feature runtime lock, dataset certifier
+│   ├── runtime/                    # runtime_engine.py — deep model inference
+│   ├── explainability/             # SHAP explainability bundle
+│   └── monitoring/                 # Model monitoring + rollback logic
 │
-├── models/                       # Production lightweight models & bundles
-├── training/                     # ML training, experimental code and pipelines
-├── configs/                      # Contract yaml schemas and environment configs
-├── tests/                        # API, health, and streaming test scripts
-├── data/                         # Raw datasets and evaluation data
-├── certified_data/               # Pre-processed certified datasets for final training
-├── quarantine/                   # Archived/obsolete scripts and artifacts
-│
-├── frontend/                     # React application
-│   ├── public/
-│   │   └── facePostWorker.js     # Web Worker: offloads face POST requests
+├── frontend/                       # React application
 │   └── src/
-│       ├── App.js                # Root Component
-│       ├── pages/Dashboard.js    # Main UI Dashboard
-│       └── components/           # UI Components (RealtimeMonitor, AnalysisPanel)
+│       ├── App.js
+│       ├── pages/Dashboard.js      # Main dashboard UI
+│       ├── theme.css               # Design system
+│       └── components/             # RealtimeMonitor, AnalysisPanel, Chatbot, etc.
 │
-└── reports/                      # Performance benchmarks & analysis reports
+├── models/                         # Production model artifacts (PyTorch + sklearn)
+│   ├── deep_face_expert.pt         # Face CNN-GRU encoder
+│   ├── deep_voice_expert.pt        # Voice CNN-GRU encoder
+│   ├── deep_physio_expert.pt       # Physio CNN-GRU encoder
+│   ├── deep_fusion_router.pt       # Flex-Modality Dynamic Router MLP
+│   ├── deep_*_scaler.pkl           # StandardScalers per modality
+│   ├── *_expert_lightweight.pkl    # Classical sklearn baseline experts (v1)
+│   ├── explainability_bundle.json  # SHAP top-driver data
+│   ├── deep_fusion_config.json     # Fusion runtime config
+│   └── registry.json              # Model version registry & hash manifest
+│
+├── configs/                        # Contract YAML schemas
+│   ├── feature_contract.yaml       # Canonical feature names & dimensions
+│   ├── api_contract.yaml
+│   ├── schema_contract.yaml
+│   └── performance_contract.yaml
+│
+├── tests/                          # Production test suite (97 tests, 100% pass)
+│   ├── test_api_endpoints.py
+│   ├── test_runtime_engine.py
+│   ├── test_explainability_bundle.py
+│   ├── test_phase5_integration.py
+│   └── ...
+│
+├── certified_data/                 # Pre-processed training datasets (CSV, gitignored)
+│   └── *.manifest.json             # Dataset integrity manifests
+│
+├── training/                       # Production training scripts
+│   ├── package_phase8_production.py  # ← Re-train all models from scratch
+│   └── augmentation.py              # Data augmentation utilities
+│
+└── model_archive/                  # 📦 Permanent preservation archive
+    ├── README.md                   # Master evidence record (all metrics + hashes)
+    ├── deep_models/                # Production PyTorch models + docs
+    ├── classical_models/           # Phase 4 sklearn baselines + docs
+    ├── training_scripts/           # All 13 training scripts with TRAINING_SCRIPTS.md
+    ├── reports/                    # All benchmark reports (Phase 6–8, leakage audit)
+    └── docs/                       # All research documentation
 ```
 
 ---
@@ -108,25 +135,63 @@ StressIntelligencePlatform/
 ## 🚀 Getting Started
 
 ### Quick Start (Windows)
-You can run the entire stack (both frontend and backend) simultaneously using the provided batch script:
 ```bash
 run.bat
 ```
-- **Frontend URL:** http://localhost:3000
-- **Backend API URL:** http://localhost:5000
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:5000
 
 ### Manual Setup
 
-**1. Backend**
+**Backend**
 ```bash
 cd backend
 pip install -r requirements.txt
 python app.py
 ```
 
-**2. Frontend**
+**Frontend**
 ```bash
 cd frontend
 npm install
 npm start
 ```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React.js, Recharts, Socket.IO client |
+| Backend | Python, Flask, Flask-SocketIO, Eventlet |
+| Deep Learning | PyTorch (1D-CNN + GRU, MLP) |
+| Classical ML | scikit-learn (Random Forest, Gradient Boosting) |
+| Computer Vision | MediaPipe Tasks API, OpenCV |
+| Audio | Librosa, custom autocorrelation |
+| Explainability | SHAP (TreeExplainer) |
+
+---
+
+## 📦 Model Archive
+
+All trained model versions, training scripts, benchmark reports, and research documentation are permanently preserved in [`model_archive/`](model_archive/README.md).
+
+This includes:
+- Every model version's accuracy, F1-score, confusion matrix, and SHA-256 hash
+- All 8 research phases with decision logs
+- Full Python training scripts for reproducibility
+- The complete methodology and leakage audit history
+
+---
+
+## 📊 Dataset
+
+**StressID** (LORIA Lab, France) — publicly available multimodal stress dataset.  
+65 subjects, 11 task conditions: Baseline, Stroop, Math, Reading, Breathing, Video ×2, Counting ×3, Speaking, Relaxation.
+
+---
+
+## 📜 License
+
+This project is for academic research purposes.

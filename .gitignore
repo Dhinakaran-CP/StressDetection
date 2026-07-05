@@ -19,37 +19,43 @@ parts/
 sdist/
 var/
 wheels/
+.pytest_cache/
 
 # ===========================================
 # Virtual Environments
 # ===========================================
-.env
-.venv
+.venv/
 venv/
 ENV/
 env/
 
 # ===========================================
+# Environment / Secrets
+# ===========================================
+configs/.env
+.env
+*.env.local
+
+# ===========================================
 # ML Models & Large Binary Files
-# Models are stored in models/ (lightweight, ~1-2MB each)
-# The full-size legacy models at backend root are NOT committed (100MB+)
+# Large legacy models NOT committed (100MB+)
 # ===========================================
 backend/facial_expert_model.pkl
 backend/voice_expert_model.pkl
 backend/physio_expert_model.pkl
 
-# Training caches
-*.npz
+# Training intermediate checkpoints
 *.h5
 *.onnx
+*.npz
 
 # ===========================================
-# Training Data (large, not versioned)
+# Training / Research Data (large, not versioned)
 # ===========================================
-training/Dataset/ravdess/
+training/Dataset/
 training/Feature Extraction/Features/*.csv
-datasets/
 data/
+datasets/
 certified_data/*.csv
 !certified_data/*.json
 
@@ -59,13 +65,14 @@ certified_data/*.csv
 backend/uploads/
 uploads/
 *.tmp
-current_reqs.txt
 backend/current_reqs.txt
+current_reqs.txt
 
 # ===========================================
 # OS & IDE
 # ===========================================
 .DS_Store
+._.DS_Store
 Thumbs.db
 .vscode/
 .idea/
@@ -81,13 +88,7 @@ frontend/.env.local
 node_modules/
 
 # ===========================================
-# Reports & Charts (generated artifacts)
-# ===========================================
-reports/*
-!reports/*.md
-
-# ===========================================
-# Archived / Obsolete Files
+# Archived / Obsolete (never commit quarantine)
 # ===========================================
 quarantine/
 _archive/
