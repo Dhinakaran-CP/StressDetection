@@ -112,6 +112,24 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
 - Risks: The Voice expert underperforms significantly compared to Face and Physio, exhibiting high variance (± 0.1003), which poses a high risk of degrading the fused pipeline performance.
 - Decision: Select the CNN-GRU encoders for Face and Physio as the modality experts. Drop/exclude Voice from fusion consideration. Proceeding to Phase 6 (Fusion Engine).
 
+## Phase 6 Log
+
+- Date: 2026-07-05
+- Branch: `research-loso-pipeline`
+- Commit: `phase6: fusion engine`
+- Objective: Fuse selected best experts, evaluate static vs. dynamic fusion, and compare pairwise (Face + Physio) vs. 3-way (Face + Voice + Physio) configurations.
+- Changes:
+  - Evaluated static grid search weighting and dynamic router MLPs in [training/phase8_best_expert_fusion.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/phase8_best_expert_fusion.py).
+- Metrics (15-subject subset):
+  - Static Pairwise (Face + Physio): 0.6154 (± 0.0332)
+  - Static 3-Way (Face + Voice + Physio): 0.6114 (± 0.0537)
+  - Dynamic Pairwise (Face + Physio): 0.6335 (± 0.0482)
+  - Dynamic 3-Way (Face + Voice + Physio): 0.6115 (± 0.0518)
+- Validation: 5-fold GroupKFold (subject-independent).
+- Risks: Static weighted average is simpler, but Dynamic Pairwise fusion provides a +1.8% accuracy gain and remains low-latency since the router MLP is extremely compact.
+- Decision: Select the Dynamic Pairwise (Face + Physio) router MLP as the fusion engine. Voice is dropped from the active runtime fusion pipeline. Proceeding to Phase 7 (Augmentation Comparison).
+
+
 
 
 
