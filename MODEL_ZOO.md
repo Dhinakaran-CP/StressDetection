@@ -101,3 +101,47 @@ The final production models are locked and saved under the following registry pa
 *   **Active Feature Contract**: Strictly locked in [`configs/feature_contract.yaml`](configs/feature_contract.yaml) to ensure input dimension alignment (Face: 18, Voice: 12, Physio: 5).
 *   **Production Scalers**: Fitted on calibrated, subject-adaptive normalized datasets to prevent raw biometric scaling leakage.
 *   **Regression Verification**: Confirmed via the 97-file automated test suite (`python -m pytest`). All tests passed, verifying runtime compatibility.
+
+---
+
+## 5. End-to-End 1D-CNN + GRU Pipeline Architecture
+
+For academic review, here is the technical processing sequence explaining how the system extracts, temporalizes, and processes bio-signals to make a classification.
+
+```
+Incoming Biomarkers (Face, Voice, Physio)
+                  │
+                  ▼
+   Subject-Adaptive Calibration
+  (Subtract Per-Subject Calm Mean)
+                  │
+                  ▼
+  Temporal Sequence Creation (SeqLen=5)
+                  │
+                  ▼
+    1D-CNN Spatial Filter Layer
+ (Combines features within adjacent steps)
+                  │
+                  ▼
+    GRU Recurrent Temporal Layer
+(Learns rising/falling biomarker trends)
+                  │
+                  ▼
+  Fully Connected Classifier (Logits)
+                  │
+                  ▼
+    MLP-Based Gated Fusion Router
+ (Applies Availability Mask & Re-normalizes)
+                  │
+                  ▼
+          Fused Stress Score
+```
+
+### Detailed Sequence Breakdown:
+1. **Calibration (Biometric Leveling)**: Every incoming feature $x_{\text{raw}}$ is normalized by subtracting the subject's baseline resting mean ($\mu_{\text{calm}}$) and dividing by their baseline variance ($\sigma_{\text{calm}}$). This calibrates the inputs into "relative deviations from calm".
+2. **Sequence Creation**: Stacks the latest 5 calibrated frames into a sequence matrix of shape `[Sequence Length = 5, Number of Features]`.
+3. **1D-CNN (Local Pattern Consolidation)**: Slides convolution kernels along the sequence axis to learn short-term spatial and pattern relationships between adjacent frames.
+4. **GRU (Temporal Tracking)**: Evaluates the output of the 1D-CNN sequence. Uses recurrent Update and Reset memory gates to track long-term trajectories (e.g., *is heart rate rising continuously over the 5 steps?*). It outputs a consolidated sequence history vector.
+5. **Adversarial Head (suppression)**: During training, the gradients from a parallel subject identity classifier branch are reversed via a Gradient Reversal Layer (GRL) with weight $\lambda_{\text{adv}} = 0.02$. This penalizes the model if it tries to identify the subject's anatomy, scrubbing identity traits from the representation.
+6. **Flex Late Fusion Router**: Takes modality stress predictions, applies an availability mask (zeroing out missing sensors), and dynamically outputs normalized weights to sum to exactly 1.0. This outputs a stable, fused stress index (0-100%).
+
