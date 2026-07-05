@@ -4,58 +4,48 @@
             "artifact_id": "face_expert_v2",
             "artifact_type": "model",
             "version": "2.0.0",
-            "timestamp": 1783228472.1344395,
-            "hash": "a1683b75ec4d2c7dcdef617289bbb20c8cd47e391a9b413b927209477a6d7ed9",
+            "timestamp": 1783233701.2222033,
+            "hash": "7dc1652cb7c0f3b763eaa3de36428a09587be427dca97f3da52fd49a0d1495fe",
             "metadata": {
-                "accuracy": 0.663,
+                "accuracy": 0.550954655456019,
                 "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
                 "framework": "PyTorch (1D-CNN+GRU)"
             }
         },
         "voice_expert": {
-            "artifact_id": "voice_expert_v1",
+            "artifact_id": "voice_expert_v2",
             "artifact_type": "model",
-            "version": "1.0.0",
-            "timestamp": 1783181862.2791233,
-            "hash": "5a1df684fc3fd167b996c83aa1168a75207c7ead6282ed66b88651b0345efc0a",
+            "version": "2.0.0",
+            "timestamp": 1783233701.2528994,
+            "hash": "db41acbc550915d476ba56b06c76c21d27cb4822b06aad49f5579ff5c1ec677e",
             "metadata": {
-                "accuracy": 0.5951980792316927,
-                "f1_score_stress": 0.704625087596356,
-                "confusion_matrix": [
-                    [
-                        936,
-                        1920
-                    ],
-                    [
-                        1452,
-                        4022
-                    ]
-                ],
-                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+                "accuracy": 0.6146442187380659,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (1D-CNN+GRU)"
             }
         },
         "physio_expert": {
             "artifact_id": "physio_expert_v2",
             "artifact_type": "model",
             "version": "2.0.0",
-            "timestamp": 1783228472.155377,
-            "hash": "b6d9ac14c822ec7fd53e4c1a4ec1e8621cf0f7fa60394137a9f61398ba5c4177",
+            "timestamp": 1783233701.2651267,
+            "hash": "b7e7568ef077352aa67415d4cacc45e26945864dc414d059edb6fce8aa566623",
             "metadata": {
-                "accuracy": 0.6494,
+                "accuracy": 0.5894680709342462,
                 "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
                 "framework": "PyTorch (1D-CNN+GRU)"
             }
         },
         "deep_fusion_router": {
-            "artifact_id": "deep_fusion_router_v1",
+            "artifact_id": "deep_fusion_router_v2",
             "artifact_type": "model",
-            "version": "1.0.0",
-            "timestamp": 1783228472.1634665,
-            "hash": "517f1eb30e357ea5fbb102daa1d1edcc19cc7a07adfb288df804aba5936500b0",
+            "version": "2.0.0",
+            "timestamp": 1783233701.2870364,
+            "hash": "a562be250cd15d607d3c79f93f5f96bce3314c89b3839c047e186526852d48c2",
             "metadata": {
-                "accuracy": 0.6744,
+                "accuracy_all_present": 0.582574927657167,
                 "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
-                "framework": "PyTorch (MLP Router)"
+                "framework": "PyTorch (MLP Flex-Router)"
             }
         }
     },
@@ -158,6 +148,18 @@
                     "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
                     "framework": "PyTorch (1D-CNN+GRU)"
                 }
+            },
+            {
+                "artifact_id": "face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783233701.2222033,
+                "hash": "7dc1652cb7c0f3b763eaa3de36428a09587be427dca97f3da52fd49a0d1495fe",
+                "metadata": {
+                    "accuracy": 0.550954655456019,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
             }
         ],
         "voice_expert": [
@@ -181,6 +183,18 @@
                         ]
                     ],
                     "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+                }
+            },
+            {
+                "artifact_id": "voice_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783233701.2528994,
+                "hash": "db41acbc550915d476ba56b06c76c21d27cb4822b06aad49f5579ff5c1ec677e",
+                "metadata": {
+                    "accuracy": 0.6146442187380659,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
                 }
             }
         ],
@@ -218,6 +232,18 @@
                     "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
                     "framework": "PyTorch (1D-CNN+GRU)"
                 }
+            },
+            {
+                "artifact_id": "physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783233701.2651267,
+                "hash": "b7e7568ef077352aa67415d4cacc45e26945864dc414d059edb6fce8aa566623",
+                "metadata": {
+                    "accuracy": 0.5894680709342462,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
             }
         ],
         "deep_fusion_router": [
@@ -231,6 +257,18 @@
                     "accuracy": 0.6744,
                     "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
                     "framework": "PyTorch (MLP Router)"
+                }
+            },
+            {
+                "artifact_id": "deep_fusion_router_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783233701.2870364,
+                "hash": "a562be250cd15d607d3c79f93f5f96bce3314c89b3839c047e186526852d48c2",
+                "metadata": {
+                    "accuracy_all_present": 0.582574927657167,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (MLP Flex-Router)"
                 }
             }
         ]

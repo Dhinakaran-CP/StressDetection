@@ -1,7 +1,9 @@
 {
-    "face_weight": null,
-    "physio_weight": null,
-    "voice_weight": 0.0,
     "sequence_length": 5,
-    "use_dynamic_router": true
+    "use_dynamic_router": true,
+    "active_modalities": [
+        "face",
+        "voice",
+        "physio"
+    ]
 }

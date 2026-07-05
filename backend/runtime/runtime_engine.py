@@ -51,12 +51,12 @@ if TORCH_AVAILABLE:
             return logits
 
     class DynamicRouter(nn.Module):
-        def __init__(self, num_modalities):
+        def __init__(self, num_modalities=3):
             super().__init__()
             self.mlp = nn.Sequential(
-                nn.Linear(num_modalities * 2, 8),
+                nn.Linear(num_modalities * 2 + num_modalities, 16),
                 nn.ReLU(),
-                nn.Linear(8, num_modalities),
+                nn.Linear(16, num_modalities),
                 nn.Softmax(dim=1)
             )
         def forward(self, x):
@@ -138,7 +138,7 @@ class RuntimeEngine:
         # Phase 8 Deep Learning variables
         self.use_deep = False
         self.deep_models = {}
-        self.deep_sequence_history = {"face": [], "physio": []}
+        self.deep_sequence_history = {"face": [], "voice": [], "physio": []}
 
         # Phase 4 Methodology: Subject-Aware Normalization & Temporal Windowing
         self.feature_history = {"face": [], "voice": [], "physio": []}
@@ -154,7 +154,7 @@ class RuntimeEngine:
         self.feature_history = {"face": [], "voice": [], "physio": []}
         self.calibration_baselines = {"face": None, "voice": None, "physio": None}
         self.calibrating = {"face": True, "voice": True, "physio": True}
-        self.deep_sequence_history = {"face": [], "physio": []}
+        self.deep_sequence_history = {"face": [], "voice": [], "physio": []}
 
     # ── Factory ───────────────────────────────────────────────────────────────
 
@@ -212,8 +212,8 @@ class RuntimeEngine:
         for reg_key, modality in registry_to_modality.items():
             model_file, scaler_file = _MODEL_FILES[reg_key]
             
-            # If use_deep is active and it's face or physio, we will load the deep scalers instead
-            if self.use_deep and modality in ["face", "physio"]:
+            # If use_deep is active, we will load the deep scalers instead for active modalities
+            if self.use_deep and modality in ["face", "voice", "physio"]:
                 deep_scaler_file = f"deep_{modality}_scaler.pkl"
                 scaler_path = os.path.join(EXPERT_MODELS_DIR, deep_scaler_file)
                 if os.path.exists(scaler_path):
@@ -256,7 +256,7 @@ class RuntimeEngine:
 
         # Load classical backups so that old unit tests pass
         if self.use_deep:
-            for reg_key in ["face_expert", "physio_expert"]:
+            for reg_key in ["face_expert", "voice_expert", "physio_expert"]:
                 modality = reg_key.split("_")[0]
                 model_file, _ = _MODEL_FILES[reg_key]
                 model_path = os.path.join(EXPERT_MODELS_DIR, model_file)
@@ -285,6 +285,14 @@ class RuntimeEngine:
             if reg_f:
                 self._verify_hash(face_path, reg_f.get("hash"), "deep_face_expert")
 
+            voice_path = os.path.join(EXPERT_MODELS_DIR, "deep_voice_expert.pt")
+            self.deep_models["voice"] = ModalityEncoder(12, 16)
+            self.deep_models["voice"].load_state_dict(torch.load(voice_path, map_location="cpu"))
+            self.deep_models["voice"].eval()
+            reg_v = self.registry.get_active_model("voice_expert")
+            if reg_v:
+                self._verify_hash(voice_path, reg_v.get("hash"), "deep_voice_expert")
+
             physio_path = os.path.join(EXPERT_MODELS_DIR, "deep_physio_expert.pt")
             self.deep_models["physio"] = ModalityEncoder(5, 16)
             self.deep_models["physio"].load_state_dict(torch.load(physio_path, map_location="cpu"))
@@ -294,7 +302,7 @@ class RuntimeEngine:
                 self._verify_hash(physio_path, reg_p.get("hash"), "deep_physio_expert")
 
             router_path = os.path.join(EXPERT_MODELS_DIR, "deep_fusion_router.pt")
-            self.deep_models["router"] = DynamicRouter(2)
+            self.deep_models["router"] = DynamicRouter(num_modalities=3)
             self.deep_models["router"].load_state_dict(torch.load(router_path, map_location="cpu"))
             self.deep_models["router"].eval()
             reg_r = self.registry.get_active_model("deep_fusion_router")
@@ -367,13 +375,13 @@ class RuntimeEngine:
         return self._predict_single("physio", raw_features, sensitivity)
 
     def _predict_single(self, modality: str, raw_features, sensitivity: float) -> dict:
-        if modality not in self._models and not (self.use_deep and modality in ["face", "physio"]):
+        if modality not in self._models and not (self.use_deep and modality in ["face", "voice", "physio"]):
             return {"error": f"{modality} model not loaded", "modality": modality}
         if raw_features is None:
             return {"error": "raw_features is None", "modality": modality}
 
         try:
-            if self.use_deep and modality in ["face", "physio"]:
+            if self.use_deep and modality in ["face", "voice", "physio"]:
                 seq = self._lock_features_deep(modality, raw_features)
                 seq_t = torch.FloatTensor(seq)
                 with torch.no_grad():
@@ -408,10 +416,13 @@ class RuntimeEngine:
         Missing modalities degrade gracefully. Supports Phase 8 deep dynamic router.
         """
         if self.use_deep:
-            if face is None and physio is None:
-                return {"error": "No valid deep modality predictions — both face and physio are None"}
+            if face is None and voice is None and physio is None:
+                return {"error": "No valid deep modality predictions — all inputs are None"}
 
             raw_probs = {}
+            masks = [0.0, 0.0, 0.0]
+            
+            # Face
             if face is not None:
                 try:
                     seq_f = self._lock_features_deep("face", face)
@@ -420,9 +431,24 @@ class RuntimeEngine:
                         logits_f = self.deep_models["face"](seq_f_t)
                         prob_f = float(torch.softmax(logits_f, dim=1)[0][1].item())
                         raw_probs["face"] = prob_f
+                        masks[0] = 1.0
                 except Exception as exc:
                     print(f"[RuntimeEngine] Deep face prediction failed: {exc}")
 
+            # Voice
+            if voice is not None:
+                try:
+                    seq_v = self._lock_features_deep("voice", voice)
+                    seq_v_t = torch.FloatTensor(seq_v)
+                    with torch.no_grad():
+                        logits_v = self.deep_models["voice"](seq_v_t)
+                        prob_v = float(torch.softmax(logits_v, dim=1)[0][1].item())
+                        raw_probs["voice"] = prob_v
+                        masks[1] = 1.0
+                except Exception as exc:
+                    print(f"[RuntimeEngine] Deep voice prediction failed: {exc}")
+
+            # Physio
             if physio is not None:
                 try:
                     seq_p = self._lock_features_deep("physio", physio)
@@ -431,35 +457,56 @@ class RuntimeEngine:
                         logits_p = self.deep_models["physio"](seq_p_t)
                         prob_p = float(torch.softmax(logits_p, dim=1)[0][1].item())
                         raw_probs["physio"] = prob_p
+                        masks[2] = 1.0
                 except Exception as exc:
                     print(f"[RuntimeEngine] Deep physio prediction failed: {exc}")
 
             if not raw_probs:
                 return {"error": "No valid deep modality predictions"}
 
-            if "face" in raw_probs and "physio" in raw_probs:
-                try:
-                    pf = raw_probs["face"]
-                    pp = raw_probs["physio"]
-                    cat_in = torch.FloatTensor([[1.0 - pf, pf, 1.0 - pp, pp]])
-                    with torch.no_grad():
-                        weights = self.deep_models["router"](cat_in)
-                        w_f = float(weights[0][0].item())
-                        w_p = float(weights[0][1].item())
-                        avg_prob = w_f * pf + w_p * pp
-                    fusion_weights = {"face": round(w_f, 3), "voice": 0.0, "physio": round(w_p, 3)}
-                except Exception as exc:
-                    print(f"[RuntimeEngine] Deep router failed: {exc}, falling back to average")
-                    avg_prob = 0.5 * raw_probs["face"] + 0.5 * raw_probs["physio"]
-                    fusion_weights = {"face": 0.5, "voice": 0.0, "physio": 0.5}
-            else:
-                mod = list(raw_probs.keys())[0]
-                avg_prob = raw_probs[mod]
+            # Build 9-dimensional input vector for Dynamic Router
+            pf = raw_probs.get("face", 0.5)
+            pv = raw_probs.get("voice", 0.5)
+            pp = raw_probs.get("physio", 0.5)
+            
+            cat_in = torch.FloatTensor([[1.0 - pf, pf, 1.0 - pv, pv, 1.0 - pp, pp] + masks])
+            
+            try:
+                with torch.no_grad():
+                    raw_weights = self.deep_models["router"](cat_in)
+                    w_f = float(raw_weights[0][0].item())
+                    w_v = float(raw_weights[0][1].item())
+                    w_p = float(raw_weights[0][2].item())
+                    
+                # Apply mask
+                w_f_m = w_f * masks[0]
+                w_v_m = w_v * masks[1]
+                w_p_m = w_p * masks[2]
+                
+                # Re-normalize
+                sum_w = w_f_m + w_v_m + w_p_m
+                if sum_w == 0:
+                    sum_w = 1.0
+                    
+                w_f_norm = w_f_m / sum_w
+                w_v_norm = w_v_m / sum_w
+                w_p_norm = w_p_m / sum_w
+                
+                avg_prob = w_f_norm * raw_probs.get("face", 0.0) + \
+                           w_v_norm * raw_probs.get("voice", 0.0) + \
+                           w_p_norm * raw_probs.get("physio", 0.0)
+                           
+                fusion_weights = {"face": round(w_f_norm, 3), "voice": round(w_v_norm, 3), "physio": round(w_p_norm, 3)}
+            except Exception as exc:
+                print(f"[RuntimeEngine] Deep router failed: {exc}, falling back to average")
+                num_active = sum(masks)
+                fallback_w = 1.0 / num_active if num_active > 0 else 0.33
                 fusion_weights = {
-                    "face": 1.0 if mod == "face" else 0.0,
-                    "voice": 0.0,
-                    "physio": 1.0 if mod == "physio" else 0.0
+                    "face": round(fallback_w * masks[0], 3),
+                    "voice": round(fallback_w * masks[1], 3),
+                    "physio": round(fallback_w * masks[2], 3)
                 }
+                avg_prob = sum(raw_probs[m] * fusion_weights[m] for m in raw_probs)
 
             threshold    = 0.6 + (0.5 - sensitivity) * 0.4
             final_pred   = 1 if avg_prob > threshold else 0
@@ -621,10 +668,12 @@ class RuntimeEngine:
         # 1. Lock features and handle missing values
         if modality == "face":
             feats = self.feature_lock.process_face_features(raw_features, scaler=None)
+        elif modality == "voice":
+            feats = self.feature_lock.process_voice_features(raw_features, scaler=None)
         elif modality == "physio":
             feats = self.feature_lock.process_physio_features(raw_features, scaler=None)
         else:
-            raise ValueError(f"Deep learning only supports face and physio, got: {modality}")
+            raise ValueError(f"Deep learning only supports face, voice, and physio, got: {modality}")
 
         feats = feats.flatten()
 
