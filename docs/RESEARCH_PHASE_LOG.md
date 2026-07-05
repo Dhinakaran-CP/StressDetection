@@ -96,5 +96,22 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
 - Risks: Training CNN-GRU sequence models on CPU is slow (~25 minutes), but yields significantly better unimodal representation learning, especially for Face (+8.1% accuracy gain) and Physio (+9.5% accuracy gain) over classical manual features.
 - Decision: Confirmed the superiority of deep learning representation encoders for Face and Physio. Proceeding to Phase 5 (Best-Expert Selection).
 
+## Phase 5 Log
+
+- Date: 2026-07-05
+- Branch: `research-loso-pipeline`
+- Commit: `phase5: best-expert selection`
+- Objective: Compare all candidate face, voice, and physio models to select exactly one best expert per modality based on strict subject-independent performance.
+- Changes:
+  - Executed [training/phase8_best_expert_fusion.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/phase8_best_expert_fusion.py) to evaluate unimodal sequence-based deep encoders under LOSO.
+- Metrics (15-subject subset):
+  - Face Expert (CNN-GRU): 0.5989 (± 0.0755)
+  - Voice Expert (CNN-GRU): 0.5581 (± 0.1003)
+  - Physio Expert (CNN-GRU): 0.5885 (± 0.0323)
+- Validation: 5-fold GroupKFold (subject-independent).
+- Risks: The Voice expert underperforms significantly compared to Face and Physio, exhibiting high variance (± 0.1003), which poses a high risk of degrading the fused pipeline performance.
+- Decision: Select the CNN-GRU encoders for Face and Physio as the modality experts. Drop/exclude Voice from fusion consideration. Proceeding to Phase 6 (Fusion Engine).
+
+
 
 
