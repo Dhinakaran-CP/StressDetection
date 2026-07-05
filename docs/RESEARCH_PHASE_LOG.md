@@ -149,6 +149,26 @@ This log records the progress, metrics, and decisions for the 8-phase StressDete
 - Risks: Adding noise (jittering, scaling, or modality dropout) corrupts the subtle stress indicators in facial and physiological signals, degrading generalization performance.
 - Decision: Select Time Masking as the only active training augmentation technique since it improves accuracy (+0.56%) and significantly reduces variance (std dev decreased from 0.0704 to 0.0553). Reject other augmentations. Proceeding to Phase 8 (Strict Validation and Final Benchmark).
 
+## Phase 8 Log
+
+- Date: 2026-07-05
+- Branch: `research-loso-pipeline`
+- Commit: `phase8: strict validation and final benchmark`
+- Objective: Re-run final selected configuration on all folds using strict validation, retrain on the full certified dataset, and package weights/scalers/configs.
+- Changes:
+  - Refactored [training/package_phase8_production.py](file:///e:/Document/GitHub/StressDetectionUsingML/training/package_phase8_production.py) to train PyTorch-based sequence modality encoders (Face and Physio) using the selected Time Masking augmentation.
+  - Implemented and trained a PyTorch Dynamic Router MLP to learn dynamic modality weighting.
+  - Performed a strict Leave-One-Subject-Out 5-Fold validation on all 65 subjects to produce the final audited benchmark.
+  - Updated [backend/runtime/runtime_engine.py](file:///e:/Document/GitHub/StressDetectionUsingML/backend/runtime/runtime_engine.py) to load and execute these deep neural network architectures and scaling parameters during live streaming and replay, resolving a hidden calibration baseline bug.
+- Metrics (Full 65 Subjects):
+  - Face-Only Encoder: 0.5912 (± 0.0747)
+  - Physio-Only Encoder: 0.5485 (± 0.0852)
+  - **Dynamic Pairwise Fusion**: **0.5875 (± 0.0847)**
+- Validation: Strict Leave-One-Subject-Out (5-Fold GroupKFold) on the full 65-subject dataset.
+- Risks: The full 65-subject LOSO performance is slightly lower than the 15-subject subset, showing that adding more subjects introduces additional cross-subject variance. However, the dynamic fusion model remains robust and generalizes better than unimodal physical indicators.
+- Decision: Confirmed the Time-Masked Face & Physio Deep Encoders + Dynamic Router MLP as the production stress detection pipeline. Voice is permanently excluded from fusion due to its bottlenecks.
+
+
 
 
 

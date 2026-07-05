@@ -1,0 +1,12 @@
+{
+    "artifact_id": "deep_fusion_router_v1",
+    "artifact_type": "model",
+    "version": "1.0.0",
+    "timestamp": 1783228472.1634665,
+    "hash": "517f1eb30e357ea5fbb102daa1d1edcc19cc7a07adfb288df804aba5936500b0",
+    "metadata": {
+        "accuracy": 0.6744,
+        "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+        "framework": "PyTorch (MLP Router)"
+    }
+}

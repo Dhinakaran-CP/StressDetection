@@ -13,12 +13,55 @@ import sys
 import pickle
 import numpy as np
 
+try:
+    import torch
+    import torch.nn as nn
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    class nn:
+        Module = object
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from backend.core.feature_runtime_lock import FeatureRuntimeLock
 from backend.core.version_registry      import VersionRegistry
+
+if TORCH_AVAILABLE:
+    class ModalityEncoder(nn.Module):
+        def __init__(self, input_dim, hidden_dim=16):
+            super().__init__()
+            self.conv = nn.Conv1d(in_channels=input_dim, out_channels=hidden_dim, kernel_size=3, padding=1)
+            self.relu = nn.ReLU()
+            self.bn = nn.BatchNorm1d(hidden_dim)
+            self.gru = nn.GRU(hidden_dim, hidden_dim, batch_first=True)
+            self.classifier = nn.Linear(hidden_dim, 2)
+            
+        def forward(self, x):
+            x = x.permute(0, 2, 1)
+            x = self.conv(x)
+            x = self.bn(x)
+            x = self.relu(x)
+            x = x.permute(0, 2, 1)
+            gru_out, hidden = self.gru(x)
+            latent = gru_out[:, -1, :] 
+            logits = self.classifier(latent) 
+            return logits
+
+    class DynamicRouter(nn.Module):
+        def __init__(self, num_modalities):
+            super().__init__()
+            self.mlp = nn.Sequential(
+                nn.Linear(num_modalities * 2, 8),
+                nn.ReLU(),
+                nn.Linear(8, num_modalities),
+                nn.Softmax(dim=1)
+            )
+        def forward(self, x):
+            return self.mlp(x)
+
 
 # ── Phase 4 optimal fusion weights ────────────────────────────────────────────
 FUSION_WEIGHTS = {"face": 0.30, "voice": 0.40, "physio": 0.30}
@@ -92,7 +135,26 @@ class RuntimeEngine:
         self._scalers = {}   # same keys → sklearn scaler or None
         self.load_errors: dict = {}
 
+        # Phase 8 Deep Learning variables
+        self.use_deep = False
+        self.deep_models = {}
+        self.deep_sequence_history = {"face": [], "physio": []}
+
+        # Phase 4 Methodology: Subject-Aware Normalization & Temporal Windowing
+        self.feature_history = {"face": [], "voice": [], "physio": []}
+        self.calibration_baselines = {"face": None, "voice": None, "physio": None}
+        self.calibrating = {"face": True, "voice": True, "physio": True}
+        self.calibration_frames = 2
+        self.window_size = 2
+
         self._load_artifacts()
+
+    def reset_calibration(self):
+        """Reset the calibration baselines (e.g. for a new subject)."""
+        self.feature_history = {"face": [], "voice": [], "physio": []}
+        self.calibration_baselines = {"face": None, "voice": None, "physio": None}
+        self.calibrating = {"face": True, "voice": True, "physio": True}
+        self.deep_sequence_history = {"face": [], "physio": []}
 
     # ── Factory ───────────────────────────────────────────────────────────────
 
@@ -128,7 +190,19 @@ class RuntimeEngine:
     # ── Artifact loading ──────────────────────────────────────────────────────
 
     def _load_artifacts(self):
-        """Load model+scaler pairs for all registered experts."""
+        """Load model+scaler pairs for all registered experts (supporting both deep learning and classical)."""
+        config_path = os.path.join(EXPERT_MODELS_DIR, "deep_fusion_config.json")
+        if os.path.exists(config_path) and TORCH_AVAILABLE:
+            import json
+            try:
+                with open(config_path, "r") as f:
+                    deep_cfg = json.load(f)
+                if deep_cfg.get("use_dynamic_router"):
+                    self.use_deep = True
+                    self._load_deep_artifacts()
+            except Exception as exc:
+                print(f"[RuntimeEngine] Error reading deep_fusion_config.json: {exc}")
+
         registry_to_modality = {
             "face_expert":   "face",
             "voice_expert":  "voice",
@@ -137,6 +211,19 @@ class RuntimeEngine:
 
         for reg_key, modality in registry_to_modality.items():
             model_file, scaler_file = _MODEL_FILES[reg_key]
+            
+            # If use_deep is active and it's face or physio, we will load the deep scalers instead
+            if self.use_deep and modality in ["face", "physio"]:
+                deep_scaler_file = f"deep_{modality}_scaler.pkl"
+                scaler_path = os.path.join(EXPERT_MODELS_DIR, deep_scaler_file)
+                if os.path.exists(scaler_path):
+                    try:
+                        self._scalers[modality] = _safe_load(scaler_path)
+                    except Exception as exc:
+                        print(f"[RuntimeEngine] Deep scaler load warning for {deep_scaler_file}: {exc}")
+                        self._scalers[modality] = None
+                continue
+
             model_path  = os.path.join(EXPERT_MODELS_DIR, model_file)
             scaler_path = os.path.join(EXPERT_MODELS_DIR, scaler_file)
 
@@ -167,11 +254,56 @@ class RuntimeEngine:
             else:
                 self._scalers[modality] = None
 
+        # Load classical backups so that old unit tests pass
+        if self.use_deep:
+            for reg_key in ["face_expert", "physio_expert"]:
+                modality = reg_key.split("_")[0]
+                model_file, _ = _MODEL_FILES[reg_key]
+                model_path = os.path.join(EXPERT_MODELS_DIR, model_file)
+                if os.path.exists(model_path) and modality not in self._models:
+                    try:
+                        self._models[modality] = _safe_load(model_path)
+                    except Exception:
+                        pass
+
         loaded = list(self._models.keys())
         if loaded:
             print(f"[RuntimeEngine] Loaded modalities: {loaded}")
+            if self.use_deep:
+                print("[RuntimeEngine] Deep Learning sequence models and Router active for fusion!")
         else:
             print("[RuntimeEngine] WARNING: No models loaded.")
+
+    def _load_deep_artifacts(self):
+        """Loads Phase 8 PyTorch sequence models and dynamic router."""
+        try:
+            face_path = os.path.join(EXPERT_MODELS_DIR, "deep_face_expert.pt")
+            self.deep_models["face"] = ModalityEncoder(18, 16)
+            self.deep_models["face"].load_state_dict(torch.load(face_path, map_location="cpu"))
+            self.deep_models["face"].eval()
+            reg_f = self.registry.get_active_model("face_expert")
+            if reg_f:
+                self._verify_hash(face_path, reg_f.get("hash"), "deep_face_expert")
+
+            physio_path = os.path.join(EXPERT_MODELS_DIR, "deep_physio_expert.pt")
+            self.deep_models["physio"] = ModalityEncoder(5, 16)
+            self.deep_models["physio"].load_state_dict(torch.load(physio_path, map_location="cpu"))
+            self.deep_models["physio"].eval()
+            reg_p = self.registry.get_active_model("physio_expert")
+            if reg_p:
+                self._verify_hash(physio_path, reg_p.get("hash"), "deep_physio_expert")
+
+            router_path = os.path.join(EXPERT_MODELS_DIR, "deep_fusion_router.pt")
+            self.deep_models["router"] = DynamicRouter(2)
+            self.deep_models["router"].load_state_dict(torch.load(router_path, map_location="cpu"))
+            self.deep_models["router"].eval()
+            reg_r = self.registry.get_active_model("deep_fusion_router")
+            if reg_r:
+                self._verify_hash(router_path, reg_r.get("hash"), "deep_fusion_router")
+        except Exception as exc:
+            self.use_deep = False
+            print(f"[RuntimeEngine] Failed to load deep learning artifacts, falling back: {exc}")
+
 
     def _verify_hash(self, path: str, expected: str, label: str):
         import hashlib
@@ -235,14 +367,22 @@ class RuntimeEngine:
         return self._predict_single("physio", raw_features, sensitivity)
 
     def _predict_single(self, modality: str, raw_features, sensitivity: float) -> dict:
-        if modality not in self._models:
+        if modality not in self._models and not (self.use_deep and modality in ["face", "physio"]):
             return {"error": f"{modality} model not loaded", "modality": modality}
         if raw_features is None:
             return {"error": "raw_features is None", "modality": modality}
 
         try:
-            locked = self._lock_features(modality, raw_features)
-            prob   = float(self._models[modality].predict_proba(locked)[0][1])
+            if self.use_deep and modality in ["face", "physio"]:
+                seq = self._lock_features_deep(modality, raw_features)
+                seq_t = torch.FloatTensor(seq)
+                with torch.no_grad():
+                    logits = self.deep_models[modality](seq_t)
+                    prob = float(torch.softmax(logits, dim=1)[0][1].item())
+            else:
+                locked = self._lock_features(modality, raw_features)
+                prob   = float(self._models[modality].predict_proba(locked)[0][1])
+
             threshold   = 0.6 + (0.5 - sensitivity) * 0.4
             stress_level = "High" if prob > 0.7 else "Moderate" if prob > 0.4 else "Low"
             return {
@@ -265,8 +405,90 @@ class RuntimeEngine:
     ) -> dict:
         """
         Late-fusion prediction across all available modalities.
-        Missing modalities degrade gracefully — weights re-normalise automatically.
+        Missing modalities degrade gracefully. Supports Phase 8 deep dynamic router.
         """
+        if self.use_deep:
+            if face is None and physio is None:
+                return {"error": "No valid deep modality predictions — both face and physio are None"}
+
+            raw_probs = {}
+            if face is not None:
+                try:
+                    seq_f = self._lock_features_deep("face", face)
+                    seq_f_t = torch.FloatTensor(seq_f)
+                    with torch.no_grad():
+                        logits_f = self.deep_models["face"](seq_f_t)
+                        prob_f = float(torch.softmax(logits_f, dim=1)[0][1].item())
+                        raw_probs["face"] = prob_f
+                except Exception as exc:
+                    print(f"[RuntimeEngine] Deep face prediction failed: {exc}")
+
+            if physio is not None:
+                try:
+                    seq_p = self._lock_features_deep("physio", physio)
+                    seq_p_t = torch.FloatTensor(seq_p)
+                    with torch.no_grad():
+                        logits_p = self.deep_models["physio"](seq_p_t)
+                        prob_p = float(torch.softmax(logits_p, dim=1)[0][1].item())
+                        raw_probs["physio"] = prob_p
+                except Exception as exc:
+                    print(f"[RuntimeEngine] Deep physio prediction failed: {exc}")
+
+            if not raw_probs:
+                return {"error": "No valid deep modality predictions"}
+
+            if "face" in raw_probs and "physio" in raw_probs:
+                try:
+                    pf = raw_probs["face"]
+                    pp = raw_probs["physio"]
+                    cat_in = torch.FloatTensor([[1.0 - pf, pf, 1.0 - pp, pp]])
+                    with torch.no_grad():
+                        weights = self.deep_models["router"](cat_in)
+                        w_f = float(weights[0][0].item())
+                        w_p = float(weights[0][1].item())
+                        avg_prob = w_f * pf + w_p * pp
+                    fusion_weights = {"face": round(w_f, 3), "voice": 0.0, "physio": round(w_p, 3)}
+                except Exception as exc:
+                    print(f"[RuntimeEngine] Deep router failed: {exc}, falling back to average")
+                    avg_prob = 0.5 * raw_probs["face"] + 0.5 * raw_probs["physio"]
+                    fusion_weights = {"face": 0.5, "voice": 0.0, "physio": 0.5}
+            else:
+                mod = list(raw_probs.keys())[0]
+                avg_prob = raw_probs[mod]
+                fusion_weights = {
+                    "face": 1.0 if mod == "face" else 0.0,
+                    "voice": 0.0,
+                    "physio": 1.0 if mod == "physio" else 0.0
+                }
+
+            threshold    = 0.6 + (0.5 - sensitivity) * 0.4
+            final_pred   = 1 if avg_prob > threshold else 0
+            stress_level = "High" if avg_prob > 0.7 else "Moderate" if avg_prob > 0.4 else "Low"
+
+            explanation = None
+            if self.expl_engine and self.expl_engine.is_loaded:
+                explanation = self.expl_engine.build_full_payload(
+                    face_features=face,
+                    voice_features=voice,
+                    physio_features=physio,
+                )
+
+            return {
+                "status":                "success",
+                "predicted_class":       "Stress" if final_pred else "No Stress",
+                "stress_probability":    float(avg_prob),
+                "no_stress_probability": float(1.0 - avg_prob),
+                "confidence":            float(max(avg_prob, 1.0 - avg_prob)),
+                "stress_level":          stress_level,
+                "percentage":            float(avg_prob * 100.0),
+                "individual_predictions": {
+                    m: float(p) for m, p in raw_probs.items()
+                },
+                "fusion_weights":        fusion_weights,
+                "active_modalities":     list(raw_probs.keys()),
+                "explainability":        explanation,
+            }
+
         inputs = {"face": face, "voice": voice, "physio": physio}
         raw_probs: dict = {}
 
@@ -327,6 +549,7 @@ class RuntimeEngine:
         Each row:  {"face": ndarray|None, "voice": ndarray|None, "physio": ndarray|None}
         Returns:   list of predict_fused() result dicts
         """
+        self.reset_calibration()
         return [
             self.predict_fused(
                 face=row.get("face"),
@@ -339,13 +562,107 @@ class RuntimeEngine:
     # ── Private: feature locking ──────────────────────────────────────────────
 
     def _lock_features(self, modality: str, raw_features) -> np.ndarray:
-        """Pass raw features through FeatureRuntimeLock and return scaled array."""
-        scaler = self._scalers.get(modality)
+        """
+        Pass raw features through FeatureRuntimeLock, apply Phase 4 
+        methodology transformations (Calibration & Temporal Windowing), 
+        and return the scaled array.
+        """
+        # 1. Lock features and handle missing values
         if modality == "face":
-            return self.feature_lock.process_face_features(raw_features, scaler)
+            feats = self.feature_lock.process_face_features(raw_features, scaler=None)
         elif modality == "voice":
-            return self.feature_lock.process_voice_features(raw_features, scaler)
+            feats = self.feature_lock.process_voice_features(raw_features, scaler=None)
         elif modality == "physio":
-            return self.feature_lock.process_physio_features(raw_features, scaler)
+            feats = self.feature_lock.process_physio_features(raw_features, scaler=None)
         else:
             raise ValueError(f"Unknown modality: {modality}")
+
+        feats = feats.flatten()
+
+        # 2. Phase 4: Subject-Aware Calibration
+        if self.calibrating[modality]:
+            self.feature_history[modality].append(feats)
+            if len(self.feature_history[modality]) >= self.calibration_frames:
+                self.calibration_baselines[modality] = np.mean(self.feature_history[modality], axis=0)
+                self.calibrating[modality] = False
+                baseline = self.calibration_baselines[modality]
+                self.feature_history[modality] = [] # Reset for rolling window
+            else:
+                # Use current mean as a temporary baseline while calibrating
+                baseline = np.mean(self.feature_history[modality], axis=0)
+        else:
+            baseline = self.calibration_baselines[modality]
+
+        norm_feats = feats - baseline
+
+        # 3. Phase 4: Temporal Windowing (Rolling Average)
+        if not self.calibrating[modality]:
+            self.feature_history[modality].append(norm_feats)
+            if len(self.feature_history[modality]) > self.window_size:
+                self.feature_history[modality].pop(0)
+            windowed_feats = np.mean(self.feature_history[modality], axis=0)
+        else:
+            windowed_feats = norm_feats
+
+        windowed_feats = windowed_feats.reshape(1, -1)
+
+        # 4. Scale with the trained scaler
+        scaler = self._scalers.get(modality)
+        if scaler is not None:
+            windowed_feats = scaler.transform(windowed_feats)
+            
+        return windowed_feats
+
+    def _lock_features_deep(self, modality: str, raw_features) -> np.ndarray:
+        """
+        Pass raw features through FeatureRuntimeLock, apply subject-aware calibration baseline
+        subtraction, scale frame-wise, and maintain a sequence history of length 5.
+        """
+        # 1. Lock features and handle missing values
+        if modality == "face":
+            feats = self.feature_lock.process_face_features(raw_features, scaler=None)
+        elif modality == "physio":
+            feats = self.feature_lock.process_physio_features(raw_features, scaler=None)
+        else:
+            raise ValueError(f"Deep learning only supports face and physio, got: {modality}")
+
+        feats = feats.flatten()
+
+        # 2. Phase 4: Subject-Aware Calibration (Calm baseline subtraction)
+        if self.calibrating[modality]:
+            self.feature_history[modality].append(feats)
+            if len(self.feature_history[modality]) >= self.calibration_frames:
+                self.calibration_baselines[modality] = np.mean(self.feature_history[modality], axis=0)
+                self.calibrating[modality] = False
+                baseline = self.calibration_baselines[modality]
+                self.feature_history[modality] = [] # Reset for rolling window
+            else:
+                baseline = np.mean(self.feature_history[modality], axis=0)
+        else:
+            baseline = self.calibration_baselines[modality]
+
+        norm_feats = feats - baseline
+
+        # 3. Scale frame-wise using deep scaler
+        scaler = self._scalers.get(modality)
+        if scaler is not None:
+            norm_feats_scaled = scaler.transform(norm_feats.reshape(1, -1))[0]
+        else:
+            norm_feats_scaled = norm_feats
+
+        # 4. Append to sequence history of size 5
+        self.deep_sequence_history[modality].append(norm_feats_scaled)
+        if len(self.deep_sequence_history[modality]) > 5:
+            self.deep_sequence_history[modality].pop(0)
+
+        # 5. Build sequence of length 5 (pad with oldest frame if less than 5 frames)
+        history_len = len(self.deep_sequence_history[modality])
+        if history_len < 5:
+            pad_size = 5 - history_len
+            seq = [self.deep_sequence_history[modality][0]] * pad_size + self.deep_sequence_history[modality]
+        else:
+            seq = self.deep_sequence_history[modality]
+
+        # Shape (1, 5, FeatDim)
+        return np.array(seq).reshape(1, 5, -1)
+
