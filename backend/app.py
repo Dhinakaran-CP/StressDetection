@@ -212,8 +212,7 @@ def ask_gemini_stress_assistant(user_message, stress_level, stress_percentage):
             return json.loads(response.read().decode('utf-8'))
 
     try:
-        import eventlet.tpool
-        response_data = eventlet.tpool.execute(_fetch)
+        response_data = _fetch()
 
         candidates = response_data.get('candidates', [])
         if not candidates:
@@ -960,10 +959,8 @@ def stream_voice():
             f0_min = 75.0
             f0_max = 400.0
 
-        # Run CPU-heavy librosa processing in eventlet's built-in OS thread pool
-        # This keeps the main greenlet loop completely free without spawning subprocesses on Windows
-        import eventlet.tpool
-        result = eventlet.tpool.execute(extract_voice_stress_indicators, audio_bytes, 16000, f0_min, f0_max)
+        # Run librosa feature extraction directly to avoid thread deadlocks on Windows
+        result = extract_voice_stress_indicators(audio_bytes, 16000, f0_min, f0_max)
         
         if result is None:
             return jsonify({'score': None, 'reason': 'audio_too_short_or_invalid'}), 200

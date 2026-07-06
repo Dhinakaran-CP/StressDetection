@@ -99,6 +99,9 @@ export default function WaveformRecorder({ continuous, chunkIntervalMs = 2000, o
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       // Initialize AudioContext at 16kHz so it resamples automatically at the Web Audio API level
       const audioCtx = new AudioCtx({ sampleRate: 16000 });
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
       audioContextRef.current = audioCtx;
 
       // 1. Setup Analyser for Visualization
