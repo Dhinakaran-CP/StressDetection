@@ -139,6 +139,7 @@ export default function RealtimeMonitor() {
   const [faceIndicators, setFaceIndicators] = useState(null);
   const [voiceIndicators, setVoiceIndicators] = useState(null);
   const esRef = useRef(null);
+  const voicePostPendingRef = useRef(false);
 
   // Parameter explorer states
   const [selectedFaceParam, setSelectedFaceParam] = useState('');
@@ -333,6 +334,11 @@ export default function RealtimeMonitor() {
   };
 
   const handleVoiceChunk = async (blob) => {
+    if (voicePostPendingRef.current) {
+      console.warn("[Voice Stream] Previous POST is still in flight. Skipping this chunk.");
+      return;
+    }
+    voicePostPendingRef.current = true;
     try {
       const response = await fetch(`${API_BASE}/api/stream/voice?user_id=default`, {
         method: 'POST',
@@ -365,6 +371,8 @@ export default function RealtimeMonitor() {
       }
     } catch (err) {
       console.error("Failed to POST voice chunk: ", err);
+    } finally {
+      voicePostPendingRef.current = false;
     }
   };
 
@@ -610,6 +618,11 @@ export default function RealtimeMonitor() {
             chunkIntervalMs={1000}
             onChunk={handleVoiceChunk}
             voiceScore={smoothVoiceScore}
+            onIndicatorsUpdate={(indicators) => {
+              if (active && !calibrating) {
+                setVoiceIndicators(indicators);
+              }
+            }}
           />
 
           <div style={{ background: 'var(--accent-light-bg)', borderRadius: 10, padding: 14, border: 'var(--glass-border)', flexGrow: 1 }}>
@@ -620,7 +633,7 @@ export default function RealtimeMonitor() {
                 <IndicatorBar 
                   label="Jitter (Micro-instability)" 
                   value={voiceIndicators.jitter_percent} 
-                  scale={5.0} 
+                  scale={15.0} 
                   format={(v) => `${(v).toFixed(2)}%`}
                   valueColor={voiceIndicators.jitter_reliable !== false ? null : '#FF9800'}
                   extra={voiceIndicators.jitter_reliable === false && (
@@ -633,7 +646,7 @@ export default function RealtimeMonitor() {
                     </span>
                   )}
                 />
-                <IndicatorBar label="Shimmer (Amplitude Var)" value={voiceIndicators.shimmer_db} scale={3.0} format={(v) => `${(v).toFixed(2)} dB`} />
+                <IndicatorBar label="Shimmer (Amplitude Var)" value={voiceIndicators.shimmer_db} scale={10.0} format={(v) => `${(v).toFixed(2)} dB`} />
                 <IndicatorBar label="Speaking Rate (ZCR)" value={voiceIndicators.speaking_rate_proxy} scale={0.2} format={(v) => `${(v * 100).toFixed(0)}%`} />
                 <IndicatorBar label="Voice Intensity" value={voiceIndicators.voice_intensity} scale={0.3} format={(v) => `${Math.round(v * 100)}%`} />
               </div>

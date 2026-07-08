@@ -51,7 +51,152 @@ function writeString(view, offset, string) {
   }
 }
 
-export default function WaveformRecorder({ continuous, chunkIntervalMs = 2000, onChunk, voiceScore = null }) {
+function computeAcousticIndicators(samples, sampleRate) {
+  // 1. Voice Intensity (RMS)
+  let sumSq = 0;
+  for (let i = 0; i < samples.length; i++) {
+    sumSq += samples[i] * samples[i];
+  }
+  const rms = Math.sqrt(sumSq / samples.length);
+  
+  // If too silent, return silence indicators
+  if (rms < 0.003) {
+    return {
+      f0_mean: 0.0,
+      jitter_percent: 0.0,
+      shimmer_db: 0.0,
+      speaking_rate_proxy: 0.0,
+      voice_intensity: rms,
+      jitter_reliable: true
+    };
+  }
+
+  // 2. Zero Crossing Rate (ZCR)
+  let zeroCrossings = 0;
+  for (let i = 1; i < samples.length; i++) {
+    if ((samples[i] >= 0 && samples[i - 1] < 0) || (samples[i] < 0 && samples[i - 1] >= 0)) {
+      zeroCrossings++;
+    }
+  }
+  const zcr = zeroCrossings / samples.length;
+
+  // 3. Pitch Tracking via Autocorrelation (YIN-like discrete autocorrelation)
+  // Pitch limits: 75Hz - 300Hz
+  const minLag = Math.floor(sampleRate / 300); // ~53 samples at 16kHz
+  const maxLag = Math.floor(sampleRate / 75);  // ~213 samples at 16kHz
+  
+  // To compute F0, we can analyze in frames of 512 samples with 50% overlap
+  const frameSize = 512;
+  const hopSize = 256;
+  const pitches = [];
+  const peakAmplitudes = [];
+  
+  for (let offset = 0; offset + frameSize <= samples.length; offset += hopSize) {
+    const frame = samples.slice(offset, offset + frameSize);
+    
+    // Find local max amplitude
+    let localMax = 0.0001;
+    for (let i = 0; i < frameSize; i++) {
+      const absVal = Math.abs(frame[i]);
+      if (absVal > localMax) localMax = absVal;
+    }
+    peakAmplitudes.push(localMax);
+    
+    // Autocorrelation for pitch
+    let bestLag = -1;
+    let bestR = -Infinity;
+    
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      let r = 0;
+      for (let i = 0; i < frameSize - lag; i++) {
+        r += frame[i] * frame[i + lag];
+      }
+      if (r > bestR) {
+        bestR = r;
+        bestLag = lag;
+      }
+    }
+    
+    // Verify peak strength to reject voice silence
+    let energy = 0;
+    for (let i = 0; i < frameSize; i++) {
+      energy += frame[i] * frame[i];
+    }
+    
+    if (bestLag > 0 && energy > 0.01) {
+      const pitch = sampleRate / bestLag;
+      if (pitch >= 75 && pitch <= 300) {
+        pitches.push(pitch);
+      }
+    }
+  }
+  
+  // Calculate average pitch (F0 Mean)
+  let f0_mean = 0.0;
+  const validPitches = pitches.filter(p => p > 0);
+  if (validPitches.length > 0) {
+    const sum = validPitches.reduce((a, b) => a + b, 0);
+    f0_mean = sum / validPitches.length;
+  }
+  
+  // 4. Jitter (Micro-instability)
+  let jitter_percent = 0.0;
+  if (validPitches.length > 2) {
+    const smoothedPitches = [];
+    for (let i = 0; i < validPitches.length; i++) {
+      if (i === 0 || i === validPitches.length - 1) {
+        smoothedPitches.push(validPitches[i]);
+      } else {
+        const window = [validPitches[i-1], validPitches[i], validPitches[i+1]].sort((a,b)=>a-b);
+        smoothedPitches.push(window[1]);
+      }
+    }
+    let diffSum = 0;
+    const periods = smoothedPitches.map(p => 1.0 / p);
+    for (let i = 1; i < periods.length; i++) {
+      diffSum += Math.abs(periods[i] - periods[i - 1]);
+    }
+    const meanPeriod = periods.reduce((a, b) => a + b, 0) / periods.length;
+    if (meanPeriod > 0) {
+      jitter_percent = (diffSum / (periods.length - 1)) / meanPeriod * 100.0;
+    }
+  }
+  
+  // 5. Shimmer (Amplitude variation)
+  let shimmer_db = 0.0;
+  if (peakAmplitudes.length > 2) {
+    const smoothedAmps = [];
+    for (let i = 0; i < peakAmplitudes.length; i++) {
+      if (i === 0 || i === peakAmplitudes.length - 1) {
+        smoothedAmps.push(peakAmplitudes[i]);
+      } else {
+        const window = [peakAmplitudes[i-1], peakAmplitudes[i], peakAmplitudes[i+1]].sort((a,b)=>a-b);
+        smoothedAmps.push(window[1]);
+      }
+    }
+    let shimmerSum = 0;
+    for (let i = 1; i < smoothedAmps.length; i++) {
+      const ratio = smoothedAmps[i] / (smoothedAmps[i - 1] || 0.0001);
+      shimmerSum += Math.abs(20.0 * Math.log10(ratio));
+    }
+    shimmer_db = shimmerSum / (smoothedAmps.length - 1);
+  }
+  
+  // Limit values to reasonable bounds for display scaling
+  jitter_percent = Math.min(jitter_percent, 15.0);
+  shimmer_db = Math.min(shimmer_db, 10.0);
+  
+  return {
+    f0_mean: f0_mean,
+    jitter_percent: jitter_percent,
+    shimmer_db: shimmer_db,
+    speaking_rate_proxy: zcr,
+    voice_intensity: rms * 2.0, // Scale for display range
+    jitter_reliable: rms > 0.005
+  };
+}
+
+export default function WaveformRecorder({ continuous, chunkIntervalMs = 2000, onChunk, voiceScore = null, onIndicatorsUpdate = null }) {
   const [recording, setRecording] = useState(false);
   const audioContextRef = useRef(null);
   const processorRef = useRef(null);
@@ -125,6 +270,12 @@ export default function WaveformRecorder({ continuous, chunkIntervalMs = 2000, o
         const inputData = e.inputBuffer.getChannelData(0);
         // Push copy of samples to our buffer
         audioChunksRef.current.push(...inputData);
+        
+        // Compute indicators on current chunk (256ms) and emit for local zero-latency UI updates
+        if (onIndicatorsUpdate) {
+          const indicators = computeAcousticIndicators(inputData, 16000);
+          onIndicatorsUpdate(indicators);
+        }
       };
 
       // 3. Regularly encode to WAV and send to parent (sliding window approach)

@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-
-
-
+import { API_BASE } from '../config';
 // Compute 18 stress indicators from MediaPipe landmarks in browser
 function computeStressIndicators(landmarks, imageWidth, imageHeight, history) {
   const pt = (i) => ({
@@ -209,7 +207,8 @@ export default function FaceStream({ onResult, onIndicatorsUpdate, active, calib
           indicators, 
           timestamp: now,
           calibrationMode: calibrationModeRef.current,
-          userId: userIdRef.current
+          userId: userIdRef.current,
+          apiBase: API_BASE
         });
       }
     }

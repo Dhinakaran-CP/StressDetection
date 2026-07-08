@@ -138,8 +138,8 @@
             "artifact_id": "explainability_bundle_v1",
             "artifact_type": "bundle",
             "version": "1.0.0",
-            "timestamp": 1782999019.7037086,
-            "hash": "12f5d4421f0d07d69e87bbfc555c7aeaa3f2eb9c96e44622f688ee5daf2692c4",
+            "timestamp": 1783397745.3193262,
+            "hash": "3cb57fcfef8bd498f6192425648b0dfcffc5ac99a4721d7ca1bf5cd7ccac693d",
             "metadata": {
                 "modalities": [
                     "face",
@@ -154,9 +154,9 @@
                     "physio": 500
                 },
                 "top_drivers": {
-                    "face": "Lip Compression",
-                    "voice": "F0 Mean (Pitch Hz)",
-                    "physio": "EDA SCL Mean (\u00b5S)"
+                    "face": "Forehead Tension",
+                    "voice": "Jitter Percent",
+                    "physio": "Heart Rate Mean (BPM)"
                 }
             }
         }
@@ -522,5 +522,60 @@
         ]
     },
     "history_datasets": {},
-    "history_bundles": {}
+    "history_bundles": {
+        "explainability_bundle": [
+            {
+                "artifact_id": "explainability_bundle_v1",
+                "artifact_type": "bundle",
+                "version": "1.0.0",
+                "timestamp": 1783397579.720322,
+                "hash": "4252974a44effd268fae4f7513411aa5048e2ec98a21ece0dbef5b1a2f40e52a",
+                "metadata": {
+                    "modalities": [
+                        "face",
+                        "voice",
+                        "physio"
+                    ],
+                    "shap_available": false,
+                    "top_k_per_mod": 6,
+                    "sample_sizes": {
+                        "face": 500,
+                        "voice": 500,
+                        "physio": 500
+                    },
+                    "top_drivers": {
+                        "face": "Left Eye Aspect Ratio",
+                        "voice": "F0 Mean (Pitch Hz)",
+                        "physio": "Heart Rate Mean (BPM)"
+                    }
+                }
+            },
+            {
+                "artifact_id": "explainability_bundle_v1",
+                "artifact_type": "bundle",
+                "version": "1.0.0",
+                "timestamp": 1783397745.3193262,
+                "hash": "3cb57fcfef8bd498f6192425648b0dfcffc5ac99a4721d7ca1bf5cd7ccac693d",
+                "metadata": {
+                    "modalities": [
+                        "face",
+                        "voice",
+                        "physio"
+                    ],
+                    "shap_available": true,
+                    "top_k_per_mod": 6,
+                    "sample_sizes": {
+                        "face": 500,
+                        "voice": 500,
+                        "physio": 500
+                    },
+                    "top_drivers": {
+                        "face": "Forehead Tension",
+                        "voice": "Jitter Percent",
+                        "physio": "Heart Rate Mean (BPM)"
+                    }
+                }
+            }
+        ]
+    }
 }

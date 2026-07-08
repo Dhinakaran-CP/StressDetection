@@ -3,52 +3,43 @@ import librosa
 import io
 import tempfile
 import os
+import subprocess
+import sys
 
-def _extract_period_with_interpolation(ac, min_lag, max_lag):
-    """
-    Extract sub-sample precise period from autocorrelation via parabolic interpolation.
-    Solves the flat-line jitter problem caused by integer lag binning.
-    """
-    if max_lag >= len(ac):
-        max_lag = len(ac) - 1
-
-    # Find discrete peak
-    km = np.argmax(ac[min_lag:max_lag]) + min_lag
-
-    # Parabolic interpolation around the peak
-    # Requires one sample on each side of the peak
-    if min_lag < km < max_lag - 1:
-        y1 = ac[km - 1]
-        y2 = ac[km]
-        y3 = ac[km + 1]
-        denom = y1 - 2 * y2 + y3
-        if abs(denom) > 1e-8:
-            delta = 0.5 * (y1 - y3) / denom
-            # Clamp delta to ±0.5 samples (parabola valid only near peak)
-            delta = np.clip(delta, -0.5, 0.5)
-            return float(km) + delta, float(y2)
-    return float(km), float(ac[km])
 def extract_f0_yin(y, sr, f0_min=75, f0_max=400, frame_len=512, hop_len=160):
     """
     YIN algorithm for F0 extraction.
-    Faster than pyin, more accurate than autocorrelation.
+    Fast and accurate. (No longer deadlocks since eventlet was removed).
     """
     try:
         f0_yin = librosa.yin(
-            y,
-            fmin=f0_min,
-            fmax=f0_max,
+            y, 
+            fmin=f0_min, 
+            fmax=f0_max, 
             sr=sr,
             frame_length=frame_len,
-            hop_length=hop_len,
-            trough_threshold=0.1
+            hop_length=hop_len
         )
-        voiced_flag = (f0_yin >= f0_min) & (f0_yin <= f0_max)
-        f0_clean = f0_yin.copy()
-        f0_clean[~voiced_flag] = np.nan
-        return f0_clean, voiced_flag
-    except Exception:
-        return np.array([np.nan]), np.array([False])
+        # librosa.yin returns array of f0. We need voiced/unvoiced decisions.
+        # Simple proxy: if RMS energy is very low, it's unvoiced
+        rms = librosa.feature.rms(y=y, frame_length=frame_len, hop_length=hop_len)[0]
+        # Pad rms to match f0_yin length if necessary (though usually they match)
+        if len(rms) < len(f0_yin):
+            rms = np.pad(rms, (0, len(f0_yin) - len(rms)), mode='edge')
+        elif len(rms) > len(f0_yin):
+            rms = rms[:len(f0_yin)]
+            
+        voiced_flag = rms > 0.01  # Energy threshold
+        
+        f0_track = np.copy(f0_yin)
+        f0_track[~voiced_flag] = np.nan
+        
+        return f0_track, voiced_flag
+    except Exception as e:
+        print(f"librosa.yin failed: {e}")
+        num_frames = 1 + (len(y) - frame_len) // hop_len
+        if num_frames < 1: num_frames = 1
+        return np.full(num_frames, np.nan), np.zeros(num_frames, dtype=bool)
 
 def extract_voice_stress_indicators(audio_bytes, sr_target=16000, f0_min=75, f0_max=400):
     """
@@ -61,67 +52,97 @@ def extract_voice_stress_indicators(audio_bytes, sr_target=16000, f0_min=75, f0_
     y, sr = None, None
     EPS = 1e-10
 
-    # Try loading directly via BytesIO
+    # Try loading directly via scipy.io.wavfile first (fast and deadlock-free on Windows)
     try:
+        from scipy.io import wavfile
+        from scipy import signal
         audio_buf = io.BytesIO(audio_bytes)
-        y, sr = librosa.load(audio_buf, sr=sr_target, mono=True, duration=3.0)
-    except Exception as e:
-        print(f"librosa.load direct BytesIO failed, trying scipy.io.wavfile fallback: {e}")
+        sr_orig, y_orig = wavfile.read(audio_buf)
+        
+        # Convert to float32 normalized to [-1.0, 1.0]
+        if y_orig.dtype == np.int16:
+            y_float = y_orig.astype(np.float32) / 32768.0
+        elif y_orig.dtype == np.int32:
+            y_float = y_orig.astype(np.float32) / 2147483648.0
+        elif y_orig.dtype == np.uint8:
+            y_float = (y_orig.astype(np.float32) - 128.0) / 128.0
+        else:
+            y_float = y_orig.astype(np.float32)
+        
+        # Convert stereo to mono
+        if len(y_float.shape) > 1:
+            y_float = np.mean(y_float, axis=1)
+            
+        # Resample if sample rate doesn't match target
+        if sr_orig != sr_target:
+            num_samples = int(len(y_float) * sr_target / sr_orig)
+            y = signal.resample(y_float, num_samples)
+            sr = sr_target
+        else:
+            y = y_float
+            sr = sr_target
+            
+        # Truncate to maximum 3.0 seconds duration
+        max_samples = int(sr * 3.0)
+        if len(y) > max_samples:
+            y = y[:max_samples]
+            
+        print("Successfully loaded WAV audio using scipy.io.wavfile first")
+    except Exception as e_scipy:
+        print(f"scipy.io.wavfile first try failed: {e_scipy}. Trying subprocess librosa fallback...")
+        temp_in_path = None
+        temp_out_path = None
         try:
+            # Write bytes to a temporary input file
+            fd_in, temp_in_path = tempfile.mkstemp()
+            os.close(fd_in)
+            with open(temp_in_path, 'wb') as f:
+                f.write(audio_bytes)
+                
+            # Prepare temporary output WAV path
+            fd_out, temp_out_path = tempfile.mkstemp(suffix='.wav')
+            os.close(fd_out)
+            
+            # Run conversion in separate clean process to prevent eventlet soundfile deadlocks
+            cmd = [
+                sys.executable,
+                "-c",
+                f"import librosa, soundfile; y, sr = librosa.load(r'{temp_in_path}', sr={sr_target}, mono=True, duration=3.0); soundfile.write(r'{temp_out_path}', y, sr, format='WAV', subtype='PCM_16')"
+            ]
+            
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            
+            # Read converted WAV using scipy (safe, deadlock-free)
             from scipy.io import wavfile
-            from scipy import signal
-            audio_buf = io.BytesIO(audio_bytes)
-            sr_orig, y_orig = wavfile.read(audio_buf)
-            
-            # Convert to float32 normalized to [-1.0, 1.0]
+            sr, y_orig = wavfile.read(temp_out_path)
             if y_orig.dtype == np.int16:
-                y_float = y_orig.astype(np.float32) / 32768.0
+                y = y_orig.astype(np.float32) / 32768.0
             elif y_orig.dtype == np.int32:
-                y_float = y_orig.astype(np.float32) / 2147483648.0
+                y = y_orig.astype(np.float32) / 2147483648.0
             elif y_orig.dtype == np.uint8:
-                y_float = (y_orig.astype(np.float32) - 128.0) / 128.0
+                y = (y_orig.astype(np.float32) - 128.0) / 128.0
             else:
-                y_float = y_orig.astype(np.float32)
-            
-            # Convert stereo to mono
-            if len(y_float.shape) > 1:
-                y_float = np.mean(y_float, axis=1)
+                y = y_orig.astype(np.float32)
                 
-            # Resample if sample rate doesn't match target
-            if sr_orig != sr_target:
-                num_samples = int(len(y_float) * sr_target / sr_orig)
-                y = signal.resample(y_float, num_samples)
-                sr = sr_target
-            else:
-                y = y_float
-                sr = sr_target
-                
-            # Truncate to maximum 3.0 seconds duration
-            max_samples = int(sr * 3.0)
-            if len(y) > max_samples:
-                y = y[:max_samples]
-                
-            print("Successfully loaded WAV audio using scipy.io.wavfile fallback")
-        except Exception as e_scipy:
-            print(f"scipy.io.wavfile fallback failed: {e_scipy}. Trying temp WAV file fallback...")
-            # Fallback 2: write to a temp file with correct .wav extension and load
-            try:
-                fd, temp_path = tempfile.mkstemp(suffix='.wav')
-                os.close(fd)
-                with open(temp_path, 'wb') as f:
-                    f.write(audio_bytes)
-                y, sr = librosa.load(temp_path, sr=sr_target, mono=True, duration=3.0)
-                try:
-                    os.remove(temp_path)
-                except:
-                    pass
-            except Exception as e_inner:
-                print(f"Error loading audio via tempfile: {e_inner}")
-                return None
-
-    if y is None or len(y) < sr_target * 0.5 or np.max(np.abs(y)) < 0.005:
+            print("Successfully loaded audio using subprocess librosa fallback")
+        except Exception as e_sub:
+            print(f"Subprocess conversion fallback failed: {e_sub}")
+            y = None
+        finally:
+            # Clean up temporary files if created
+            if temp_in_path and os.path.exists(temp_in_path):
+                try: os.remove(temp_in_path)
+                except: pass
+            if temp_out_path and os.path.exists(temp_out_path):
+                try: os.remove(temp_out_path)
+                except: pass
+    if y is None:
+        print("voice_worker returning None: y is None")
         return None
-
+    if len(y) < sr_target * 0.25:  # Relaxed to 0.25s
+        print(f"voice_worker returning None: len(y)={len(y)} < {sr_target * 0.25} (duration {len(y)/sr_target:.2f}s)")
+        return None
+    # Removed peak amplitude check since app.py handles silence detection
     # Ensure loaded audio is normalized to float [-1.0, 1.0] and clamped
     if y.dtype != np.float32 and y.dtype != np.float64:
         y = y.astype(np.float32) / 32768.0
@@ -141,11 +162,13 @@ def extract_voice_stress_indicators(audio_bytes, sr_target=16000, f0_min=75, f0_
         indicators['f0_range'] = float(np.ptp(f0_voiced))  if len(f0_voiced) > 0 else 0.0
         
         if len(f0_voiced) >= 3:
-            periods = sr / (f0_voiced + 1e-10)
+            import scipy.signal
+            f0_smoothed = scipy.signal.medfilt(f0_voiced, kernel_size=3)
+            periods = sr / (f0_smoothed + 1e-10)
             period_diffs = np.abs(np.diff(periods))
             jitter_rap = float(np.mean(period_diffs) / (np.mean(periods) + 1e-10)) * 100
-            indicators['jitter_percent']  = float(np.clip(jitter_rap, 0.0, 5.0))
-            indicators['jitter_reliable'] = bool(jitter_rap < 3.0)
+            indicators['jitter_percent']  = float(np.clip(jitter_rap, 0.0, 15.0))
+            indicators['jitter_reliable'] = bool(jitter_rap < 10.0)
         else:
             indicators['jitter_percent']  = 0.0
             indicators['jitter_reliable'] = False
@@ -153,11 +176,20 @@ def extract_voice_stress_indicators(audio_bytes, sr_target=16000, f0_min=75, f0_
         # Shimmer: amplitude variation between consecutive voiced frames
         rms_all = librosa.feature.rms(y=y, frame_length=frame_len, hop_length=hop_len)[0]
         voiced_rms = rms_all[:len(voiced_flag)][voiced_flag]
-        voiced_rms = voiced_rms[voiced_rms > 0.005]
-        
         if len(voiced_rms) >= 3:
-            shimmer_raw = float(np.mean(np.abs(np.diff(voiced_rms))) / (np.mean(voiced_rms) + 1e-10))
-            indicators['shimmer_db'] = float(np.clip(shimmer_raw * 20, 0.0, 3.0))
+            import scipy.signal
+            voiced_rms_smoothed = scipy.signal.medfilt(voiced_rms, kernel_size=3)
+            amp_ratios = voiced_rms_smoothed[1:] / (voiced_rms_smoothed[:-1] + 1e-10)
+            shimmer_db = float(np.mean(np.abs(20 * np.log10(amp_ratios + 1e-10))))
+            if shimmer_db > 10.0: # clip at 10dB for display
+                shimmer_db = 10.0
+            indicators['shimmer_db'] = shimmer_db
+        elif len(voiced_rms) == 2:
+            amp_ratios = voiced_rms[1:] / (voiced_rms[:-1] + 1e-10)
+            shimmer_db = float(np.mean(np.abs(20 * np.log10(amp_ratios + 1e-10))))
+            if shimmer_db > 10.0:
+                shimmer_db = 10.0
+            indicators['shimmer_db'] = shimmer_db
         else:
             indicators['shimmer_db'] = 0.0
             
@@ -176,10 +208,13 @@ def extract_voice_stress_indicators(audio_bytes, sr_target=16000, f0_min=75, f0_
     try:
         ac_full = np.correlate(y, y, mode='full')[len(y) - 1:]
         ac_norm = ac_full / (ac_full[0] + EPS)
-        min_period = int(sr / 400)
-        max_period = int(sr / 80)
-        if max_period < len(ac_norm):
-            peak_val = np.max(ac_norm[min_period:max_period])
+        # Find first zero crossing to determine search range for fundamental period
+        zc = np.where(ac_norm < 0)[0]
+        first_zc = zc[0] if len(zc) > 0 else len(ac_norm)
+        
+        if first_zc < len(ac_norm):
+            peak_val = np.max(ac_norm[first_zc:])
+            peak_val = np.clip(peak_val, 1e-10, 0.9999) # prevent log10 domain errors
             hnr = 10 * np.log10(peak_val / (1 - peak_val + EPS) + EPS)
         else:
             hnr = 0.0

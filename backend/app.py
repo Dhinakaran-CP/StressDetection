@@ -1,5 +1,4 @@
-import eventlet
-eventlet.monkey_patch()
+# Removed eventlet monkey_patch to prevent deadlocks with C-extensions
 
 import sys
 import builtins
@@ -32,8 +31,12 @@ from backend.model import MultimodalStressDetector, safe_pickle_load
 
 app = Flask(__name__)
 # Secure CORS for production compatibility
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-CORS(app, resources={r"/api/*": {"origins": [FRONTEND_URL]}})
+FRONTEND_URLS = [
+    os.environ.get('FRONTEND_URL', 'http://localhost:3000'),
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+]
+CORS(app, resources={r"/api/*": {"origins": FRONTEND_URLS}})
 socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=60, ping_interval=25, max_http_buffer_size=100000000)
 
 # Initialize global stream processor (will be injected after runtime_engine is ready)
@@ -622,6 +625,13 @@ def analyze_face():
         # Clean up
         os.remove(filepath)
         
+        if 'error' in result:
+            print(f"[HTTP] POST /api/face/upload - Failed: {result['error']}")
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+            
         print(f"[HTTP] POST /api/face/upload - Success: stress_level={result.get('stress_level')}, percentage={result.get('percentage')}%")
         return jsonify(result)
     
@@ -676,6 +686,13 @@ def analyze_voice():
             
         result = runtime_engine.predict_voice(raw_features=voice_features)
         
+        if 'error' in result:
+            print(f"[HTTP] POST /api/voice/upload - Failed: {result['error']}")
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+            
         print(f"[HTTP] POST /api/voice/upload - Success: stress_level={result.get('stress_level')}, percentage={result.get('percentage')}%")
         return jsonify(result)
     
@@ -917,11 +934,20 @@ def stream_voice():
 
     user_id = request.args.get('user_id', 'default')
 
-    # Check silence first — fast, no librosa needed (using numpy from audio_bytes)
+    # Check silence first — fast, no librosa needed (using scipy.io.wavfile to avoid soundfile/CFFI deadlocks on Windows)
     try:
         import io
-        import soundfile as sf
-        y, _ = sf.read(io.BytesIO(audio_bytes))
+        from scipy.io import wavfile
+        sr_orig, y_orig = wavfile.read(io.BytesIO(audio_bytes))
+        # Convert to float
+        if y_orig.dtype == np.int16:
+            y = y_orig.astype(np.float32) / 32768.0
+        elif y_orig.dtype == np.int32:
+            y = y_orig.astype(np.float32) / 2147483648.0
+        elif y_orig.dtype == np.uint8:
+            y = (y_orig.astype(np.float32) - 128.0) / 128.0
+        else:
+            y = y_orig.astype(np.float32)
         rms = float(np.sqrt(np.mean(y ** 2)))
         
         from calibration import get_or_create
@@ -1110,6 +1136,14 @@ def stream_fused():
                 fused['per_modality'] = {
                     k: {'score': round(v['ema_score'], 3)} for k, v in all_scores.items()
                 }
+                
+                if runtime_engine.expl_engine and runtime_engine.expl_engine.is_loaded:
+                    fused['explainability'] = runtime_engine.expl_engine.build_full_payload(
+                        face_features=[] if 'face' in probs else None,
+                        voice_features=[] if 'voice' in probs else None,
+                        physio_features=[] if 'physio' in probs else None,
+                    )
+                
                 data = json.dumps(fused)
                 print(f"[Fusion Engine] Fused Level: {fused['stress_level']} ({fused['fused_score']:.3f}) | Active: {list(probs.keys())}")
 
@@ -1395,11 +1429,10 @@ def shutdown_backend():
 
 if __name__ == '__main__':
     print("Starting Multimodal Stress Detection API...")
-    print(f"Model trained: {model.is_trained}")
     
     # Waitress does not support WebSockets/Socket.IO, so we use eventlet via socketio.run
     print("Starting SocketIO server on http://localhost:5000...")
-    socketio.run(app, debug=False, host='0.0.0.0', port=5000, use_reloader=False, minimum_chunk_size=1)
+    socketio.run(app, debug=False, host='127.0.0.1', port=5000, use_reloader=False, minimum_chunk_size=1)
 
 
 # --- Phase 8: Admin & Monitoring Endpoints ---
