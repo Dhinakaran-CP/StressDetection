@@ -98,3 +98,12 @@ Physiological/
 # Deployment Export Packages
 # ===========================================
 StressDetectionUsingML_Deploy/
+
+# ===========================================
+# Early Fusion Workspace ignores
+# ===========================================
+early_fusion/outputs/checkpoints/
+early_fusion/outputs/final_model/
+early_fusion/outputs/predictions/
+early_fusion/logs/
+model_archive.zip

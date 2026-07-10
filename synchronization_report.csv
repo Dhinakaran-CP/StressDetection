@@ -1,8 +1,0 @@
-metric,value,details
-total_recordings,775,Total subject-task pairs evaluated
-fully_synchronized,364,Recordings with all 3 modalities present and matching lengths
-missing_face,146,Recordings missing video data
-missing_voice,397,Recordings missing audio data
-missing_physio,0,Recordings missing physiological logs
-duration_mismatches,0,Recordings with length difference > 2.0s
-final_status,Partially synchronized,Final classification of dataset synchronization

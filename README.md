@@ -153,6 +153,30 @@ During initial modality training, a high adversarial lambda ($\lambda = 0.15$) c
 
 ---
 
+## 🛠️ Early Fusion Workspace (Robust FlexiModal MoE Pipeline)
+
+The `early_fusion/` subdirectory contains a dedicated research workspace implementing a **Mask-Aware FlexiModal MoE** architecture with **Training Modality Dropout** to handle missing sensors (Face, Voice, Physio) without shortcut learning.
+
+### 5-Model Comparative Ablation Study
+The workspace trains, evaluates, and compares exactly five distinct architectures under various sensor failure scenarios:
+1. **Early Fusion Baseline:** Concatenates raw latent feature vectors.
+2. **Gated Fusion Baseline:** Learns sample-dependent gating scalars per modality.
+3. **Cross-Attention Fusion:** Maps modalities into a unified space using dot-product cross-attention.
+4. **Standard MoE Fusion:** Uses the FlexiModal MoE model but trains it without modality dropout.
+5. **Robust FlexiModal MoE:** The final model, trained with 30% independent modality dropout to force feature learning.
+
+### Jupyter Pipeline Sequence
+The research notebooks are organized under `early_fusion/notebooks/` and should be run in the following sequence:
+1. **[01_raw_sync_audit.ipynb](early_fusion/notebooks/01_raw_sync_audit.ipynb):** Audits raw sensor folders and outputs subject-task presence manifests.
+2. **[02_extract_and_align.ipynb](early_fusion/notebooks/02_extract_and_align.ipynb):** Syncs frame window keys, executes Subject-Adaptive calm baseline normalization, and exports splits (`data/processed/train/`, `val/`, `test/`).
+3. **[03_train_models.ipynb](early_fusion/notebooks/03_train_models.ipynb):** Trains all 5 models and saves checkpoints under `early_fusion/outputs/checkpoints/`.
+4. **[04_validate_models.ipynb](early_fusion/notebooks/04_validate_models.ipynb):** Restores all checkpoints, calculates parameter sizes, measures latency cost in milliseconds, and audits performance under simulated modality dropouts.
+5. **[05_final_report.ipynb](early_fusion/notebooks/05_final_report.ipynb):** Prints comparative metric tables and saves the final markdown report to `early_fusion/reports/evaluation/ablation_study_report.md`.
+
+For a critical analysis of modality alignment skews and sensor shortcuts, read the **[critical_analysis_report.md](early_fusion/reports/critical_analysis_report.md)** (or in the artifact directory).
+
+---
+
 ## 💻 Tech Stack
 
 *   **Frontend**: React.js (Inter Typography, sleek dark glassmorphism styling, Recharts telemetry, WebSocket client)
