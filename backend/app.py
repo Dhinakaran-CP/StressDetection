@@ -5,8 +5,11 @@ import builtins
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
 # Force all print statements to flush immediately to avoid buffering in standard terminals/IDE logs
 def print(*args, **kwargs):
@@ -1080,24 +1083,230 @@ def calibrate_face_sample():
     cal.add_face_feature_vector(feature_vec)
     return jsonify({'status': 'ok', 'samples': len(cal.samples_face)})
 
-@app.route('/api/calibrate/finalize', methods=['POST'])
-def calibrate_finalize():
-    """Compute final baseline statistics from all collected samples."""
-    data    = request.json or {}
+@app.route('/api/calibrate/physio_sample', methods=['POST'])
+def calibrate_physio_sample():
+    """Phase 3b: Receive physio indicators/features during neutral calibration."""
+    data = request.json or {}
     user_id = data.get('user_id', 'default')
+    indicators = data.get('indicators', {})
+    features = data.get('features', None)
 
     from calibration import get_or_create
     cal = get_or_create(user_id)
+    cal.phase = 'physio_calibrating'
+    cal.add_physio_sample(indicators)
+    if features is not None:
+        cal.add_physio_feature_vector(np.array(features, dtype=np.float32))
+    else:
+        # Default/simulated values
+        f_val = [
+            float(indicators.get('ecg_rate_mean', 72.0)),
+            float(indicators.get('ecg_hrv_rmssd', 45.0)),
+            float(indicators.get('ecg_hrv_sdnn', 50.0)),
+            float(indicators.get('eda_scl_mean', 1.5)),
+            float(indicators.get('resp_rate_mean', 16.0))
+        ]
+        cal.add_physio_feature_vector(np.array(f_val, dtype=np.float32))
+        
+    return jsonify({'status': 'ok', 'samples': len(cal.samples_physio)})
+
+@app.route('/api/calibrate/finalize', methods=['POST'])
+def calibrate_finalize():
+    """Compute final baseline statistics and verify them using the stress models."""
+    data    = request.json or {}
+    user_id = data.get('user_id', 'default')
+
+    from calibration import get_or_create, get_save_path
+    import shutil
+    import json
+    
+    cal = get_or_create(user_id)
     voice_ok = cal.finalize_voice()
     face_ok  = cal.finalize_face()
+    
+    # Check physiological signals. If missing/insufficient, fill with simulated neutral values
+    physio_ok = cal.finalize_physio()
+    if not physio_ok:
+        print(f"[Calibration] Simulating neutral physiological baseline for user {user_id}")
+        for _ in range(10):
+            rate = float(np.random.normal(70.0, 1.5))
+            rmssd = float(np.random.normal(45.0, 2.0))
+            sdnn = float(np.random.normal(50.0, 2.0))
+            scl = float(np.random.normal(1.5, 0.1))
+            resp = float(np.random.normal(16.0, 0.5))
+            indicators = {
+                'ecg_rate_mean': rate,
+                'ecg_hrv_rmssd': rmssd,
+                'ecg_hrv_sdnn': sdnn,
+                'eda_scl_mean': scl,
+                'resp_rate_mean': resp
+            }
+            cal.add_physio_sample(indicators)
+            cal.add_physio_feature_vector(np.array([rate, rmssd, sdnn, scl, resp], dtype=np.float32))
+        physio_ok = cal.finalize_physio()
+        
     session_scalers_built = cal.build_session_scalers()
 
-    print(f"[Calibration] Finalized for user {user_id}. Voice ok: {voice_ok}, Face ok: {face_ok}, Session Scalers built: {session_scalers_built}")
+    status = 'complete' if (voice_ok and face_ok and session_scalers_built) else 'partial'
+    verification_results = {}
+    
+    if voice_ok and face_ok:
+        # 1. Compute average features from collected matrices
+        mean_raw_face = np.mean(cal._face_baseline_matrix, axis=0)
+        mean_raw_voice = np.mean(cal._voice_baseline_matrix, axis=0)
+        mean_raw_physio = np.mean(cal._physio_baseline_matrix, axis=0)
+        
+        # 2. Run uncalibrated predictions to verify if baseline window is neutral
+        # Temporarily disable completed status so inference runs in population/uncalibrated space
+        was_complete = cal.is_complete
+        cal.is_complete = False
+        try:
+            res_fused = runtime_engine.predict_fused(
+                face=mean_raw_face, 
+                voice=mean_raw_voice, 
+                physio=mean_raw_physio
+            )
+        finally:
+            cal.is_complete = was_complete
+            
+        stress_prob = res_fused.get('stress_probability', 0.0)
+        biomarker_scores = {
+            'face': float(res_fused.get('individual_predictions', {}).get('face', 0.0)),
+            'voice': float(res_fused.get('individual_predictions', {}).get('voice', 0.0)),
+            'physio': float(res_fused.get('individual_predictions', {}).get('physio', 0.0))
+        }
+        
+        # 3. Compute population baseline deviations (average absolute Z-score of window features)
+        pop_deviations = {}
+        for modality, mean_feats, scaler_key in [('face', mean_raw_face, 'face'), 
+                                                 ('voice', mean_raw_voice, 'voice'), 
+                                                 ('physio', mean_raw_physio, 'physio')]:
+            scaler = runtime_engine._scalers.get(scaler_key)
+            if scaler is not None:
+                # Preprocess without personal baseline normalization
+                if modality == 'face':
+                    locked = runtime_engine.feature_lock.process_face_features(mean_feats, scaler=None)
+                elif modality == 'voice':
+                    locked = runtime_engine.feature_lock.process_voice_features(mean_feats, scaler=None)
+                else:
+                    locked = runtime_engine.feature_lock.process_physio_features(mean_feats, scaler=None)
+                pop_deviations[modality] = float(np.mean(np.abs(scaler.transform(locked))))
+            else:
+                pop_deviations[modality] = 0.0
+                
+        # 4. Compute deviation from prior user baseline if available
+        prior_devs = {}
+        save_path = get_save_path(user_id)
+        accepted_path = save_path.replace(".json", "_accepted.json")
+        if os.path.exists(accepted_path):
+            try:
+                with open(accepted_path, 'r') as f:
+                    prior_data = json.load(f)
+                if prior_data.get('ear_baseline') and cal.ear_baseline:
+                    prior_devs['face'] = float(abs(cal.ear_baseline - prior_data['ear_baseline']) / prior_data['ear_baseline'])
+                if prior_data.get('f0_mean') and cal.f0_mean:
+                    prior_devs['voice'] = float(abs(cal.f0_mean - prior_data['f0_mean']) / prior_data['f0_mean'])
+                if prior_data.get('physio_mean') and cal.physio_mean:
+                    prior_devs['physio'] = float(abs(cal.physio_mean[0] - prior_data['physio_mean'][0]) / prior_data['physio_mean'][0])
+            except Exception as e:
+                print(f"Error loading prior baseline: {e}")
+                
+        # 5. Generate explanation summary using top drivers
+        explanation_summary = "All biomarkers are within normal resting parameters."
+        top_drivers = []
+        if runtime_engine.expl_engine and runtime_engine.expl_engine.is_loaded:
+            expl_payload = runtime_engine.expl_engine.build_full_payload(
+                face_features=mean_raw_face,
+                voice_features=mean_raw_voice,
+                physio_features=mean_raw_physio
+            )
+            top_drivers = expl_payload.get('top_drivers', [])
+            drivers_desc = []
+            for d in top_drivers[:3]:
+                feat_name = d.get('feature', 'Unknown')
+                mod_name = d.get('modality', '')
+                drivers_desc.append(f"{feat_name} ({mod_name})")
+            if drivers_desc:
+                explanation_summary = f"Baseline features show primary contributions from: {', '.join(drivers_desc)}."
+                
+        # 6. Recommendation: Auto-accept if stress probability < 0.40 and no modality score > 0.50
+        max_modality_prob = max(biomarker_scores.values())
+        if stress_prob < 0.40 and max_modality_prob < 0.50:
+            recommendation = 'ACCEPT_BASELINE'
+            cal.is_complete = True
+            cal.save_to_file(user_id)
+            try:
+                shutil.copyfile(save_path, accepted_path)
+                print(f"[Calibration] Saved automatically accepted baseline to {accepted_path}")
+            except Exception as e:
+                print(f"Error copying accepted baseline file: {e}")
+        else:
+            recommendation = 'NEEDS_CONFIRMATION'
+            cal.is_complete = False
+            cal.save_to_file(user_id)
+            
+        verification_results = {
+            'recommendation': recommendation,
+            'stress_probability': float(stress_prob),
+            'biomarker_scores': biomarker_scores,
+            'pop_deviations': pop_deviations,
+            'prior_deviations': prior_devs,
+            'explanation_summary': explanation_summary,
+            'top_features': top_drivers[:3]
+        }
+        
+        cal.verification_results = verification_results
+        cal.save_to_file(user_id)
+
+    print(f"[Calibration] Finalized for user {user_id}. Voice ok: {voice_ok}, Face ok: {face_ok}, Physio ok: {physio_ok}, Scalers built: {session_scalers_built}")
     return jsonify({
-        'status':      'complete' if (voice_ok and face_ok and session_scalers_built) else 'partial',
+        'status':      status,
         'calibration': cal.to_dict(),
         'session_scalers_built': session_scalers_built,
+        'verification': verification_results
     })
+
+@app.route('/api/calibrate/confirm', methods=['POST'])
+def calibrate_confirm():
+    """Consent loop: user reviews the baseline verification and chooses action."""
+    data = request.json or {}
+    user_id = data.get('user_id', 'default')
+    action = data.get('action') # 'accept_low_confidence', 'recalibrate', 'discard'
+    notes = data.get('notes', '')
+
+    from calibration import get_or_create, clear, get_save_path
+    import shutil
+    cal = get_or_create(user_id)
+
+    if action == 'accept_low_confidence':
+        cal.is_complete = True
+        cal.is_low_confidence = True
+        cal.confidence_notes = notes
+        cal.save_to_file(user_id)
+        
+        # Save as accepted baseline
+        save_path = get_save_path(user_id)
+        accepted_path = save_path.replace(".json", "_accepted.json")
+        try:
+            shutil.copyfile(save_path, accepted_path)
+            print(f"[Calibration] Manually accepted low-confidence baseline saved to {accepted_path}")
+        except Exception as e:
+            print(f"Error copying accepted calibration: {e}")
+            
+        return jsonify({
+            'status': 'ok',
+            'state': 'ACCEPT_WITH_LOW_CONFIDENCE',
+            'calibration': cal.to_dict()
+        })
+    elif action in ('recalibrate', 'discard'):
+        clear(user_id)
+        return jsonify({
+            'status': 'ok',
+            'state': 'RECALIBRATE',
+            'calibration': None
+        })
+    else:
+        return jsonify({'error': 'Invalid action'}), 400
 
 @app.route('/api/calibrate/status', methods=['GET'])
 def calibrate_status():

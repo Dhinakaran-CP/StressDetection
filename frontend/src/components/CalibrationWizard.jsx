@@ -33,6 +33,8 @@ export default function CalibrationWizard({ userId = 'default', onComplete, sile
     const [countdown, setCountdown] = useState(PHASES[0].duration);
     const [running,   setRunning]   = useState(false);
     const [done,      setDone]      = useState(false);
+    const [verification, setVerification] = useState(null);
+    const [notes,     setNotes]     = useState('');
     const timerRef   = useRef(null);
 
     const currentPhase = PHASES[phase];
@@ -97,8 +99,13 @@ export default function CalibrationWizard({ userId = 'default', onComplete, sile
                     body: JSON.stringify({ user_id: userId }),
                 });
                 const data = await res.json();
-                setDone(true);
-                if (onComplete) onComplete(data.calibration);
+                
+                if (data.verification && data.verification.recommendation === 'NEEDS_CONFIRMATION') {
+                    setVerification(data.verification);
+                } else {
+                    setDone(true);
+                    if (onComplete) onComplete(data.calibration);
+                }
             } catch (err) {
                 console.error("Failed to finalize calibration:", err);
                 setDone(true);
@@ -108,6 +115,126 @@ export default function CalibrationWizard({ userId = 'default', onComplete, sile
     };
 
     const pct = Math.round(((currentPhase.duration - countdown) / currentPhase.duration) * 100);
+
+    if (verification) {
+        return (
+            <div style={{ maxWidth: 520, margin: '20px auto', padding: 28, background: 'var(--card-bg)', borderRadius: 16, border: 'var(--glass-border)', boxShadow: 'var(--glass-shadow)', backdropFilter: 'blur(8px)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: 12, textAlign: 'center' }}>⚠️</div>
+                <h3 style={{ color: 'var(--text-color)', margin: '0 0 12px', fontSize: '1.4rem', textAlign: 'center' }}>Baseline Quality Check</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: 20, textAlign: 'center' }}>
+                    The system detected elevated stress markers or high baseline deviation during your calibration.
+                </p>
+
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: 16, borderRadius: 8, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span>Overall Stress Level:</span>
+                        <strong style={{ color: verification.stress_probability > 0.6 ? '#ff4d4d' : '#ff9900' }}>
+                            {Math.round(verification.stress_probability * 100)}%
+                        </strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.85rem' }}>
+                        <span>Face Indicator Score:</span>
+                        <span>{Math.round(verification.biomarker_scores.face * 100)}%</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.85rem' }}>
+                        <span>Voice Indicator Score:</span>
+                        <span>{Math.round(verification.biomarker_scores.voice * 100)}%</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: '0.85rem' }}>
+                        <span>Physiological Score:</span>
+                        <span>{Math.round(verification.biomarker_scores.physio * 100)}%</span>
+                    </div>
+                    
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 10, fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--primary-color)' }}>
+                        <strong>Explanation:</strong> {verification.explanation_summary}
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '0.85rem' }}>
+                        Is this window really your normal, neutral state?
+                    </label>
+                    <textarea
+                        className="form-control"
+                        rows="2"
+                        placeholder="Optional notes (e.g. just had coffee, felt slightly rushed)"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        style={{ width: '100%', borderRadius: 8, padding: 8, background: 'rgba(0,0,0,0.15)', color: 'var(--text-color)', border: '1px solid rgba(255,255,255,0.15)' }}
+                    />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <button
+                        onClick={async () => {
+                            try {
+                                const res = await fetch(`${API_BASE}/api/calibrate/confirm`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ user_id: userId, action: 'accept_low_confidence', notes }),
+                                });
+                                const data = await res.json();
+                                setDone(true);
+                                setVerification(null);
+                                if (onComplete) onComplete(data.calibration);
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        }}
+                        className="btn btn-primary"
+                        style={{ padding: 12, fontWeight: 'bold', width: '100%' }}
+                    >
+                        Confirm as Normal State (Use Baseline)
+                    </button>
+                    
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await fetch(`${API_BASE}/api/calibrate/confirm`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ user_id: userId, action: 'recalibrate' }),
+                                    });
+                                    setPhase(0);
+                                    setCountdown(PHASES[0].duration);
+                                    setRunning(false);
+                                    setVerification(null);
+                                    setNotes('');
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }}
+                            className="btn btn-secondary"
+                            style={{ flex: 1, padding: 10 }}
+                        >
+                            🔄 Recalibrate
+                        </button>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await fetch(`${API_BASE}/api/calibrate/confirm`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ user_id: userId, action: 'discard' }),
+                                    });
+                                    setDone(true);
+                                    setVerification(null);
+                                    if (onComplete) onComplete(null);
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }}
+                            className="btn btn-secondary"
+                            style={{ flex: 1, padding: 10, border: '1px solid #ff4d4d', color: '#ff4d4d' }}
+                        >
+                            ❌ Discard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (done) {
         return (

@@ -384,16 +384,16 @@ class RuntimeEngine:
 
     # ── Public: single-modality inference ─────────────────────────────────────
 
-    def predict_face(self, raw_features, sensitivity: float = 0.5) -> dict:
-        return self._predict_single("face", raw_features, sensitivity)
+    def predict_face(self, raw_features, sensitivity: float = 0.5, user_id: str = 'default') -> dict:
+        return self._predict_single("face", raw_features, sensitivity, user_id)
 
-    def predict_voice(self, raw_features, sensitivity: float = 0.5) -> dict:
-        return self._predict_single("voice", raw_features, sensitivity)
+    def predict_voice(self, raw_features, sensitivity: float = 0.5, user_id: str = 'default') -> dict:
+        return self._predict_single("voice", raw_features, sensitivity, user_id)
 
-    def predict_physio(self, raw_features, sensitivity: float = 0.5) -> dict:
-        return self._predict_single("physio", raw_features, sensitivity)
+    def predict_physio(self, raw_features, sensitivity: float = 0.5, user_id: str = 'default') -> dict:
+        return self._predict_single("physio", raw_features, sensitivity, user_id)
 
-    def _predict_single(self, modality: str, raw_features, sensitivity: float) -> dict:
+    def _predict_single(self, modality: str, raw_features, sensitivity: float, user_id: str = 'default') -> dict:
         if modality not in self._models and not (self.use_deep and modality in ["face", "voice", "physio"]):
             return {"error": f"{modality} model not loaded", "modality": modality}
         if raw_features is None:
@@ -401,13 +401,13 @@ class RuntimeEngine:
 
         try:
             if self.use_deep and modality in ["face", "voice", "physio"]:
-                seq = self._lock_features_deep(modality, raw_features)
+                seq = self._lock_features_deep(modality, raw_features, user_id=user_id)
                 seq_t = torch.FloatTensor(seq)
                 with torch.no_grad():
                     logits = self.deep_models[modality](seq_t)
                     prob = float(torch.softmax(logits, dim=1)[0][1].item())
             else:
-                locked = self._lock_features(modality, raw_features)
+                locked = self._lock_features(modality, raw_features, user_id=user_id)
                 prob   = float(self._models[modality].predict_proba(locked)[0][1])
 
             threshold   = 0.6 + (0.5 - sensitivity) * 0.4
@@ -431,6 +431,7 @@ class RuntimeEngine:
         voice=None,
         physio=None,
         sensitivity: float = 0.5,
+        user_id: str = 'default',
     ) -> dict:
         """
         Late-fusion prediction across all available modalities.
@@ -446,7 +447,7 @@ class RuntimeEngine:
             # Face
             if face is not None:
                 try:
-                    seq_f = self._lock_features_deep("face", face)
+                    seq_f = self._lock_features_deep("face", face, user_id=user_id)
                     seq_f_t = torch.FloatTensor(seq_f)
                     with torch.no_grad():
                         logits_f = self.deep_models["face"](seq_f_t)
@@ -459,7 +460,7 @@ class RuntimeEngine:
             # Voice
             if voice is not None:
                 try:
-                    seq_v = self._lock_features_deep("voice", voice)
+                    seq_v = self._lock_features_deep("voice", voice, user_id=user_id)
                     seq_v_t = torch.FloatTensor(seq_v)
                     with torch.no_grad():
                         logits_v = self.deep_models["voice"](seq_v_t)
@@ -472,7 +473,7 @@ class RuntimeEngine:
             # Physio
             if physio is not None:
                 try:
-                    seq_p = self._lock_features_deep("physio", physio)
+                    seq_p = self._lock_features_deep("physio", physio, user_id=user_id)
                     seq_p_t = torch.FloatTensor(seq_p)
                     with torch.no_grad():
                         logits_p = self.deep_models["physio"](seq_p_t)
@@ -564,7 +565,7 @@ class RuntimeEngine:
             if feats is None or modality not in self._models:
                 continue
             try:
-                locked = self._lock_features(modality, feats)
+                locked = self._lock_features(modality, feats, user_id=user_id)
                 prob   = float(self._models[modality].predict_proba(locked)[0][1])
                 raw_probs[modality] = prob
             except Exception as exc:
@@ -629,7 +630,7 @@ class RuntimeEngine:
 
     # ── Private: feature locking ──────────────────────────────────────────────
 
-    def _lock_features(self, modality: str, raw_features) -> np.ndarray:
+    def _lock_features(self, modality: str, raw_features, user_id='default') -> np.ndarray:
         """
         Pass raw features through FeatureRuntimeLock, apply Phase 4 
         methodology transformations (Calibration & Temporal Windowing), 
@@ -648,6 +649,19 @@ class RuntimeEngine:
         feats = feats.flatten()
 
         # 2. Phase 4: Subject-Aware Calibration
+        from backend.calibration import get_or_create
+        cal = get_or_create(user_id)
+        if cal.is_complete:
+            if modality == "face" and len(cal._face_baseline_matrix) > 0:
+                self.calibration_baselines[modality] = np.mean(cal._face_baseline_matrix, axis=0)
+                self.calibrating[modality] = False
+            elif modality == "voice" and len(cal._voice_baseline_matrix) > 0:
+                self.calibration_baselines[modality] = np.mean(cal._voice_baseline_matrix, axis=0)
+                self.calibrating[modality] = False
+            elif modality == "physio" and len(cal._physio_baseline_matrix) > 0:
+                self.calibration_baselines[modality] = np.mean(cal._physio_baseline_matrix, axis=0)
+                self.calibrating[modality] = False
+
         if self.calibrating[modality]:
             self.feature_history[modality].append(feats)
             if len(self.feature_history[modality]) >= self.calibration_frames:
@@ -661,6 +675,8 @@ class RuntimeEngine:
         else:
             baseline = self.calibration_baselines[modality]
 
+        if baseline is None:
+            baseline = np.zeros_like(feats)
         norm_feats = feats - baseline
 
         # 3. Phase 4: Temporal Windowing (Rolling Average)
@@ -681,7 +697,7 @@ class RuntimeEngine:
             
         return windowed_feats
 
-    def _lock_features_deep(self, modality: str, raw_features) -> np.ndarray:
+    def _lock_features_deep(self, modality: str, raw_features, user_id='default') -> np.ndarray:
         """
         Pass raw features through FeatureRuntimeLock, apply subject-aware calibration baseline
         subtraction, scale frame-wise, and maintain a sequence history of length 5.
@@ -699,6 +715,19 @@ class RuntimeEngine:
         feats = feats.flatten()
 
         # 2. Phase 4: Subject-Aware Calibration (Calm baseline subtraction)
+        from backend.calibration import get_or_create
+        cal = get_or_create(user_id)
+        if cal.is_complete:
+            if modality == "face" and len(cal._face_baseline_matrix) > 0:
+                self.calibration_baselines[modality] = np.mean(cal._face_baseline_matrix, axis=0)
+                self.calibrating[modality] = False
+            elif modality == "voice" and len(cal._voice_baseline_matrix) > 0:
+                self.calibration_baselines[modality] = np.mean(cal._voice_baseline_matrix, axis=0)
+                self.calibrating[modality] = False
+            elif modality == "physio" and len(cal._physio_baseline_matrix) > 0:
+                self.calibration_baselines[modality] = np.mean(cal._physio_baseline_matrix, axis=0)
+                self.calibrating[modality] = False
+
         if self.calibrating[modality]:
             self.feature_history[modality].append(feats)
             if len(self.feature_history[modality]) >= self.calibration_frames:
@@ -711,6 +740,8 @@ class RuntimeEngine:
         else:
             baseline = self.calibration_baselines[modality]
 
+        if baseline is None:
+            baseline = np.zeros_like(feats)
         norm_feats = feats - baseline
 
         # 3. Scale frame-wise using deep scaler
