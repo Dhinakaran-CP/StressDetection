@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stress Detection System Architecture</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            color: #111;
+            margin: 0;
+            padding: 50px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .flowchart-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            width: 1200px;
+            gap: 50px;
+            position: relative;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            width: 32%;
+            position: relative;
+            z-index: 5;
+        }
+
+        .col-header {
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 40px;
+            background: #fff;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .box {
+            border: 1px solid #333;
+            background: #fff;
+            padding: 18px 15px;
+            text-align: center;
+            margin-bottom: 45px;
+            position: relative;
+            font-size: 14px;
+            z-index: 2;
+        }
+
+        .box strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .box small {
+            color: #444;
+            font-size: 13px;
+            line-height: 1.4;
+            display: block;
+        }
+
+        /* Vertical Arrows */
+        .down-arrow::after {
+            content: '';
+            position: absolute;
+            bottom: -46px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 1.5px solid #888;
+            height: 45px;
+            z-index: 1;
+        }
+
+        .down-arrow::before {
+            content: '';
+            position: absolute;
+            bottom: -48px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid #888;
+            z-index: 2;
+        }
+
+        .group-box {
+            border: 1px solid #333;
+            padding: 25px 20px 20px 20px;
+            margin-bottom: 45px;
+            position: relative;
+            background: #fff;
+        }
+
+        .group-label {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #fff;
+            padding: 0 8px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .sub-boxes {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 25px;
+            margin-top: 20px;
+        }
+
+        .sub-boxes .box {
+            flex: 1;
+            margin-bottom: 0;
+            padding: 12px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            color: #666;
+            border: 1px solid #aaa;
+        }
+
+        .sub-arrow-down {
+            position: relative;
+        }
+
+        .sub-arrow-down::after {
+            content: '';
+            position: absolute;
+            bottom: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 1px solid #aaa;
+            height: 25px;
+            z-index: 1;
+        }
+
+        .sub-arrow-down::before {
+            content: '';
+            position: absolute;
+            bottom: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid #aaa;
+            z-index: 2;
+        }
+
+        /* Connecting SVGs */
+        .svg-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="flowchart-container" id="chart-container">
+        <!-- SVG overlay for horizontal lines -->
+        <svg class="svg-lines" id="svg-layer"></svg>
+
+        <!-- COLUMN 1 -->
+        <div class="column">
+            <div class="col-header">MULTIMODAL SENSING & INGESTION LAYER</div>
+
+            <div class="box down-arrow">
+                <strong>Live Input Streams</strong>
+                <small>(Webcam Feed, Microphone Stream, Physio/Muse EEG Sensors)</small>
+            </div>
+
+            <div class="box down-arrow">
+                <strong>Low-Latency Audio & Video Processing</strong>
+                <small>(WebGL MediaPipe Landmarks, AudioContext 16kHz resampler)</small>
+            </div>
+
+            <div class="box down-arrow">
+                <strong>Local Biomarker Computation</strong>
+                <small>(EAR, brow descent, lip compression, pitch tracking, RMS energy)</small>
+            </div>
+
+            <div class="group-box" id="col1-out">
+                <div class="group-label">Feature Collection Engine</div>
+                <div style="text-align:center; font-size:13px; color:#555; margin-top:5px; margin-bottom: 20px;">
+                    Client-Server Communication</div>
+
+                <div class="sub-boxes">
+                    <div class="box sub-arrow-down" style="padding: 10px 5px;"><strong
+                            style="font-size:12px; font-weight:normal; margin:0;">Web Worker<br>Face offloader</strong>
+                    </div>
+                    <div class="box sub-arrow-down" style="padding: 10px 5px;"><strong
+                            style="font-size:12px; font-weight:normal; margin:0;">Audio Wav<br>Chunk Streamer</strong>
+                    </div>
+                    <div class="box sub-arrow-down" style="padding: 10px 5px;"><strong
+                            style="font-size:12px; font-weight:normal; margin:0;">Physio<br>API Gateway</strong></div>
+                </div>
+
+                <div class="box down-arrow" style="margin-top: 10px; margin-bottom: 30px; padding: 10px;">
+                    Flask API Network Interface
+                </div>
+
+                <div class="box" style="margin-bottom: 0;" id="col1-node">
+                    <strong>Multimodal Feature Packages</strong>
+                    <small>JSON: {Face Indicators, Audio WAV, Physio Stats}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMN 2 -->
+        <div class="column" style="margin-top: 140px;">
+            <div class="col-header">PERSONALIZED INFERENCE & FUSION</div>
+
+            <div class="box down-arrow" id="col2-in">
+                <strong>Feature Runtime Lock</strong>
+                <small>(configs/feature_contract.yaml dimension assertion & null filling)</small>
+            </div>
+
+            <div class="box down-arrow">
+                <strong>Personalized Baseline Adaptation</strong>
+                <small>(Subtract user resting calibration; rebuild StandardScaler dynamically)</small>
+            </div>
+
+            <div class="box down-arrow">
+                <strong>Modality Classification Experts</strong>
+                <small>(RandomForest models for Face, Voice, and Physio streams)</small>
+            </div>
+
+            <div class="box down-arrow">
+                <strong>Late Fusion Weighting</strong>
+                <small>(Fusion: Face 0.30, Voice 0.40, Physio 0.30)</small>
+            </div>
+
+            <div class="box" id="col2-out">
+                <strong>Explainability & Predictions</strong>
+                <small>(SHAP Feature Importance Engine, Anomaly/Drift monitors)</small>
+            </div>
+        </div>
+
+        <!-- COLUMN 3 -->
+        <div class="column">
+            <div class="col-header">MONITORING & CALIBRATION INTERACTOR</div>
+
+            <div class="box down-arrow" id="col3-in" style="margin-top: 80px;">
+                <strong>Real-time Stress Dashboard</strong>
+                <small>(React UI, live stress meters, anomaly alarms)</small>
+            </div>
+
+            <div class="box down-arrow">
+                <strong>Baseline Calibration Loop</strong>
+                <small>(uncalibrated verification check, noise floor calculations)</small>
+            </div>
+
+            <div class="box down-arrow">
+                <strong>Consent & Confidence Gate</strong>
+                <small>(Flag quality check; ask to recalibrate, discard, or save with notes)</small>
+            </div>
+
+            <div class="box down-arrow">
+                <strong>Session State Database</strong>
+                <small>(Secure PostgreSQL logging, offline calibration storage)</small>
+            </div>
+
+            <div class="box">
+                <strong>Historical Stress Analytics</strong>
+                <small>(Generate secure exports and timelines for user analysis)</small>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Javascript to draw precise SVG connecting lines between specific boxes
+        window.onload = function () {
+            const svg = document.getElementById('svg-layer');
+
+            const drawLine = (startId, endId) => {
+                const startEl = document.getElementById(startId);
+                const endEl = document.getElementById(endId);
+                const container = document.getElementById('chart-container');
+
+                const startRect = startEl.getBoundingClientRect();
+                const endRect = endEl.getBoundingClientRect();
+                const contRect = container.getBoundingClientRect();
+
+                // X, Y coordinates relative to the container element
+                const startX = startRect.right - contRect.left;
+                const startY = startRect.top + (startRect.height / 2) - contRect.top;
+
+                const endX = endRect.left - contRect.left;
+                const endY = endRect.top + (endRect.height / 2) - contRect.top;
+
+                // Defines path routing: go right halfway, go up/down, go right the rest of the way
+                const midX = startX + (endX - startX) / 2;
+                const pathData = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX - 7} ${endY}`;
+
+                const pathColor = "#999";
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('stroke', pathColor);
+                path.setAttribute('stroke-width', '1.5');
+                path.setAttribute('fill', 'none');
+
+                // Draw arrow head at the end
+                const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                arrow.setAttribute('points', `${endX},${endY} ${endX - 9},${endY - 5} ${endX - 9},${endY + 5}`);
+                arrow.setAttribute('fill', pathColor);
+
+                svg.appendChild(path);
+                svg.appendChild(arrow);
+            };
+
+            // Draw the inter-column connections just like the original flowchart
+            drawLine('col1-node', 'col2-in');
+            drawLine('col2-out', 'col3-in');
+        };
+    </script>
+
+</body>
+
+</html>
