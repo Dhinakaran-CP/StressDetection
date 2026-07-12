@@ -4,23 +4,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multimodal Stress Detection - System Architecture</title>
+    <title>Multimodal Stress Detection - Interactive System Architecture</title>
     <style>
+        :root {
+            --primary: #1a1a1a;
+            --primary-hover: #333;
+            --bg-color: #fafafa;
+            --card-bg: #ffffff;
+            --text-color: #1a1a1a;
+            --text-muted: #555;
+            --border-color: #222;
+            --accent: #2b6cb0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #fafafa;
-            color: #1a1a1a;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
             padding: 40px 20px;
             display: flex;
             justify-content: center;
         }
 
+        /* Flowchart View Wrapper */
+        .view-container {
+            width: 1360px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
         .flowchart-container {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
-            width: 1360px;
             gap: 30px;
             position: relative;
         }
@@ -34,22 +50,22 @@
         }
 
         .col-header {
-            border: 1px solid #1a1a1a;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 10px;
             text-align: center;
             font-weight: 700;
             font-size: 11px;
             margin-bottom: 35px;
-            background: #1a1a1a;
+            background: var(--primary);
             color: #fff;
             letter-spacing: 0.75px;
             text-transform: uppercase;
         }
 
         .box {
-            border: 1.5px solid #222;
-            background: #fff;
+            border: 1.5px solid var(--border-color);
+            background: var(--card-bg);
             padding: 16px 12px;
             border-radius: 4px;
             text-align: center;
@@ -58,12 +74,15 @@
             font-size: 13px;
             z-index: 2;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            cursor: pointer;
         }
 
         .box:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.06);
+            background-color: #f7fafc;
+            border-color: var(--accent);
         }
 
         .box strong {
@@ -75,10 +94,30 @@
         }
 
         .box small {
-            color: #555;
+            color: var(--text-muted);
             font-size: 11.5px;
             line-height: 1.4;
             display: block;
+            margin-bottom: 8px;
+        }
+
+        .sub-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .sub-block {
+            flex: 1;
+            border: 1px solid #ccc;
+            background: #f0f0f0;
+            border-radius: 3px;
+            padding: 5px 3px;
+            font-size: 9.5px;
+            color: #333;
+            font-weight: 500;
+            pointer-events: none;
         }
 
         /* Vertical Connection Arrows */
@@ -106,7 +145,7 @@
         }
 
         .group-box {
-            border: 1.5px dashed #444;
+            border: 1.5px dashed var(--border-color);
             border-radius: 4px;
             padding: 22px 14px 14px 14px;
             margin-bottom: 35px;
@@ -118,7 +157,7 @@
             position: absolute;
             top: -10px;
             left: 15px;
-            background: #fafafa;
+            background: var(--bg-color);
             padding: 0 6px;
             font-weight: 700;
             font-size: 11px;
@@ -169,7 +208,7 @@
             z-index: 2;
         }
 
-        /* Connecting SVGs */
+        /* SVG overlay for lines */
         .svg-lines {
             position: absolute;
             top: 0;
@@ -179,138 +218,690 @@
             pointer-events: none;
             z-index: 1;
         }
+
+        /* Detailed Phase Panel View */
+        .detail-container {
+            display: none;
+            opacity: 0;
+            width: 960px;
+            background: #ffffff;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            background: #e2e8f0;
+            color: #2d3748;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 13.5px;
+            cursor: pointer;
+            margin-bottom: 30px;
+            transition: background-color 0.2s;
+        }
+
+        .back-btn:hover {
+            background-color: #cbd5e0;
+        }
+
+        .detail-header {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .detail-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #000;
+            margin: 0 0 8px 0;
+        }
+
+        .detail-category {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+        }
+
+        .detail-section h4 {
+            font-size: 13px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            color: #444;
+            letter-spacing: 0.5px;
+        }
+
+        /* Detailed Sub-Flowchart CSS */
+        .sub-flowchart {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 25px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .sub-flowchart-node {
+            background: #fff;
+            border: 1.5px solid #222;
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-size: 11.5px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 140px;
+            max-width: 220px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .sub-flowchart-arrow {
+            font-size: 16px;
+            color: #888;
+            font-weight: bold;
+        }
+
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .detail-table th, .detail-table td {
+            text-align: left;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            font-size: 13.5px;
+        }
+
+        .detail-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            width: 25%;
+            color: #000;
+        }
+
+        .code-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .code-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="flowchart-container" id="chart-container">
-        <!-- SVG overlay for horizontal lines -->
-        <svg class="svg-lines" id="svg-layer"></svg>
+    <!-- Flowchart Container View -->
+    <div class="view-container" id="flowchart-view">
+        <div class="flowchart-container" id="chart-container">
+            <!-- SVG overlay for horizontal lines -->
+            <svg class="svg-lines" id="svg-layer"></svg>
 
-        <!-- COLUMN 1: CLIENT SENSING & ACQUISITION -->
-        <div class="column">
-            <div class="col-header">1. Client Sensing & Acquisition</div>
+            <!-- COLUMN 1: CLIENT SENSING & ACQUISITION -->
+            <div class="column">
+                <div class="col-header">1. Client Sensing & Acquisition</div>
 
-            <div class="box down-arrow">
-                <strong>Multimodal Raw Ingestion</strong>
-                <small>Webcam live stream, microphone input, physical EEG device stream</small>
-            </div>
-
-            <div class="box down-arrow">
-                <strong>WebGL & WASM Mesh Detection</strong>
-                <small>MediaPipe FaceMesh tracks landmarks; native AudioContext downsamples to 16kHz</small>
-            </div>
-
-            <div class="group-box" id="col1-out">
-                <div class="group-label">Parallel Extraction</div>
-                
-                <div class="sub-boxes">
-                    <div class="box sub-arrow-down">
-                        <strong style="font-size:10px; font-weight:700;">18 Face<br>Geometric Ratios</strong>
-                    </div>
-                    <div class="box sub-arrow-down">
-                        <strong style="font-size:10px; font-weight:700;">Local Audio<br>Pitch (Autocorr)</strong>
+                <div class="box down-arrow" onclick="showPhaseDetail('raw_ingestion')">
+                    <strong>Multimodal Raw Ingestion</strong>
+                    <small>Webcam live stream, microphone input, physical EEG device stream</small>
+                    <div class="sub-row">
+                        <div class="sub-block">Webcam Feed</div>
+                        <div class="sub-block">Mic Input</div>
+                        <div class="sub-block">Physio Sensor</div>
                     </div>
                 </div>
 
-                <div class="box down-arrow" style="margin-top: 5px; margin-bottom: 20px; padding: 10px;">
-                    Web Worker thread-offloaded fetch & WAV chunk binary stream
+                <div class="box down-arrow" onclick="showPhaseDetail('mesh_detection')">
+                    <strong>WebGL & WASM Mesh Detection</strong>
+                    <small>MediaPipe FaceMesh landmarks tracking; native AudioContext resampler</small>
+                    <div class="sub-row">
+                        <div class="sub-block">WebGL Mesh</div>
+                        <div class="sub-block">Audio resampler</div>
+                    </div>
                 </div>
 
-                <div class="box" style="margin-bottom: 0;" id="col1-node">
-                    <strong>Ingested Multi-modal Package</strong>
-                    <small>REST API & Socket payloads sent to server backend</small>
+                <div class="group-box" id="col1-out">
+                    <div class="group-label">Parallel Extraction</div>
+                    
+                    <div class="sub-boxes">
+                        <div class="box sub-arrow-down" onclick="showPhaseDetail('face_indicators')">
+                            <strong style="font-size:10px; font-weight:700;">18 Face<br>Geometric Ratios</strong>
+                        </div>
+                        <div class="box sub-arrow-down" onclick="showPhaseDetail('voice_indicators')">
+                            <strong style="font-size:10px; font-weight:700;">Local Audio<br>Pitch (Autocorr)</strong>
+                        </div>
+                    </div>
+
+                    <div class="box down-arrow" style="margin-top: 5px; margin-bottom: 20px; padding: 10px;" onclick="showPhaseDetail('networking_transmission')">
+                        Web Worker offloader & audio WAV slider
+                    </div>
+
+                    <div class="box" style="margin-bottom: 0;" id="col1-node" onclick="showPhaseDetail('networking_transmission')">
+                        <strong>Ingested Multi-modal Package</strong>
+                        <small>REST API & Socket payloads sent to server backend</small>
+                        <div class="sub-row">
+                            <div class="sub-block">REST endpoints</div>
+                            <div class="sub-block">Socket.IO</div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- COLUMN 2: FEATURE ALIGNMENT & PERSONALIZATION -->
+            <div class="column">
+                <div class="col-header">2. Alignment & Personalization</div>
+
+                <div class="box down-arrow" id="col2-in" style="margin-top: 80px;" onclick="showPhaseDetail('runtime_lock')">
+                    <strong>Feature Runtime Lock</strong>
+                    <small>configs/feature_contract.yaml dimensions validation and zero/mean null-filling</small>
+                    <div class="sub-row">
+                        <div class="sub-block">YAML contract</div>
+                        <div class="sub-block">Null fill strategy</div>
+                    </div>
+                </div>
+
+                <div class="box down-arrow" onclick="showPhaseDetail('scaler_reconstitution')">
+                    <strong>Dynamic Scaler Reconstitution</strong>
+                    <small>Restores StandardScaler means/variances from JSON calibration files on disk</small>
+                    <div class="sub-row">
+                        <div class="sub-block">Disk JSON Load</div>
+                        <div class="sub-block">Scaler Rebuild</div>
+                    </div>
+                </div>
+
+                <div class="box" id="col2-node" onclick="showPhaseDetail('personalized_adaptation')">
+                    <strong>Personalized Adaptation</strong>
+                    <small>Subtracted accepted calm baseline averages from active user feature vector</small>
+                    <div class="sub-row">
+                        <div class="sub-block">Calm Baseline</div>
+                        <div class="sub-block">User deviations</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMN 3: INFERENCE & FUSION ENSEMBLE -->
+            <div class="column">
+                <div class="col-header">3. Inference & Fusion Ensemble</div>
+
+                <div class="group-box" id="col3-in" style="margin-top: 140px;">
+                    <div class="group-label">Expert Classifiers</div>
+                    
+                    <div class="sub-boxes">
+                        <div class="box sub-arrow-down" onclick="showPhaseDetail('modality_experts')">
+                            <strong style="font-size:10px; font-weight:700;">Face Expert<br>(CNN-GRU)</strong>
+                        </div>
+                        <div class="box sub-arrow-down" onclick="showPhaseDetail('modality_experts')">
+                            <strong style="font-size:10px; font-weight:700;">Voice Expert<br>(CNN-GRU)</strong>
+                        </div>
+                        <div class="box sub-arrow-down" onclick="showPhaseDetail('modality_experts')">
+                            <strong style="font-size:10px; font-weight:700;">Physio Expert<br>(CNN-GRU)</strong>
+                        </div>
+                    </div>
+
+                    <div class="box down-arrow" style="margin-top: 5px; margin-bottom: 20px; padding: 10px;" onclick="showPhaseDetail('late_fusion')">
+                        Dynamic MLP Router Fusion (Modality Availability Mask)
+                        <div class="sub-row">
+                            <div class="sub-block">Dynamic Weights</div>
+                            <div class="sub-block">Modality Dropout</div>
+                        </div>
+                    </div>
+
+                    <div class="box" style="margin-bottom: 0;" id="col3-node" onclick="showPhaseDetail('explainability_prediction')">
+                        <strong>Ensemble Prediction & SHAP</strong>
+                        <small>Calculates stress index; extracts top contributing driver features via SHAP</small>
+                        <div class="sub-row">
+                            <div class="sub-block">SHAP Explainer</div>
+                            <div class="sub-block">Drift Monitors</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMN 4: CONTROL MATRIX & CONSENT LOOP -->
+            <div class="column">
+                <div class="col-header">4. UI & Calibration Consent Loop</div>
+
+                <div class="box down-arrow" id="col4-in" style="margin-top: 80px;" onclick="showPhaseDetail('realtime_dashboard')">
+                    <strong>Real-time Stress Dashboard</strong>
+                    <small>React UI monitors metric timelines, anomaly triggers, and SHAP drivers</small>
+                    <div class="sub-row">
+                        <div class="sub-block">timeline graphs</div>
+                        <div class="sub-block">stress meters</div>
+                    </div>
+                </div>
+
+                <div class="box down-arrow" onclick="showPhaseDetail('verification_quality')">
+                    <strong>Verification & Quality Check</strong>
+                    <small>Auto-acceptance recommendation if calm stress level is within normal range (&lt;0.4)</small>
+                    <div class="sub-row">
+                        <div class="sub-block">noise floor RMS</div>
+                        <div class="sub-block">uncalibrated check</div>
+                    </div>
+                </div>
+
+                <div class="box down-arrow" onclick="showPhaseDetail('consent_loop')">
+                    <strong>Subject Consent Gate</strong>
+                    <small>Flags anomalies; requests manual confirm (stores notes), recalibrate, or discard</small>
+                    <div class="sub-row">
+                        <div class="sub-block">Confirm (Notes)</div>
+                        <div class="sub-block">Recalibrate / Discard</div>
+                    </div>
+                </div>
+
+                <div class="box" onclick="showPhaseDetail('database_analytics')">
+                    <strong>Database & Analytics</strong>
+                    <small>Immutable logging, performance reports, and session profile storage</small>
+                    <div class="sub-row">
+                        <div class="sub-block">PostgreSQL Logs</div>
+                        <div class="sub-block">JSON Calibration</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Detailed Phase Panel View -->
+    <div class="detail-container" id="detail-view">
+        <button class="back-btn" onclick="hidePhaseDetail()">← Back to System Architecture</button>
+        <div class="detail-header">
+            <div class="detail-category" id="phase-category">INGESTION LAYER</div>
+            <h2 class="detail-title" id="phase-title">Multimodal Raw Ingestion</h2>
         </div>
 
-        <!-- COLUMN 2: FEATURE ALIGNMENT & PERSONALIZATION -->
-        <div class="column">
-            <div class="col-header">2. Alignment & Personalization</div>
-
-            <div class="box down-arrow" id="col2-in" style="margin-top: 80px;">
-                <strong>Feature Runtime Lock</strong>
-                <small>configs/feature_contract.yaml dimensions validation and zero/mean null-filling</small>
-            </div>
-
-            <div class="box down-arrow">
-                <strong>Dynamic Scaler Reconstitution</strong>
-                <small>Restores StandardScaler means/variances from JSON calibration files on disk</small>
-            </div>
-
-            <div class="box" id="col2-node">
-                <strong>Personalized Adaptation</strong>
-                <small>Subtracted accepted calm baseline averages from active user feature vector</small>
-            </div>
+        <div class="detail-section">
+            <p id="phase-description" style="font-size: 15px; line-height: 1.6; color: #333; margin: 0;"></p>
         </div>
 
-        <!-- COLUMN 3: INFERENCE & FUSION ENSEMBLE -->
-        <div class="column">
-            <div class="col-header">3. Inference & Fusion Ensemble</div>
-
-            <div class="group-box" id="col3-in" style="margin-top: 140px;">
-                <div class="group-label">Expert Classifiers</div>
-                
-                <div class="sub-boxes">
-                    <div class="box sub-arrow-down">
-                        <strong style="font-size:10px; font-weight:700;">Face Expert<br>(RF model)</strong>
-                    </div>
-                    <div class="box sub-arrow-down">
-                        <strong style="font-size:10px; font-weight:700;">Voice Expert<br>(RF model)</strong>
-                    </div>
-                    <div class="box sub-arrow-down">
-                        <strong style="font-size:10px; font-weight:700;">Physio Expert<br>(RF model)</strong>
-                    </div>
-                </div>
-
-                <div class="box down-arrow" style="margin-top: 5px; margin-bottom: 20px; padding: 10px;">
-                    Late Fusion Weighted Average (Face 0.3, Voice 0.4, Physio 0.3)
-                </div>
-
-                <div class="box" style="margin-bottom: 0;" id="col3-node">
-                    <strong>Ensemble Prediction & SHAP</strong>
-                    <small>Calculates stress index; extracts top contributing driver features via SHAP</small>
-                </div>
-            </div>
+        <div class="detail-section">
+            <h4>Phase-Specific Architecture Workflow</h4>
+            <div id="phase-diagram-container"></div>
         </div>
 
-        <!-- COLUMN 4: CONTROL MATRIX & CONSENT LOOP -->
-        <div class="column">
-            <div class="col-header">4. UI & Calibration Consent Loop</div>
-
-            <div class="box down-arrow" id="col4-in" style="margin-top: 80px;">
-                <strong>Real-time Stress Dashboard</strong>
-                <small>React UI monitors metric timelines, anomaly triggers, and SHAP drivers</small>
-            </div>
-
-            <div class="box down-arrow">
-                <strong>Verification & Quality Check</strong>
-                <small>Auto-acceptance recommendation if calm stress level is within normal range (<0.4)</small>
-            </div>
-
-            <div class="box down-arrow">
-                <strong>Subject Consent Gate</strong>
-                <small>Flags anomalies; requests manual confirm (stores notes), recalibrate, or discard</small>
-            </div>
-
-            <div class="box">
-                <strong>Database & Analytics</strong>
-                <small>Immutable logging, performance reports, and session profile storage</small>
-            </div>
-        </div>
-
+        <table class="detail-table">
+            <tr>
+                <th>Methodology & Algorithms</th>
+                <td id="phase-methodology"></td>
+            </tr>
+            <tr>
+                <th>Libraries & Libraries Used</th>
+                <td id="phase-libraries"></td>
+            </tr>
+            <tr>
+                <th>Data In/Out Contracts</th>
+                <td id="phase-data"></td>
+            </tr>
+            <tr>
+                <th>Codebase References</th>
+                <td id="phase-code"></td>
+            </tr>
+        </table>
     </div>
 
     <script>
+        const detailsData = {
+            raw_ingestion: {
+                title: "Multimodal Raw Ingestion",
+                category: "1. Client Sensing & Ingestion",
+                description: "This initial ingestion stage handles concurrent hardware connection to the user's local sensing devices—webcam feed, microphone, and physiological sensors—capturing high-frequency behavioral data directly inside the browser.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Hardware Inputs<br>(Webcam / Mic / Sensors)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Browser Ingestion<br>(getUserMedia API)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Concurrently Buffered<br>A/V Streams</div>
+                    </div>
+                `,
+                methodology: "Acquires raw live media stream feeds (30fps camera, 16kHz audio) asynchronously using browser APIs. Pre-configures echo-cancellation, noise-suppression, and auto-gain filters on the microphone pipeline.",
+                libraries: "Web Audio API (AudioContext), HTML5 MediaDevices API (getUserMedia)",
+                data: "In: Raw analog/digital hardware input streams.<br>Out: Raw uncompressed video buffers, float32 audio segments, and raw sensor packets.",
+                code: [
+                    { name: "FaceStream.jsx", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/src/components/FaceStream.jsx" },
+                    { name: "WaveformRecorder.jsx", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/src/components/WaveformRecorder.jsx" }
+                ]
+            },
+            mesh_detection: {
+                title: "WebGL & WASM Mesh Detection",
+                category: "1. Client Sensing & Ingestion",
+                description: "Offloads structural face mapping to the browser's graphics/WASM processors, tracking 468 points of facial coordinates at low CPU usage.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">320x240 RGB<br>Video Frames</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">WebGL Throttling<br>(15fps Frame Skip)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">MediaPipe WASM<br>FaceMesh Engine</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">468 3D Landmark<br>Coordinates Vector</div>
+                    </div>
+                `,
+                methodology: "Instantiates a single-instance WebGL pipeline. Downsamples camera resolution to 320x240 and skips alternate frames (max 15fps) to save 50% CPU cycles. Landmark tracking refinement is disabled to optimize WebAssembly processing loops by 20ms.",
+                libraries: "Google MediaPipe Face Mesh (face_mesh.js WASM), WebGL, MediaPipe Camera Utilities",
+                data: "In: 320x240 RGB camera frames.<br>Out: Normalized 3D coordinate vector array representing 468 landmark points.",
+                code: [
+                    { name: "FaceStream.jsx", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/src/components/FaceStream.jsx#L236-L269" }
+                ]
+            },
+            face_indicators: {
+                title: "18 Face Geometric Ratios",
+                category: "1. Client Sensing & Ingestion",
+                description: "Translates raw 3D mesh points into specialized stress-related behavioral indicators right in the browser, avoiding massive video upload transfers.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">468 3D Mesh<br>Landmarks</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Distance Norm<br>(IOD / FaceHeight)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Geometric Ratios<br>(EAR, Brow, Lip, Jaw)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">18-dim Indicators<br>JSON Object</div>
+                    </div>
+                `,
+                methodology: "Computes 18 geometric ratios based on exact facial dimensions. Normalizes distances by the inter-ocular distance (IOD) or vertical face height to eliminate distance-to-camera bias. Ratios include EAR (Eye Aspect Ratio), brow descent, jaw displacement/width, and mouth pull.",
+                libraries: "Pure JavaScript Math, WebGL coordinate mapping",
+                data: "In: 468 MediaPipe landmark coordinates.<br>Out: Dictionary of 18 normalized float indicators (e.g. avg_ear, lip_compression).",
+                code: [
+                    { name: "FaceStream.jsx (computeStressIndicators)", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/src/components/FaceStream.jsx#L4-L101" }
+                ]
+            },
+            voice_indicators: {
+                title: "Local Audio Pitch & Biomarkers",
+                category: "1. Client Sensing & Ingestion",
+                description: "Extracts local acoustic indicators in real-time, providing immediate feedback for wave rendering and stress visualizers on the screen.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">4096 Samples Frame<br>(16kHz Resampled)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Signal Math<br>(RMS & ZCR speaking rate)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Lag Window Autocorr<br>(75Hz-300Hz Pitch)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Vocal Instability<br>(Jitter / Shimmer)</div>
+                    </div>
+                `,
+                methodology: "Processes incoming audio buffers in 256ms frames (4096 samples). Computes RMS for voice intensity, Zero-Crossing Rate (ZCR) for speaking speed, and employs a discrete autocorrelation lag window search (75Hz-300Hz) to trace F0 mean pitch, Jitter, and Shimmer metrics locally.",
+                libraries: "Web Audio API (ScriptProcessorNode, AnalyserNode)",
+                data: "In: Raw float32 audio channel samples at 16kHz.<br>Out: Instant local voice statistics dictionary.",
+                code: [
+                    { name: "WaveformRecorder.jsx (computeAcousticIndicators)", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/src/components/WaveformRecorder.jsx#L54-L197" }
+                ]
+            },
+            networking_transmission: {
+                title: "Web Worker Offloader & WAV Chunking",
+                category: "1. Client Sensing & Ingestion",
+                description: "Transmits indicators and buffered audio to the server using background worker threads to guarantee that network lag never stutters the webcam capture or dashboard UI.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Indicators & PCM Audio<br>(Main Thread)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Web Worker Lock<br>(pendingPost Drop Frame)</div>
+                        <div class="sub-flowchart-node">Audio Chunking<br>(2s PCM -> 16-bit WAV)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">REST API & Socket<br>Ingestion Gateway</div>
+                    </div>
+                `,
+                methodology: "Facial indicators are posted to a background HTML5 Web Worker thread which throttles uploads to 800ms intervals and drops frames if a network post is already pending. Audio is continuously buffered into a sliding 2-second window (32,000 samples at 16kHz) and encoded to standard monophonic 16-bit PCM WAV Blobs for transmission.",
+                libraries: "HTML5 Web Workers, fetch API, ArrayBuffer Wave encoder",
+                data: "In: Local indicator dictionaries, sliding raw audio array.<br>Out: JSON post messages and WAV file Blobs sent to '/api/stream/face' and '/api/stream/voice'.",
+                code: [
+                    { name: "facePostWorker.js", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/public/facePostWorker.js" },
+                    { name: "WaveformRecorder.jsx", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/src/components/WaveformRecorder.jsx#L282-L300" }
+                ]
+            },
+            runtime_lock: {
+                title: "Feature Runtime Lock",
+                category: "2. Alignment & Personalization",
+                description: "Enforces strict mathematical dimension assertions and null-filling strategies on raw API packets, bridging the gap between train-time models and live inference.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Raw Ingested API<br>Payload Stream</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Contract Assertion<br>(configs/feature_contract.yaml)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Zero / Mean<br>Null-Filling Strategy</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Locked Matrices<br>(Face:18, Voice:12, Physio:5)</div>
+                    </div>
+                `,
+                methodology: "Parses input indicators, checks shape matches against the schema config (Face: 18, Voice: 12, Physio: 5), resolves missing features via zero-fill or mean-fill strategies, and outputs standard matrix representations.",
+                libraries: "Numpy, PyYAML",
+                data: "In: Variable API payload inputs.<br>Out: Strictly shaped numpy matrices of shape (1, dimensions).",
+                code: [
+                    { name: "feature_runtime_lock.py", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/core/feature_runtime_lock.py" }
+                ]
+            },
+            scaler_reconstitution: {
+                title: "Dynamic Scaler Reconstitution",
+                category: "2. Alignment & Personalization",
+                description: "Safely reconstructs the user's StandardScaler parameters on server restarts without relying on insecure pickle files.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">User JSON Profile<br>(uploads/calibration_<id>.json)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Extract Stored Mean &<br>Variance Vector Lists</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">scikit-learn Scaler Fit<br>(StandardScaler)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Instantiated Session<br>Scalers in Memory</div>
+                    </div>
+                `,
+                methodology: "Loads saved mean and variance scaling vectors from the user's calibration JSON profile (`uploads/calibration_<user_id>.json`). Dynamically fits standard scikit-learn StandardScaler configurations on reconstructed calm matrix points to reconstruct active scalers.",
+                libraries: "Scikit-Learn (StandardScaler), json",
+                data: "In: Calibration JSON files containing stored statistics vectors.<br>Out: Instantiated StandardScaler objects fitted to the user's specific baseline.",
+                code: [
+                    { name: "calibration.py (load_from_file)", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/calibration.py" }
+                ]
+            },
+            personalized_adaptation: {
+                title: "Personalized Subject Adaptation",
+                category: "2. Alignment & Personalization",
+                description: "Performs subject-aware baseline alignment, normalizing the active user's features relative to their verified resting state to prevent population model skew.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Locked Active Features<br>(Vector x)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Calm Baseline Subtraction<br>(norm_feats = x - calm_base)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Temporal Windowing<br>(Group sequences size = 5)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Deep CNN-GRU Sequence<br>Arrays (1x5xFeatures)</div>
+                    </div>
+                `,
+                methodology: "Retrieves the user's calm baseline average vector from disk. For classical mode, subtracts the calm averages vector directly from live features: norm_feats = feats - baseline. For deep mode, compiles sequences of length 5 and normalizes via StandardScaler parameters.",
+                libraries: "Numpy, PyTorch",
+                data: "In: Runtime-locked live features, loaded baseline statistics.<br>Out: Calm-subtracted baseline-aligned features & sequence matrices (length=5).",
+                code: [
+                    { name: "runtime_engine.py (_lock_features)", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/runtime/runtime_engine.py" }
+                ]
+            },
+            modality_experts: {
+                title: "Modality Expert Classifiers",
+                category: "3. Inference & Fusion Ensemble",
+                description: "Modality-specific classifiers running in parallel to predict independent stress indices for face, voice, and physiological tracks.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Normalized Target<br>Sequence Sequences</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Primary Strategy 5<br>(Adversarial CNN-GRU)</div>
+                        <div class="sub-flowchart-node">Fallback Strategy 4 / RF<br>(Standard CNN-GRU / Random Forest)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Modality Stress Predictions<br>(P_face, P_voice, P_physio)</div>
+                    </div>
+                `,
+                methodology: "Applies two selection strategies:<br>• <strong>Strategy 5 (Production Primary)</strong>: PyTorch 1D-CNN + GRU sequence encoders trained under strict Leave-One-Subject-Out (LOSO) validation with Subject-Adversarial Identity Suppression (adversarial penalty &lambda;_adv = 0.02) to prevent anatomical leakage.<br>• <strong>Strategy 4 (Fallback)</strong>: Standard CNN-GRU models.<br>• <strong>Classical (Fallback)</strong>: Scikit-learn RandomForestClassifiers.",
+                libraries: "PyTorch, Scikit-Learn (RandomForestClassifier, DecisionTreeClassifier)",
+                data: "In: Normalized modality feature sequences (shape 1x5xfeatures) or flat vectors.<br>Out: Modality stress probability float (0.0 to 1.0).",
+                code: [
+                    { name: "runtime_engine.py", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/runtime/runtime_engine.py" },
+                    { name: "model.py", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/model.py" }
+                ]
+            },
+            late_fusion: {
+                title: "Late Fusion Weighted Average",
+                category: "3. Inference & Fusion Ensemble",
+                description: "Combines single-modality classifier predictions into an overall fused stress probability index, dynamically balancing the strengths of each model.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Single Modality Scores<br>& 3-bit Availability Mask</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">MLP Dynamic Router<br>(Deep Modality Dropout)</div>
+                        <div class="sub-flowchart-node">Static Optimal Merge<br>(Voice 0.40, Face/Physio 0.30)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Renormalized Weights &<br>Fused Probability sum</div>
+                    </div>
+                `,
+                methodology: "Features two processing modes:<br>• <strong>Deep Mode (Dynamic Router)</strong>: Passes a 9-dimensional input vector [1-P_face, P_face, 1-P_voice, P_voice, 1-P_physio, P_physio, M_face, M_voice, M_physio] to an MLP Dynamic Router trained with Modality Dropout. Normalizes active weights dynamically.<br>• <strong>Classical Mode (Static Fallback)</strong>: Re-normalized optimal validation weights: Voice = 0.40, Face = 0.30, Physio = 0.30.",
+                libraries: "PyTorch, Numpy",
+                data: "In: Modality probabilities and sensor mask bits.<br>Out: Fused stress index probability score & normalized active weights.",
+                code: [
+                    { name: "runtime_engine.py (predict_fused)", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/runtime/runtime_engine.py#L428-L540" },
+                    { name: "model.py (fuse_predictions)", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/model.py" }
+                ]
+            },
+            explainability_prediction: {
+                title: "Ensemble Prediction & SHAP",
+                category: "3. Inference & Fusion Ensemble",
+                description: "Extracts local explainability driver markers for the prediction and tracks system anomalies or drift.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Active Input Features<br>& Trained Ensembles</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">SHAP Value Engine<br>(Kernel / Tree Explainer)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Identify Top Features &<br>Run Data Drift Monitors</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Live Explanations &<br>Drift Warning Triggers</div>
+                    </div>
+                `,
+                methodology: "Invokes KernelSHAP or TreeSHAP on the expert ensembles to compute game-theoretic feature importance vectors. Identifies top-contributing features (e.g. jaw width decrease, F0 pitch drop) to generate live diagnostic text explanations and flags anomalies/drifts.",
+                libraries: "SHAP, Numpy",
+                data: "In: Active feature vectors, fitted RF models.<br>Out: Highlighted driver indexes, SHAP explanation strings.",
+                code: [
+                    { name: "explainability_engine.py", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/explainability/explainability_engine.py" },
+                    { name: "drift_monitor.py", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/monitoring/drift_monitor.py" }
+                ]
+            },
+            realtime_dashboard: {
+                title: "Real-time Stress Dashboard",
+                category: "4. UI & Calibration Consent Loop",
+                description: "Renders active stress metrics, line charts, explainability panels, and calibration triggers to the end user.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Live Stream API<br>(Socket.IO / Polling)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">React Dashboard State<br>(150ms Throttled updates)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Timeline Charts &<br>Color-Coded Status Meters</div>
+                    </div>
+                `,
+                methodology: "Polles or streams data via Socket.IO. Displays metrics within target latencies derived from live benchmarks:<br>• <strong>Video average latency</strong>: ~30.92 ms (Target &lt; 200ms)<br>• <strong>Audio average latency</strong>: ~338.53 ms (Target &lt; 500ms)<br>• <strong>Visual interface update rate</strong>: 150 ms (throttled to save rendering cycles).",
+                libraries: "React (UI Componentry, hooks), CSS transitions",
+                data: "In: Live fused stress statistics, SHAP drivers, calibration flags.<br>Out: Responsive visual stress meters, charts, and control interfaces.",
+                code: [
+                    { name: "RealtimeMonitor.jsx", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/src/components/RealtimeMonitor.jsx" }
+                ]
+            },
+            verification_quality: {
+                title: "Verification & Quality Check",
+                category: "4. UI & Calibration Consent Loop",
+                description: "Validates the collected voice (40s) and face (45s) calibration window parameters to ensure the baseline collected is truly representative of a calm, neutral rest state.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Collected Calibration<br>Window Features</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Uncalibrated Stress Level &<br>Modality Check (<0.40)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Population Z-Score &<br>Prior Deviation test</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Verify Status Report<br>(ACCEPT / CONFIRM)</div>
+                    </div>
+                `,
+                methodology: "Calculates the average uncalibrated stress probability of the baseline window. Flags anomalies if stress index exceeds 0.40 or if individual modality scores exceed 0.50, recommending the calibration be reviewed instead of auto-accepted.",
+                libraries: "Flask API, Numpy",
+                data: "In: Calibration feature matrices.<br>Out: Verification status ('ACCEPT_BASELINE' or 'NEEDS_CONFIRMATION') + quality report.",
+                code: [
+                    { name: "app.py (calibrate_finalize)", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/app.py#L1113-L1220" }
+                ]
+            },
+            consent_loop: {
+                title: "Subject Consent Loop",
+                category: "4. UI & Calibration Consent Loop",
+                description: "Controls user calibration confirmation, enabling users to accept low-confidence baselines with annotations, recalibrate, or discard profiles.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Anomalous Calibration<br>Status Warning</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Render Wizard Consent Card<br>& notes input text area</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">User Action:<br>Confirm / Recalibrate / Discard</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">API State Transition &<br>Disk/Memory clear operations</div>
+                    </div>
+                `,
+                methodology: "Presents a detail card showing quality warnings. Routes actions to `/api/calibrate/confirm` with options: 'accept_low_confidence' (copies profile to accepted baseline and logs user text notes), 'recalibrate' (clears files and restarts wizard), or 'discard' (removes files).",
+                libraries: "React hooks, fetch API",
+                data: "In: User action button click, optional text notes input.<br>Out: Server state transitions ('ACCEPT_WITH_LOW_CONFIDENCE', 'RECALIBRATE', 'DISCARD').",
+                code: [
+                    { name: "CalibrationWizard.jsx", path: "file:///e:/Document/GitHub/StressDetectionUsingML/frontend/src/components/CalibrationWizard.jsx" },
+                    { name: "app.py (calibrate_confirm)", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/app.py#L1262-L1315" }
+                ]
+            },
+            database_analytics: {
+                title: "Database & Compliance Analytics",
+                category: "4. UI & Calibration Consent Loop",
+                description: "Stores persistent user calibration statistics, baseline scales, and historical session logs securely.",
+                diagram: `
+                    <div class="sub-flowchart">
+                        <div class="sub-flowchart-node">Calibration Scales &<br>User Consent Data</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Write to Disk JSON files<br>(uploads/calibration_<id>.json)</div>
+                        <div class="sub-flowchart-arrow">→</div>
+                        <div class="sub-flowchart-node">Store compliance logs<br>in database tables</div>
+                    </div>
+                `,
+                methodology: "Writes structured user calibration metadata, Scaler means/variances, and confidence notes to filesystem uploads (JSON format) and database tables, permitting audit compliance tracking and baseline reloads.",
+                libraries: "Python os/json, PostgreSQL",
+                data: "In: Completed calibration profile object, user baseline scales.<br>Out: Persistent database records and local JSON configuration files.",
+                code: [
+                    { name: "calibration.py", path: "file:///e:/Document/GitHub/StressDetectionUsingML/backend/calibration.py" }
+                ]
+            }
+        };
+
         // Javascript to draw precise SVG connecting lines between specific boxes
-        window.onload = function () {
+        function drawFlowLines() {
             const svg = document.getElementById('svg-layer');
+            svg.innerHTML = ''; // Clear previous paths
 
             const drawLine = (startId, endId) => {
                 const startEl = document.getElementById(startId);
                 const endEl = document.getElementById(endId);
                 const container = document.getElementById('chart-container');
+
+                if (!startEl || !endEl || !container) return;
 
                 const startRect = startEl.getBoundingClientRect();
                 const endRect = endEl.getBoundingClientRect();
@@ -348,7 +939,71 @@
             drawLine('col1-node', 'col2-in');
             drawLine('col2-node', 'col3-in');
             drawLine('col3-node', 'col4-in');
+        }
+
+        window.onload = function () {
+            drawFlowLines();
         };
+
+        window.onresize = function() {
+            drawFlowLines();
+        };
+
+        function showPhaseDetail(phaseKey) {
+            const data = detailsData[phaseKey];
+            if (!data) return;
+
+            document.getElementById('phase-title').innerText = data.title;
+            document.getElementById('phase-category').innerText = data.category;
+            document.getElementById('phase-description').innerHTML = data.description;
+            document.getElementById('phase-methodology').innerHTML = data.methodology;
+            document.getElementById('phase-libraries').innerHTML = data.libraries;
+            document.getElementById('phase-data').innerHTML = data.data;
+
+            // Render sub-flowchart diagram
+            document.getElementById('phase-diagram-container').innerHTML = data.diagram;
+
+            // Render code references
+            const codeCell = document.getElementById('phase-code');
+            codeCell.innerHTML = '';
+            data.code.forEach(ref => {
+                const link = document.createElement('a');
+                link.href = ref.path;
+                link.className = 'code-link';
+                link.innerText = ref.name;
+                link.style.display = 'block';
+                link.style.marginBottom = '4px';
+                codeCell.appendChild(link);
+            });
+
+            // Smooth transition
+            const flowchart = document.getElementById('flowchart-view');
+            const details = document.getElementById('detail-view');
+
+            flowchart.style.opacity = '0';
+            setTimeout(() => {
+                flowchart.style.display = 'none';
+                details.style.display = 'block';
+                setTimeout(() => {
+                    details.style.opacity = '1';
+                }, 50);
+            }, 300);
+        }
+
+        function hidePhaseDetail() {
+            const flowchart = document.getElementById('flowchart-view');
+            const details = document.getElementById('detail-view');
+
+            details.style.opacity = '0';
+            setTimeout(() => {
+                details.style.display = 'none';
+                flowchart.style.display = 'block';
+                drawFlowLines();
+                setTimeout(() => {
+                    flowchart.style.opacity = '1';
+                }, 50);
+            }, 300);
+        }
     </script>
 
 </body>
