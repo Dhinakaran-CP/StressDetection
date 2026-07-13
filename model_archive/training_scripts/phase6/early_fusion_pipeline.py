@@ -30,7 +30,7 @@ EPOCHS = 8
 BATCH_SIZE = 256
 SEQ_LEN = 5
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-REPORTS_DIR = "reports"
+REPORTS_DIR = "early_fusion/reports"
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 print(f"Device: {DEVICE}")
