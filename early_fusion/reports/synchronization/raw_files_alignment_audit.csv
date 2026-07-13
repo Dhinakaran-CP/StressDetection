@@ -1,0 +1,777 @@
+subject_id,task_id,video_exists,audio_exists,physio_exists,video_duration,audio_duration,physio_duration,status,details
+g7r2,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4e8r,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+v8mh,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+u3v9,counting1,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+9j3o,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+dmbd,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+b2l8,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8r2,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r5s8,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+uymz,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+iqyg,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g7r2,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+9txq,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h7j3,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9t6n,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+b2l8,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+m8g5,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+hvpa,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+hvpa,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+2z7d,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+hvpa,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+4e8r,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9txq,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+h8s1,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+m8g5,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kkf5,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+c3m7,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qw5t,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+wfsl,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+71i5,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4e8r,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+8i4i,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+45lx,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+4woj,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6k5f,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+iqyg,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+kkf5,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qw5t,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+45lx,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+dmbd,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+kkf5,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+a1k9,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+cxj0,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hvpa,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+b9w0,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+x1q3,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+g9j5,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+e5p4,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+x1q3,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+x1q3,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+t6v9,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+physio,certified,False,False,True,0.0,0.0,262.984,Missing Voice,No video file; No audio file
+2ea4,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+71i5,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+i9t9,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8s1,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+2hpu,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hh2e,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+2ea4,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+c3m7,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j9h8,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hvpa,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+ctzy,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8g4y,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+wssm,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+chdf,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+dmbd,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+j9h8,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+h8s1,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j1u8,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+7h5u,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r3zm,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8s1,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+7m3c,counting1,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+5f7t,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+b9w0,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+tmvd,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+ql3b,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+uymz,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9j3o,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ql3b,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+qx2o,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+tmvd,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+ql3b,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+6g6y,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+x1q3,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+9t6n,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ctzy,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+6g6y,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+bfl5,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+x1q3,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+bfl5,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+f6q3,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+bfl5,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+chdf,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+dmbd,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+wfsl,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+8i4i,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+f6q3,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+uyrl,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+y8c3,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qx2o,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+g7r2,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+chdf,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9j3o,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+kycf,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ql3b,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+a1k9,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+chdf,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y9z6,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+u3v9,counting2,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+b2l8,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+w2t5,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+c3m7,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+uyrl,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+9txq,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h7j3,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ctzy,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+9j3o,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ql3b,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+9j3o,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+bfl5,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+hh2e,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+uyrl,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+m8g5,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4e8r,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wfsl,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+iqyg,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+p9i3,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+p9i3,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+bfl5,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y9z6,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+7h5u,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+p9i3,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+qw5t,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+w2t5,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+4woj,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6k5f,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wfsl,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+k67g,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+5f7t,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+final,physio,False,False,True,0.0,0.0,1.292,Missing Voice,No video file; No audio file
+cxj0,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g9j5,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r5s8,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+d4n6,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+h8r2,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+d4n6,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hvpa,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+d4n6,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+45lx,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+i9t9,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+j9h8,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6k5f,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+2z7d,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+p9i3,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+r0a3,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+6k5f,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+r0a3,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+k67g,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+r0a3,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+9t6n,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+5f7t,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+kycf,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+7m3c,counting2,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+p9i3,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+45lx,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wssm,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8r2,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+6g6y,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+5f7t,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+c3m7,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+45lx,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+5f7t,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+d4n6,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+x1q3,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+j1u8,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+2ea4,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+a1k9,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+k67g,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+d4n6,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+e5p4,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+tmvd,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+71i5,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+t6v9,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2ea4,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+r0a3,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+dmbd,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+j1u8,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+2hpu,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+2hpu,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+c3m7,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+2hpu,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+tmvd,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8g4y,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+r3zm,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ql3b,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+j1u8,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+f6q3,reading,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+b9w0,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8g4y,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uyrl,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+r5s8,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8g4y,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+g7r2,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+e5p4,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+tmvd,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+u3v9,counting3,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+b2l8,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+t6v9,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+v8mh,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+m8g5,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+c3m7,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2z7d,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ctzy,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uymz,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+v8mh,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+bfl5,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9txq,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h7j3,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uymz,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uymz,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+9t6n,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+9t6n,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qw5t,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9t6n,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+4e8r,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r3zm,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+f6q3,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+2hpu,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+iqyg,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y8c3,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qx2o,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+8g4y,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+8i4i,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+g7r2,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8i4i,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2hpu,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8i4i,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+u3v9,reading,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+k2v7,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+t6v9,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+b2l8,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8g4y,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hvpa,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+k2v7,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+kkf5,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+qw5t,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+a1k9,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+uymz,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+9txq,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h7j3,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kkf5,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+a1k9,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wssm,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+qw5t,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+71i5,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+a1k9,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+9t6n,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+v8mh,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+p9i3,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y8c3,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+uymz,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j9h8,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hh2e,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+y9z6,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+45lx,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9t6n,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hh2e,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+5f7t,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+u3v9,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+w2t5,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hh2e,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+b9w0,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8i4i,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+4woj,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6k5f,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+7h5u,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+7m3c,counting3,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+h8s1,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+7h5u,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+x1q3,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+cxj0,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+7h5u,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+h8s1,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+d4n6,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+a1k9,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+8i4i,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ctzy,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6g6y,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2ea4,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g9j5,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r0a3,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+i9t9,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+a1k9,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r5s8,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+j9h8,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g7r2,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+hh2e,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+k67g,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4woj,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+6k5f,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+j1u8,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+u3v9,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+qx2o,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+b2l8,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+2z7d,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+tmvd,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+cxj0,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+ql3b,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+9txq,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+h7j3,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+7m3c,reading,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+hh2e,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+h8r2,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g9j5,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+kycf,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+4e8r,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+chdf,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+6g6y,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kycf,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+i9t9,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+kycf,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+chdf,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+7h5u,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+bfl5,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+iqyg,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+uyrl,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+wssm,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+f6q3,counting2,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+9j3o,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+4woj,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+9j3o,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+y9z6,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+7m3c,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+w2t5,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2hpu,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+71i5,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+8g4y,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kycf,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+wfsl,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+wssm,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+j9h8,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+wfsl,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+e5p4,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+v8mh,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+t6v9,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uymz,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kycf,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+b9w0,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+r5s8,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+m8g5,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hvpa,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+p9i3,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wssm,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+v8mh,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+r5s8,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k67g,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9t6n,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r5s8,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+g7r2,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+7m3c,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+wssm,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+b2l8,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2z7d,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+6g6y,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+r3zm,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qw5t,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2z7d,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2z7d,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+9txq,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h7j3,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8r2,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8i4i,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+45lx,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+4e8r,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+d4n6,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+m8g5,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+qx2o,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+kkf5,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+iqyg,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+a1k9,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wfsl,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+hvpa,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+r5s8,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+5f7t,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+r0a3,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+g7r2,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+5f7t,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+kkf5,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+qw5t,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+b2l8,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+2ea4,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2z7d,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+y8c3,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r5s8,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hh2e,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+g7r2,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h7j3,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+9txq,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+g7r2,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+71i5,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uyrl,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+b2l8,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+u3v9,math,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+b2l8,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j1u8,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+4e8r,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+2z7d,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+dmbd,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+9txq,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+7h5u,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+dmbd,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+hvpa,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+h8s1,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y9z6,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+dmbd,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+9txq,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+iqyg,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+h7j3,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+e5p4,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+tmvd,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j9h8,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+w2t5,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+t6v9,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4e8r,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+x1q3,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8s1,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+b9w0,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4e8r,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+iqyg,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2ea4,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+iqyg,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+c3m7,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+bfl5,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ctzy,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+r3zm,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+71i5,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+c3m7,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+f6q3,counting3,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+ctzy,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ctzy,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+6g6y,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4woj,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2hpu,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6k5f,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8g4y,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+dmbd,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+cxj0,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hvpa,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+71i5,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j9h8,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+x1q3,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+ql3b,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+qx2o,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+kycf,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g9j5,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+chdf,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qx2o,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+v8mh,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+b9w0,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+qx2o,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+dmbd,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+wssm,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uymz,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+i9t9,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j9h8,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+chdf,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+h8r2,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+9t6n,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+bfl5,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9j3o,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+b9w0,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+45lx,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+y8c3,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ctzy,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+6g6y,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+9j3o,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+7m3c,math,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+uyrl,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+ql3b,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+c3m7,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ctzy,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8i4i,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6g6y,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qx2o,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+y9z6,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2ea4,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+w2t5,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+wfsl,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+w2t5,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kkf5,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+w2t5,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+bfl5,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+a1k9,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qx2o,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+j1u8,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+r5s8,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4woj,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6k5f,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+e5p4,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+uyrl,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+hh2e,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+tmvd,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+p9i3,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ql3b,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+r0a3,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+2z7d,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+cxj0,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+5f7t,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k67g,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+y9z6,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+uyrl,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+7h5u,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k67g,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+w2t5,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+h8s1,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uyrl,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+g9j5,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k67g,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+37ir,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+bfl5,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+r3zm,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+f6q3,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+i9t9,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+iqyg,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y9z6,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+m8g5,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+d4n6,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+37ir,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+h8r2,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+w2t5,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+p9i3,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+h8r2,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8r2,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+45lx,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r0a3,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+qw5t,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+5f7t,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+71i5,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k67g,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+dmbd,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+d4n6,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+2ea4,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y8c3,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+kycf,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+chdf,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k67g,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+hvpa,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+p9i3,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+h8r2,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+b9w0,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r0a3,relax,False,False,True,0.0,0.0,150.0,Missing Voice,No video file; No audio file
+45lx,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+j1u8,stroop,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+9j3o,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+v8mh,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+e5p4,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+h8r2,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+c3m7,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+t6v9,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+e5p4,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+tmvd,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+e5p4,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+ctzy,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+45lx,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+t6v9,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+t6v9,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+45lx,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+c3m7,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+wssm,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+2ea4,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+d4n6,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+2hpu,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wssm,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+wfsl,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+r3zm,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+8g4y,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r3zm,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+x1q3,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qx2o,counting1,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+6k5f,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+m8g5,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r3zm,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+f6q3,stroop,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+r0a3,baseline,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+2ea4,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j1u8,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+2ea4,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+cxj0,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+v8mh,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r5s8,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kkf5,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+e5p4,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+uymz,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+tmvd,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+qw5t,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+t6v9,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+g9j5,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+j1u8,speaking,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+9t6n,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+2hpu,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+2z7d,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j1u8,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+i9t9,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+e5p4,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+tmvd,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+8g4y,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+t6v9,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+tmvd,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+ql3b,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+y8c3,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+r3zm,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+37ir,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+y8c3,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y9z6,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+f6q3,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+y8c3,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+g7r2,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+8i4i,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+w2t5,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+u3v9,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+g7r2,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+uymz,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+k2v7,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+b2l8,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+u3v9,stroop,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+r3zm,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+u3v9,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+h8s1,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+bfl5,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+5f7t,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+b2l8,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+f6q3,speaking,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+kkf5,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9t6n,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+a1k9,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9txq,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+h7j3,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+f6q3,math,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+9txq,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+h7j3,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+2hpu,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+4e8r,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+8g4y,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+71i5,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4e8r,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+iqyg,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+8i4i,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+hh2e,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+y8c3,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+iqyg,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+k67g,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k2v7,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+dmbd,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+v8mh,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+x1q3,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4woj,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+uymz,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+4woj,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6k5f,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+u3v9,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+4woj,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+a1k9,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+7h5u,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y8c3,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8s1,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+b9w0,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+cxj0,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+cxj0,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+h8r2,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+cxj0,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+71i5,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+chdf,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+u3v9,speaking,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+g9j5,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+71i5,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+p9i3,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g9j5,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+c3m7,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g9j5,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+ctzy,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+i9t9,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+m8g5,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+h7j3,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+i9t9,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j9h8,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+8i4i,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+9j3o,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+i9t9,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+ql3b,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+j9h8,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+b9w0,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+7h5u,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+4woj,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+6k5f,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+kkf5,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+qw5t,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+b9w0,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+r0a3,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+7m3c,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+qx2o,counting2,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+7m3c,stroop,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+d4n6,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+7m3c,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+cxj0,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+kycf,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+4woj,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6g6y,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+6k5f,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+chdf,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wfsl,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+g9j5,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+wssm,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+6g6y,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+r0a3,math,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+cxj0,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+i9t9,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+e5p4,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+9j3o,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+t6v9,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+g9j5,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+7h5u,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+h8s1,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+i9t9,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+j9h8,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y9z6,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+v8mh,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kycf,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+7m3c,video2,False,False,True,0.0,0.0,118.0,Missing Voice,No video file; No audio file
+w2t5,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+r3zm,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+wssm,relax,True,False,True,150.0,0.0,150.0,Missing Voice,No audio file
+f6q3,counting1,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+wfsl,reading,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+37ir,counting3,False,False,True,0.0,0.0,60.0,Missing Voice,No video file; No audio file
+7m3c,speaking,False,True,True,0.0,60.0,60.0,Missing Face,No video file
+uyrl,breathing,False,False,True,0.0,0.0,180.0,Missing Voice,No video file; No audio file
+p9i3,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+uyrl,video1,False,False,True,0.0,0.0,174.0,Missing Voice,No video file; No audio file
+6g6y,speaking,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+x1q3,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+m8g5,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+r5s8,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+5f7t,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y9z6,breathing,True,False,True,180.0,0.0,180.0,Missing Voice,No audio file
+m8g5,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+m8g5,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+y9z6,video1,True,False,True,174.0,0.0,174.0,Missing Voice,No audio file
+2hpu,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+v8mh,video2,True,False,True,118.0,0.0,118.0,Missing Voice,No audio file
+2z7d,reading,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+k67g,counting2,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+kycf,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+8g4y,math,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+chdf,baseline,True,False,True,60.0,0.0,60.0,Missing Voice,No audio file
+kkf5,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+qw5t,stroop,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+y8c3,counting1,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
+d4n6,counting3,True,True,True,60.0,60.0,60.0,Aligned,Aligned (60.0s)
