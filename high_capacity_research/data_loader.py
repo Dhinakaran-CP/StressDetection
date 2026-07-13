@@ -29,8 +29,9 @@ CARDIO_FEATURES = ['ecg_rate_mean', 'ecg_hrv_rmssd', 'ecg_hrv_sdnn']
 MOTION_FEATURES = ['resp_rate_mean']
 
 class MultimodalExpertDataset(Dataset):
-    def __init__(self, df, face_scaler=None, voice_scaler=None, physio_scaler=None, seq_len=5):
+    def __init__(self, df, face_scaler=None, voice_scaler=None, physio_scaler=None, seq_len=5, dual_representation=False):
         self.seq_len = seq_len
+        self.dual_representation = dual_representation
         
         # Extract features
         lock = FeatureRuntimeLock()
@@ -42,7 +43,7 @@ class MultimodalExpertDataset(Dataset):
         X_voice_raw = df[voice_cols].values
         X_physio_raw = df[physio_cols].values
         
-        # Scale
+        # Scale deviations
         self.face_scaler = face_scaler or StandardScaler()
         self.voice_scaler = voice_scaler or StandardScaler()
         self.physio_scaler = physio_scaler or StandardScaler()
@@ -67,17 +68,51 @@ class MultimodalExpertDataset(Dataset):
         self.df_voice_scaled = pd.DataFrame(X_voice, columns=voice_cols)
         self.df_physio_scaled = pd.DataFrame(X_physio, columns=physio_cols)
         
-        # Sub-group expert slices
-        self.feats_eye = self.df_face_scaled[EYE_FEATURES].values
-        self.feats_mouth = self.df_face_scaled[MOUTH_FEATURES].values
-        self.feats_global_face = self.df_face_scaled[GLOBAL_FACE_FEATURES].values
-        
-        self.feats_prosody = self.df_voice_scaled[PROSODY_FEATURES].values
-        self.feats_spectral = self.df_voice_scaled[SPECTRAL_FEATURES].values
-        self.feats_quality = self.df_voice_scaled[QUALITY_FEATURES].values
-        
-        self.feats_cardio = self.df_physio_scaled[CARDIO_FEATURES].values
-        self.feats_motion = self.df_physio_scaled[MOTION_FEATURES].values
+        if self.dual_representation:
+            face_cols_abs = [f + "_abs" for f in face_cols]
+            voice_cols_abs = [f + "_abs" for f in voice_cols]
+            physio_cols_abs = [f + "_abs" for f in physio_cols]
+            
+            X_face_abs = df[face_cols_abs].values
+            X_voice_abs = df[voice_cols_abs].values
+            X_physio_abs = df[physio_cols_abs].values
+            
+            # Setup/Scale absolute inputs separately
+            self.face_scaler_abs = StandardScaler()
+            self.voice_scaler_abs = StandardScaler()
+            self.physio_scaler_abs = StandardScaler()
+            
+            X_face_abs_scaled = self.face_scaler_abs.fit_transform(X_face_abs)
+            X_voice_abs_scaled = self.voice_scaler_abs.fit_transform(X_voice_abs)
+            X_physio_abs_scaled = self.physio_scaler_abs.fit_transform(X_physio_abs)
+            
+            self.df_face_abs_scaled = pd.DataFrame(X_face_abs_scaled, columns=face_cols_abs)
+            self.df_voice_abs_scaled = pd.DataFrame(X_voice_abs_scaled, columns=voice_cols_abs)
+            self.df_physio_abs_scaled = pd.DataFrame(X_physio_abs_scaled, columns=physio_cols_abs)
+            
+            # Sub-group expert slices (Concatenating absolute + relative features)
+            self.feats_eye = np.hstack([self.df_face_scaled[EYE_FEATURES].values, self.df_face_abs_scaled[[col + "_abs" for col in EYE_FEATURES]].values])
+            self.feats_mouth = np.hstack([self.df_face_scaled[MOUTH_FEATURES].values, self.df_face_abs_scaled[[col + "_abs" for col in MOUTH_FEATURES]].values])
+            self.feats_global_face = np.hstack([self.df_face_scaled[GLOBAL_FACE_FEATURES].values, self.df_face_abs_scaled[[col + "_abs" for col in GLOBAL_FACE_FEATURES]].values])
+            
+            self.feats_prosody = np.hstack([self.df_voice_scaled[PROSODY_FEATURES].values, self.df_voice_abs_scaled[[col + "_abs" for col in PROSODY_FEATURES]].values])
+            self.feats_spectral = np.hstack([self.df_voice_scaled[SPECTRAL_FEATURES].values, self.df_voice_abs_scaled[[col + "_abs" for col in SPECTRAL_FEATURES]].values])
+            self.feats_quality = np.hstack([self.df_voice_scaled[QUALITY_FEATURES].values, self.df_voice_abs_scaled[[col + "_abs" for col in QUALITY_FEATURES]].values])
+            
+            self.feats_cardio = np.hstack([self.df_physio_scaled[CARDIO_FEATURES].values, self.df_physio_abs_scaled[[col + "_abs" for col in CARDIO_FEATURES]].values])
+            self.feats_motion = np.hstack([self.df_physio_scaled[MOTION_FEATURES].values, self.df_physio_abs_scaled[[col + "_abs" for col in MOTION_FEATURES]].values])
+        else:
+            # Sub-group expert slices (Deviation features only)
+            self.feats_eye = self.df_face_scaled[EYE_FEATURES].values
+            self.feats_mouth = self.df_face_scaled[MOUTH_FEATURES].values
+            self.feats_global_face = self.df_face_scaled[GLOBAL_FACE_FEATURES].values
+            
+            self.feats_prosody = self.df_voice_scaled[PROSODY_FEATURES].values
+            self.feats_spectral = self.df_voice_scaled[SPECTRAL_FEATURES].values
+            self.feats_quality = self.df_voice_scaled[QUALITY_FEATURES].values
+            
+            self.feats_cardio = self.df_physio_scaled[CARDIO_FEATURES].values
+            self.feats_motion = self.df_physio_scaled[MOTION_FEATURES].values
         
         self.labels = df['label'].values
         self.subjects = df['subject_id'].values
@@ -139,7 +174,7 @@ class MultimodalExpertDataset(Dataset):
             torch.LongTensor([subj_id])[0]
         )
 
-def load_and_align_data(data_dir="certified_data"):
+def load_and_align_data(data_dir="certified_data", return_absolute=False):
     print("Loading datasets...")
     df_face = pd.read_csv(os.path.join(data_dir, "face_certified.csv")).drop(columns=['video_id', 'window_start', 'window_end'], errors='ignore')
     df_voice = pd.read_csv(os.path.join(data_dir, "voice_certified.csv")).drop(columns=['video_id', 'window_start', 'window_end'], errors='ignore')
@@ -153,6 +188,14 @@ def load_and_align_data(data_dir="certified_data"):
         
     # Calibration baseline normalization (Subtract subject's calm average)
     lock = FeatureRuntimeLock()
+    
+    if return_absolute:
+        for df, modality in [(df_face, 'face'), (df_voice, 'voice'), (df_physio, 'physio')]:
+            features = [f for f in lock.contract["modalities"][modality]["features"] if f not in EXCLUDED_FEATURES]
+            df[features] = df[features].fillna(0)
+            for f in features:
+                df[f + "_abs"] = df[f]
+                
     for df, modality in [(df_face, 'face'), (df_voice, 'voice'), (df_physio, 'physio')]:
         features = [f for f in lock.contract["modalities"][modality]["features"] if f not in EXCLUDED_FEATURES]
         df[features] = df[features].fillna(0)
