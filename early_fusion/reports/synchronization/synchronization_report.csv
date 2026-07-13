@@ -1,8 +1,0 @@
-metric,value
-total_recordings,776
-fully_synchronized,364
-missing_face,147
-missing_voice,398
-missing_physio,0
-duration_mismatches,0
-final_status,Partially synchronized

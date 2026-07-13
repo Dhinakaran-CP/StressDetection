@@ -1,5 +1,0 @@
-Scenario,Inference Accuracy
-All Modalities Present,78.03%
-Missing Face/Video,77.70%
-Missing Voice/Audio,78.30%
-Missing Physio Logs,78.05%
