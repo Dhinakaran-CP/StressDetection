@@ -1,0 +1,256 @@
+{
+  "version": "1.0.0",
+  "created_at": "2026-07-07T04:14:52.734511Z",
+  "shap_available": true,
+  "models": {
+    "face": {
+      "model_file": "face_expert_lightweight.pkl",
+      "n_features": 18,
+      "sample_size": 500,
+      "feature_labels": [
+        "Left Eye Aspect Ratio",
+        "Right Eye Aspect Ratio",
+        "Avg Eye Aspect Ratio",
+        "Blink Velocity",
+        "Left Brow Descent",
+        "Right Brow Descent",
+        "Brow Asymmetry",
+        "Lip Compression",
+        "Jaw Displacement",
+        "Mouth Corner Pull",
+        "Forehead Tension",
+        "Face Height Norm",
+        "Head Tilt",
+        "Temporal X Variance",
+        "Temporal Y Variance",
+        "Eye Openness Ratio",
+        "Landmark Confidence",
+        "Nose Wrinkle"
+      ],
+      "feature_groups": [
+        "eye",
+        "eye",
+        "eye",
+        "eye",
+        "brow",
+        "brow",
+        "brow",
+        "mouth",
+        "mouth",
+        "mouth",
+        "face",
+        "face",
+        "head",
+        "temporal",
+        "temporal",
+        "eye",
+        "quality",
+        "nose"
+      ],
+      "shap_means": [
+        0.015160927684953125,
+        0.0031578900580797563,
+        0.007112746982188201,
+        0.0,
+        0.008044891960740735,
+        0.018954036800688,
+        0.007089962919056678,
+        0.06377736484993228,
+        0.050059613559171344,
+        0.008492038515703924,
+        0.06640016295757885,
+        0.015434818991334604,
+        0.0,
+        0.0,
+        0.0,
+        0.006599704079947482,
+        0.017155958459286295,
+        0.023612306226159577
+      ],
+      "top_features": [
+        {
+          "feature_index": 10,
+          "feature_label": "Forehead Tension",
+          "feature_group": "face",
+          "mean_abs_shap": 0.06640016295757885
+        },
+        {
+          "feature_index": 7,
+          "feature_label": "Lip Compression",
+          "feature_group": "mouth",
+          "mean_abs_shap": 0.06377736484993228
+        },
+        {
+          "feature_index": 8,
+          "feature_label": "Jaw Displacement",
+          "feature_group": "mouth",
+          "mean_abs_shap": 0.050059613559171344
+        },
+        {
+          "feature_index": 17,
+          "feature_label": "Nose Wrinkle",
+          "feature_group": "nose",
+          "mean_abs_shap": 0.023612306226159577
+        },
+        {
+          "feature_index": 5,
+          "feature_label": "Right Brow Descent",
+          "feature_group": "brow",
+          "mean_abs_shap": 0.018954036800688
+        },
+        {
+          "feature_index": 16,
+          "feature_label": "Landmark Confidence",
+          "feature_group": "quality",
+          "mean_abs_shap": 0.017155958459286295
+        }
+      ],
+      "shap_available": true
+    },
+    "voice": {
+      "model_file": "voice_expert_lightweight.pkl",
+      "n_features": 12,
+      "sample_size": 500,
+      "feature_labels": [
+        "F0 Mean (Pitch Hz)",
+        "F0 Std (Pitch Variation)",
+        "F0 Range",
+        "Jitter Percent",
+        "Shimmer dB",
+        "HNR Mean",
+        "Speaking Rate Proxy",
+        "Voice Intensity",
+        "High Freq Ratio",
+        "Spectral Flux",
+        "Pause Ratio",
+        "Voiced Fraction"
+      ],
+      "feature_groups": [
+        "pitch",
+        "pitch",
+        "pitch",
+        "perturbation",
+        "perturbation",
+        "quality",
+        "rate",
+        "intensity",
+        "spectral",
+        "spectral",
+        "prosody",
+        "voice_activity"
+      ],
+      "shap_means": [
+        0.00870737321454898,
+        0.009140815302787927,
+        0.005150331767087574,
+        0.38721294339481305,
+        0.01123625681211331,
+        0.00383690839563346,
+        0.0026694401404559727,
+        0.0023370817232041454,
+        0.0044586832199293705,
+        0.007485455966166076,
+        0.017161897730666124,
+        0.00715328530331451
+      ],
+      "top_features": [
+        {
+          "feature_index": 3,
+          "feature_label": "Jitter Percent",
+          "feature_group": "perturbation",
+          "mean_abs_shap": 0.38721294339481305
+        },
+        {
+          "feature_index": 10,
+          "feature_label": "Pause Ratio",
+          "feature_group": "prosody",
+          "mean_abs_shap": 0.017161897730666124
+        },
+        {
+          "feature_index": 4,
+          "feature_label": "Shimmer dB",
+          "feature_group": "perturbation",
+          "mean_abs_shap": 0.01123625681211331
+        },
+        {
+          "feature_index": 1,
+          "feature_label": "F0 Std (Pitch Variation)",
+          "feature_group": "pitch",
+          "mean_abs_shap": 0.009140815302787927
+        },
+        {
+          "feature_index": 0,
+          "feature_label": "F0 Mean (Pitch Hz)",
+          "feature_group": "pitch",
+          "mean_abs_shap": 0.00870737321454898
+        },
+        {
+          "feature_index": 9,
+          "feature_label": "Spectral Flux",
+          "feature_group": "spectral",
+          "mean_abs_shap": 0.007485455966166076
+        }
+      ],
+      "shap_available": true
+    },
+    "physio": {
+      "model_file": "physio_expert_lightweight.pkl",
+      "n_features": 5,
+      "sample_size": 500,
+      "feature_labels": [
+        "Heart Rate Mean (BPM)",
+        "HRV RMSSD (ms)",
+        "HRV SDNN (ms)",
+        "EDA SCL Mean (\u00b5S)",
+        "Respiration Rate (br/min)"
+      ],
+      "feature_groups": [
+        "heart_rate",
+        "hrv",
+        "hrv",
+        "eda",
+        "respiration"
+      ],
+      "shap_means": [
+        0.13362022105443533,
+        0.030913513487392158,
+        0.028532775021144135,
+        0.08009461585161164,
+        0.029588045880707802
+      ],
+      "top_features": [
+        {
+          "feature_index": 0,
+          "feature_label": "Heart Rate Mean (BPM)",
+          "feature_group": "heart_rate",
+          "mean_abs_shap": 0.13362022105443533
+        },
+        {
+          "feature_index": 3,
+          "feature_label": "EDA SCL Mean (\u00b5S)",
+          "feature_group": "eda",
+          "mean_abs_shap": 0.08009461585161164
+        },
+        {
+          "feature_index": 1,
+          "feature_label": "HRV RMSSD (ms)",
+          "feature_group": "hrv",
+          "mean_abs_shap": 0.030913513487392158
+        },
+        {
+          "feature_index": 4,
+          "feature_label": "Respiration Rate (br/min)",
+          "feature_group": "respiration",
+          "mean_abs_shap": 0.029588045880707802
+        },
+        {
+          "feature_index": 2,
+          "feature_label": "HRV SDNN (ms)",
+          "feature_group": "hrv",
+          "mean_abs_shap": 0.028532775021144135
+        }
+      ],
+      "shap_available": true
+    }
+  }
+}

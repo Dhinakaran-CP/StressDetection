@@ -1,0 +1,45 @@
+# Schema Contract for Modality Datasets
+# Version: 1.0.0
+# Defines the strict metadata columns that every extracted dataset MUST possess.
+
+metadata_schema:
+  columns:
+    - name: "subject_id"
+      type: "string"
+      required: true
+      description: "Unique identifier for the participant (e.g., 'subject01')."
+    
+    - name: "task_id"
+      type: "string"
+      required: true
+      description: "The experimental task performed (e.g., 'math', 'stroop')."
+    
+    - name: "video_id"
+      type: "string"
+      required: true
+      description: "Source media identifier."
+      
+    - name: "window_index"
+      type: "integer"
+      required: true
+      description: "Monotonically increasing integer index for the temporal window within the source media."
+
+    - name: "window_start"
+      type: "float"
+      required: true
+      description: "Start time of the window in seconds relative to the start of the source media."
+      
+    - name: "window_end"
+      type: "float"
+      required: true
+      description: "End time of the window in seconds."
+
+    - name: "label"
+      type: "integer"
+      required: true
+      description: "Ground truth label: 0 for No Stress / Calm, 1 for Stress."
+
+validation_rules:
+  window_length: 1.0
+  hop_length: 0.5
+  allow_missing_modality: false

@@ -1,0 +1,9 @@
+{
+    "sequence_length": 5,
+    "use_dynamic_router": true,
+    "active_modalities": [
+        "face",
+        "voice",
+        "physio"
+    ]
+}

@@ -1,0 +1,743 @@
+{
+    "active_models": {
+        "face_expert": {
+            "artifact_id": "face_expert_v2",
+            "artifact_type": "model",
+            "version": "2.0.0",
+            "timestamp": 1783932604.3530464,
+            "hash": "2ddc81fa2efbf3c9d87bbc5b0e3573978ee901f7c0a3c0b09ed302492bb661c4",
+            "metadata": {
+                "accuracy": 0.6338482047961185,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (1D-CNN+GRU)"
+            }
+        },
+        "voice_expert": {
+            "artifact_id": "voice_expert_v2",
+            "artifact_type": "model",
+            "version": "2.0.0",
+            "timestamp": 1783932604.3670497,
+            "hash": "20228c3d7d7974eb10802b4375ba63ee4307607f1373431bafc4268dbb9764f7",
+            "metadata": {
+                "accuracy": 0.6771871899055759,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (1D-CNN+GRU)"
+            }
+        },
+        "physio_expert": {
+            "artifact_id": "physio_expert_v2",
+            "artifact_type": "model",
+            "version": "2.0.0",
+            "timestamp": 1783932604.3830674,
+            "hash": "c2b33bed5ae0d819bcdd10c929e4790ea3a96b2ec170e59f63b428bd8c7e73c5",
+            "metadata": {
+                "accuracy": 0.6429542436107661,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (1D-CNN+GRU)"
+            }
+        },
+        "deep_fusion_router": {
+            "artifact_id": "deep_fusion_router_v2",
+            "artifact_type": "model",
+            "version": "2.0.0",
+            "timestamp": 1783932604.3972428,
+            "hash": "494d277cc2176b76e446bf475e92d06726c371e66ba586756da30503e98745d7",
+            "metadata": {
+                "accuracy": 0.6944460200774805,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (MLP Flex-Router)"
+            }
+        },
+        "adv_face_expert": {
+            "artifact_id": "adv_face_expert_v2",
+            "artifact_type": "model",
+            "version": "2.0.0",
+            "timestamp": 1783932604.413242,
+            "hash": "050127696ad1a9f4599e89f76261c0036ab8a117a4d70d244025c9a31418aaa8",
+            "metadata": {
+                "accuracy": 0.660297480609392,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (Adversarial CNN-GRU)"
+            }
+        },
+        "adv_voice_expert": {
+            "artifact_id": "adv_voice_expert_v2",
+            "artifact_type": "model",
+            "version": "2.0.0",
+            "timestamp": 1783932604.429256,
+            "hash": "85078e3b16321c67679dc83ffb6edcab0838e6d7da90c4d83b42607d5dccb306",
+            "metadata": {
+                "accuracy": 0.6816026508612179,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (Adversarial CNN-GRU)"
+            }
+        },
+        "adv_physio_expert": {
+            "artifact_id": "adv_physio_expert_v2",
+            "artifact_type": "model",
+            "version": "2.0.0",
+            "timestamp": 1783932604.4477773,
+            "hash": "f37b38e6c3af5c6903486000ec875e553c174e0f56f978495cbf6a7a752264b2",
+            "metadata": {
+                "accuracy": 0.6603331465365964,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (Adversarial CNN-GRU)"
+            }
+        },
+        "adv_fusion_router": {
+            "artifact_id": "adv_fusion_router_v2",
+            "artifact_type": "model",
+            "version": "2.0.0",
+            "timestamp": 1783932604.461778,
+            "hash": "2989ef40550e08a285b84e59dc8c0edb22dca4944d5c35b3d3fcf227cb1aa7c5",
+            "metadata": {
+                "accuracy": 0.7051082024594083,
+                "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                "framework": "PyTorch (Adversarial Flex-Router)"
+            }
+        }
+    },
+    "active_datasets": {
+        "face_dataset": {
+            "artifact_id": "face_dataset_v1",
+            "artifact_type": "dataset",
+            "version": "1.0.0",
+            "timestamp": 1782911830.117996,
+            "hash": "994053c857f8ee409125279e749f70b85a3cdc94bfeed1ceb2d01c816fc968fa",
+            "metadata": {
+                "dataset_name": "Face Modality",
+                "total_rows": 108051,
+                "total_subjects": 53,
+                "class_balance": {
+                    "0": 61746,
+                    "1": 46305
+                },
+                "status": "CERTIFIED"
+            }
+        },
+        "voice_dataset": {
+            "artifact_id": "voice_dataset_v1",
+            "artifact_type": "dataset",
+            "version": "1.0.0",
+            "timestamp": 1782911830.3475769,
+            "hash": "99e3892aeeb1f5838e44cd96ea8be09017328a8f904991b0afbb0086565f67fc",
+            "metadata": {
+                "dataset_name": "Voice Modality",
+                "total_rows": 44982,
+                "total_subjects": 54,
+                "class_balance": {
+                    "1": 31892,
+                    "0": 13090
+                },
+                "status": "CERTIFIED"
+            }
+        }
+    },
+    "active_bundles": {
+        "explainability_bundle": {
+            "artifact_id": "explainability_bundle_v1",
+            "artifact_type": "bundle",
+            "version": "1.0.0",
+            "timestamp": 1783397745.3193262,
+            "hash": "9106c2e5b995883a2cde93006950bbd2803398ec872883e768e923543edad6b2",
+            "metadata": {
+                "modalities": [
+                    "face",
+                    "voice",
+                    "physio"
+                ],
+                "shap_available": true,
+                "top_k_per_mod": 6,
+                "sample_sizes": {
+                    "face": 500,
+                    "voice": 500,
+                    "physio": 500
+                },
+                "top_drivers": {
+                    "face": "Forehead Tension",
+                    "voice": "Jitter Percent",
+                    "physio": "Heart Rate Mean (BPM)"
+                }
+            }
+        }
+    },
+    "history_models": {
+        "face_expert": [
+            {
+                "artifact_id": "face_expert_v1",
+                "artifact_type": "model",
+                "version": "1.0.0",
+                "timestamp": 1783181563.560804,
+                "hash": "a2027fcf87fc74580e7448cd1a948d4d23af719a6ddda5d9341a907e8bc51f27",
+                "metadata": {
+                    "accuracy": 0.5698766094420601,
+                    "f1_score_stress": 0.5605444662677568,
+                    "confusion_matrix": [
+                        [
+                            6611,
+                            4487
+                        ],
+                        [
+                            5134,
+                            6136
+                        ]
+                    ],
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+                }
+            },
+            {
+                "artifact_id": "face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783228472.1344395,
+                "hash": "a1683b75ec4d2c7dcdef617289bbb20c8cd47e391a9b413b927209477a6d7ed9",
+                "metadata": {
+                    "accuracy": 0.663,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783233701.2222033,
+                "hash": "7dc1652cb7c0f3b763eaa3de36428a09587be427dca97f3da52fd49a0d1495fe",
+                "metadata": {
+                    "accuracy": 0.550954655456019,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783247790.1926763,
+                "hash": "70e651a48aa8d5d1e5e5578809ae3bb9974ff75240f8f88f1d2c1e7ed83f01c4",
+                "metadata": {
+                    "accuracy": 0.6640131681866961,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783254450.9748182,
+                "hash": "995ac6f53be21fe7249bb4389c3059aa3dcae8c6414871b78606305903113cf2",
+                "metadata": {
+                    "accuracy": 0.6614195316454996,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "face_expert_v1",
+                "artifact_type": "model",
+                "version": "1.0.0",
+                "timestamp": 1783921086.6335325,
+                "hash": "8e0571f6a72521a13afcf660f8505bc221d53577d07c94601c51e137e7e3dede",
+                "metadata": {
+                    "accuracy": 0.5698766094420601,
+                    "f1_score_stress": 0.5605444662677568,
+                    "confusion_matrix": [
+                        [
+                            6611,
+                            4487
+                        ],
+                        [
+                            5134,
+                            6136
+                        ]
+                    ],
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+                }
+            },
+            {
+                "artifact_id": "face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783932604.3530464,
+                "hash": "2ddc81fa2efbf3c9d87bbc5b0e3573978ee901f7c0a3c0b09ed302492bb661c4",
+                "metadata": {
+                    "accuracy": 0.6338482047961185,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            }
+        ],
+        "voice_expert": [
+            {
+                "artifact_id": "voice_expert_v1",
+                "artifact_type": "model",
+                "version": "1.0.0",
+                "timestamp": 1783181571.3044915,
+                "hash": "5a1df684fc3fd167b996c83aa1168a75207c7ead6282ed66b88651b0345efc0a",
+                "metadata": {
+                    "accuracy": 0.5951980792316927,
+                    "f1_score_stress": 0.704625087596356,
+                    "confusion_matrix": [
+                        [
+                            936,
+                            1920
+                        ],
+                        [
+                            1452,
+                            4022
+                        ]
+                    ],
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+                }
+            },
+            {
+                "artifact_id": "voice_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783233701.2528994,
+                "hash": "db41acbc550915d476ba56b06c76c21d27cb4822b06aad49f5579ff5c1ec677e",
+                "metadata": {
+                    "accuracy": 0.6146442187380659,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "voice_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783247790.2016315,
+                "hash": "05347fc3759b7fa763593393ffca219d548d5ab328697f2952e11ea3ff8a5cee",
+                "metadata": {
+                    "accuracy": 0.6222625410289597,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "voice_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783254451.0147855,
+                "hash": "ba863cfeb1309b38b5f52d8e9c5ffd91d0dcd7526931c666503777de496c8ec9",
+                "metadata": {
+                    "accuracy": 0.6242514354920219,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "voice_expert_v1",
+                "artifact_type": "model",
+                "version": "1.0.0",
+                "timestamp": 1783921087.854606,
+                "hash": "fb8ad1f152468b26e2cbdb5dbdb78240728eed4d11a18e11f66959a2038792c3",
+                "metadata": {
+                    "accuracy": 0.6064825930372149,
+                    "f1_score_stress": 0.7113928508540236,
+                    "confusion_matrix": [
+                        [
+                            1012,
+                            1844
+                        ],
+                        [
+                            1434,
+                            4040
+                        ]
+                    ],
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+                }
+            },
+            {
+                "artifact_id": "voice_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783932604.3670497,
+                "hash": "20228c3d7d7974eb10802b4375ba63ee4307607f1373431bafc4268dbb9764f7",
+                "metadata": {
+                    "accuracy": 0.6771871899055759,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            }
+        ],
+        "physio_expert": [
+            {
+                "artifact_id": "physio_expert_v1",
+                "artifact_type": "model",
+                "version": "1.0.0",
+                "timestamp": 1783181585.3670082,
+                "hash": "79c7e0905649f28582bdf8b260f17f07b2019527930cc39388f0380e4e153d35",
+                "metadata": {
+                    "accuracy": 0.7050972825213057,
+                    "f1_score_stress": 0.6087883959044369,
+                    "confusion_matrix": [
+                        [
+                            11832,
+                            2667
+                        ],
+                        [
+                            4669,
+                            5708
+                        ]
+                    ],
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+                }
+            },
+            {
+                "artifact_id": "physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783228472.155377,
+                "hash": "b6d9ac14c822ec7fd53e4c1a4ec1e8621cf0f7fa60394137a9f61398ba5c4177",
+                "metadata": {
+                    "accuracy": 0.6494,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783233701.2651267,
+                "hash": "b7e7568ef077352aa67415d4cacc45e26945864dc414d059edb6fce8aa566623",
+                "metadata": {
+                    "accuracy": 0.5894680709342462,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783247790.2046278,
+                "hash": "5d0dcc559b48b82f15f05dd6e91ca2fa37081b842450fc93a8445e062f00169e",
+                "metadata": {
+                    "accuracy": 0.6491377909032825,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783254451.0324893,
+                "hash": "e387d8fba0d1a399387af87598de3d95b3793ee9eb8130d9c2caa0c54f57e8e8",
+                "metadata": {
+                    "accuracy": 0.6556460351110042,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            },
+            {
+                "artifact_id": "physio_expert_v1",
+                "artifact_type": "model",
+                "version": "1.0.0",
+                "timestamp": 1783921089.8709085,
+                "hash": "178debec697448f114e2afe81d56bf6aa845230f82d6044e044b538544b375a9",
+                "metadata": {
+                    "accuracy": 0.7050972825213057,
+                    "f1_score_stress": 0.6087883959044369,
+                    "confusion_matrix": [
+                        [
+                            11832,
+                            2667
+                        ],
+                        [
+                            4669,
+                            5708
+                        ]
+                    ],
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)"
+                }
+            },
+            {
+                "artifact_id": "physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783932604.3830674,
+                "hash": "c2b33bed5ae0d819bcdd10c929e4790ea3a96b2ec170e59f63b428bd8c7e73c5",
+                "metadata": {
+                    "accuracy": 0.6429542436107661,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (1D-CNN+GRU)"
+                }
+            }
+        ],
+        "deep_fusion_router": [
+            {
+                "artifact_id": "deep_fusion_router_v1",
+                "artifact_type": "model",
+                "version": "1.0.0",
+                "timestamp": 1783228472.1634665,
+                "hash": "517f1eb30e357ea5fbb102daa1d1edcc19cc7a07adfb288df804aba5936500b0",
+                "metadata": {
+                    "accuracy": 0.6744,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (MLP Router)"
+                }
+            },
+            {
+                "artifact_id": "deep_fusion_router_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783233701.2870364,
+                "hash": "a562be250cd15d607d3c79f93f5f96bce3314c89b3839c047e186526852d48c2",
+                "metadata": {
+                    "accuracy_all_present": 0.582574927657167,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (MLP Flex-Router)"
+                }
+            },
+            {
+                "artifact_id": "deep_fusion_router_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783247790.206623,
+                "hash": "c29c1d3e796a6a2ccf71b85ddb6380f6cb66a0f14365bde4c80cb3a300921c28",
+                "metadata": {
+                    "accuracy": 0.6779639389875324,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (MLP Flex-Router)"
+                }
+            },
+            {
+                "artifact_id": "deep_fusion_router_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783254451.0455978,
+                "hash": "e892ef6421e256eb0b80697430b72fbc53dace036e1895b0a0a7c73edb7ff387",
+                "metadata": {
+                    "accuracy": 0.6724004417667959,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (MLP Flex-Router)"
+                }
+            },
+            {
+                "artifact_id": "deep_fusion_router_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783932604.3972428,
+                "hash": "494d277cc2176b76e446bf475e92d06726c371e66ba586756da30503e98745d7",
+                "metadata": {
+                    "accuracy": 0.6944460200774805,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (MLP Flex-Router)"
+                }
+            }
+        ],
+        "adv_face_expert": [
+            {
+                "artifact_id": "adv_face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783247790.212022,
+                "hash": "0d7c18f32939a05d584567508cd4307756077e55a2da46a9d46111a7db3644fb",
+                "metadata": {
+                    "accuracy": 0.46747944362622657,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            },
+            {
+                "artifact_id": "adv_face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783254451.0578673,
+                "hash": "596c0dfc5badfacd80fc6875a2c9834a015127b9d459e76a199c1cdb4ed30cbd",
+                "metadata": {
+                    "accuracy": 0.6706224873503415,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            },
+            {
+                "artifact_id": "adv_face_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783932604.413242,
+                "hash": "050127696ad1a9f4599e89f76261c0036ab8a117a4d70d244025c9a31418aaa8",
+                "metadata": {
+                    "accuracy": 0.660297480609392,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            }
+        ],
+        "adv_voice_expert": [
+            {
+                "artifact_id": "adv_voice_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783247790.2150905,
+                "hash": "e7d023ddd108669bf96bce966558f4944b24be06146008fcf248f61cb44c43b8",
+                "metadata": {
+                    "accuracy": 0.4673690737433275,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            },
+            {
+                "artifact_id": "adv_voice_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783254451.0764928,
+                "hash": "1aa60d44bfc484279dc58ac4295c9f254bc1c2641ab38f1b8814dd08ec2b76c8",
+                "metadata": {
+                    "accuracy": 0.6186114426049878,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            },
+            {
+                "artifact_id": "adv_voice_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783932604.429256,
+                "hash": "85078e3b16321c67679dc83ffb6edcab0838e6d7da90c4d83b42607d5dccb306",
+                "metadata": {
+                    "accuracy": 0.6816026508612179,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            }
+        ],
+        "adv_physio_expert": [
+            {
+                "artifact_id": "adv_physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783247790.2190793,
+                "hash": "b2a6c6453e6532faa6f138b9464a44f2d07f4d1356535b629a58ead81d03bd54",
+                "metadata": {
+                    "accuracy": 0.4725189208605907,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            },
+            {
+                "artifact_id": "adv_physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783254451.1056786,
+                "hash": "0c4e1e5a134c216e0896b91d69b2ecb565da2b74f3ffbe466e2b7aa58e028f9d",
+                "metadata": {
+                    "accuracy": 0.6424431492396934,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            },
+            {
+                "artifact_id": "adv_physio_expert_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783932604.4477773,
+                "hash": "f37b38e6c3af5c6903486000ec875e553c174e0f56f978495cbf6a7a752264b2",
+                "metadata": {
+                    "accuracy": 0.6603331465365964,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial CNN-GRU)"
+                }
+            }
+        ],
+        "adv_fusion_router": [
+            {
+                "artifact_id": "adv_fusion_router_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783247790.222071,
+                "hash": "6b138db33e837736446a20d6bbfc4533cddbcca70a4b24d8ec45c227073d81ed",
+                "metadata": {
+                    "accuracy": 0.4709961657727938,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial Flex-Router)"
+                }
+            },
+            {
+                "artifact_id": "adv_fusion_router_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783254451.1229103,
+                "hash": "d850ee84a2497acea86f4e425a74b9b42b8975ee812c961c658d615e52a5f5e6",
+                "metadata": {
+                    "accuracy": 0.6735747408267037,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial Flex-Router)"
+                }
+            },
+            {
+                "artifact_id": "adv_fusion_router_v2",
+                "artifact_type": "model",
+                "version": "2.0.0",
+                "timestamp": 1783932604.461778,
+                "hash": "2989ef40550e08a285b84e59dc8c0edb22dca4944d5c35b3d3fcf227cb1aa7c5",
+                "metadata": {
+                    "accuracy": 0.7051082024594083,
+                    "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+                    "framework": "PyTorch (Adversarial Flex-Router)"
+                }
+            }
+        ]
+    },
+    "history_datasets": {},
+    "history_bundles": {
+        "explainability_bundle": [
+            {
+                "artifact_id": "explainability_bundle_v1",
+                "artifact_type": "bundle",
+                "version": "1.0.0",
+                "timestamp": 1783397579.720322,
+                "hash": "4252974a44effd268fae4f7513411aa5048e2ec98a21ece0dbef5b1a2f40e52a",
+                "metadata": {
+                    "modalities": [
+                        "face",
+                        "voice",
+                        "physio"
+                    ],
+                    "shap_available": false,
+                    "top_k_per_mod": 6,
+                    "sample_sizes": {
+                        "face": 500,
+                        "voice": 500,
+                        "physio": 500
+                    },
+                    "top_drivers": {
+                        "face": "Left Eye Aspect Ratio",
+                        "voice": "F0 Mean (Pitch Hz)",
+                        "physio": "Heart Rate Mean (BPM)"
+                    }
+                }
+            },
+            {
+                "artifact_id": "explainability_bundle_v1",
+                "artifact_type": "bundle",
+                "version": "1.0.0",
+                "timestamp": 1783397745.3193262,
+                "hash": "9106c2e5b995883a2cde93006950bbd2803398ec872883e768e923543edad6b2",
+                "metadata": {
+                    "modalities": [
+                        "face",
+                        "voice",
+                        "physio"
+                    ],
+                    "shap_available": true,
+                    "top_k_per_mod": 6,
+                    "sample_sizes": {
+                        "face": 500,
+                        "voice": 500,
+                        "physio": 500
+                    },
+                    "top_drivers": {
+                        "face": "Forehead Tension",
+                        "voice": "Jitter Percent",
+                        "physio": "Heart Rate Mean (BPM)"
+                    }
+                }
+            }
+        ]
+    }
+}

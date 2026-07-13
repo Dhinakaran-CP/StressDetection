@@ -1,0 +1,109 @@
+# ===========================================
+# Python
+# ===========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+.pytest_cache/
+
+# ===========================================
+# Virtual Environments
+# ===========================================
+.venv/
+venv/
+ENV/
+env/
+
+# ===========================================
+# Environment / Secrets
+# ===========================================
+configs/.env
+.env
+*.env.local
+
+# ===========================================
+# ML Models & Large Binary Files
+# Large legacy models NOT committed (100MB+)
+# ===========================================
+backend/facial_expert_model.pkl
+backend/voice_expert_model.pkl
+backend/physio_expert_model.pkl
+
+# Training intermediate checkpoints
+*.h5
+*.onnx
+*.npz
+
+# ===========================================
+# Training / Research Data (large, not versioned)
+# ===========================================
+training/Dataset/
+training/Feature Extraction/Features/*.csv
+data/
+datasets/
+certified_data/*.csv
+!certified_data/*.json
+
+# ===========================================
+# Uploads & Temp Files
+# ===========================================
+backend/uploads/
+uploads/
+*.tmp
+backend/current_reqs.txt
+current_reqs.txt
+
+# ===========================================
+# OS & IDE
+# ===========================================
+.DS_Store
+._.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ===========================================
+# Frontend
+# ===========================================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+node_modules/
+
+# ===========================================
+# Archived / Obsolete (never commit quarantine)
+# ===========================================
+quarantine/
+_archive/
+Physiological/
+
+# ===========================================
+# Deployment Export Packages
+# ===========================================
+StressDetectionUsingML_Deploy/
+
+# ===========================================
+# Early Fusion Workspace ignores
+# ===========================================
+early_fusion/outputs/checkpoints/
+early_fusion/outputs/final_model/
+early_fusion/outputs/predictions/
+early_fusion/logs/
+model_archive.zip

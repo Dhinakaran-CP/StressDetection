@@ -1,0 +1,10 @@
+{
+    "sequence_length": 5,
+    "use_dynamic_router": true,
+    "primary_strategy": "adversarial",
+    "active_modalities": [
+        "face",
+        "voice",
+        "physio"
+    ]
+}

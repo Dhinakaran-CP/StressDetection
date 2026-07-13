@@ -1,0 +1,26 @@
+{
+    "artifact_id": "explainability_bundle_v1",
+    "artifact_type": "bundle",
+    "version": "1.0.0",
+    "timestamp": 1783397745.3193262,
+    "hash": "3cb57fcfef8bd498f6192425648b0dfcffc5ac99a4721d7ca1bf5cd7ccac693d",
+    "metadata": {
+        "modalities": [
+            "face",
+            "voice",
+            "physio"
+        ],
+        "shap_available": true,
+        "top_k_per_mod": 6,
+        "sample_sizes": {
+            "face": 500,
+            "voice": 500,
+            "physio": 500
+        },
+        "top_drivers": {
+            "face": "Forehead Tension",
+            "voice": "Jitter Percent",
+            "physio": "Heart Rate Mean (BPM)"
+        }
+    }
+}
