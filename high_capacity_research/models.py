@@ -23,11 +23,12 @@ def grad_reverse(x, alpha=0.02):
 # Base 1D-CNN + GRU Sequence Encoder (Unimodal Expert)
 # ---------------------------------------------------------
 class SequenceEncoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim=16):
+    def __init__(self, input_dim, hidden_dim=16, num_heads=4):
         super().__init__()
         self.conv = nn.Conv1d(in_channels=input_dim, out_channels=hidden_dim, kernel_size=3, padding=1)
         self.bn = nn.BatchNorm1d(hidden_dim)
         self.relu = nn.ReLU()
+        self.self_attn = nn.MultiheadAttention(embed_dim=hidden_dim, num_heads=num_heads, batch_first=True)
         self.gru = nn.GRU(hidden_dim, hidden_dim, batch_first=True)
         
     def forward(self, x):
@@ -37,6 +38,11 @@ class SequenceEncoder(nn.Module):
         x = self.bn(x)
         x = self.relu(x)
         x = x.permute(0, 2, 1)  # [batch, seq_len, hidden_dim]
+        
+        # Standard multi-head self-attention
+        attn_out, _ = self.self_attn(x, x, x)
+        x = x + attn_out  # residual connection
+        
         gru_out, _ = self.gru(x)
         latent = gru_out[:, -1, :]  # Last time step [batch, hidden_dim]
         return latent
@@ -235,11 +241,12 @@ class HybridMoEAttentionModel(nn.Module):
         # Global MoE Router
         self.global_gate = GatedFusion(num_modalities=3, embed_dim=hidden_dim)
         self.stress_head = nn.Linear(hidden_dim, 2)
+        self.confidence_head = nn.Linear(hidden_dim, 1) # Auxiliary confidence head
         
         if adversarial:
             self.subj_head = nn.Linear(hidden_dim, num_subjects)
             
-    def forward(self, eye, mouth, global_face, prosody, spectral, quality, cardio, motion):
+    def forward(self, eye, mouth, global_face, prosody, spectral, quality, cardio, motion, return_confidence=False):
         # 1. Forward through specialized sub-experts
         e_eye = self.exp_eye(eye)
         e_mouth = self.exp_mouth(mouth)
@@ -266,6 +273,14 @@ class HybridMoEAttentionModel(nn.Module):
         fused = self.global_gate([f_re, v_re, p_re])
         stress_logits = self.stress_head(fused)
         
+        if return_confidence:
+            confidence = torch.sigmoid(self.confidence_head(fused))
+            if self.adversarial:
+                rev_fused = grad_reverse(fused)
+                subj_logits = self.subj_head(rev_fused)
+                return stress_logits, subj_logits, confidence
+            return stress_logits, confidence
+            
         if self.adversarial:
             rev_fused = grad_reverse(fused)
             subj_logits = self.subj_head(rev_fused)
