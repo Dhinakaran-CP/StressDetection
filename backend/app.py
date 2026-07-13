@@ -846,8 +846,12 @@ def stream_face():
         cal = get_or_create(user_id)
         
         landmark_conf = indicators.get('landmark_confidence', 1.0)
-        # Gate 1: Landmark quality gate
-        if landmark_conf < 0.5:
+        # Gate 1: Landmark quality gate (using AVB-MSIA SignalQualityMonitor)
+        raw_vec = build_face_feature_vector(indicators)
+        from backend.core.signal_quality_monitor import SignalQualityMonitor
+        quality_monitor = SignalQualityMonitor(face_min_confidence=0.5)
+        quality_status = quality_monitor.get_quality_status("face", raw_vec)
+        if not quality_status["is_reliable"]:
             return jsonify({
                 'score': None,
                 'reason': 'low_landmark_confidence',
@@ -997,10 +1001,14 @@ def stream_voice():
         # Extract features and indicators
         indicators = result['indicators']
         
-        # Filter out silence or non-speech hum/noise post-feature-extraction
-        if indicators.get('f0_mean', 0.0) == 0.0 or indicators.get('voiced_fraction', 0.0) < 0.05:
+        # Filter out silence or non-speech hum/noise post-feature-extraction (using AVB-MSIA SignalQualityMonitor)
+        from backend.core.signal_quality_monitor import SignalQualityMonitor
+        quality_monitor = SignalQualityMonitor(voice_min_intensity=0.01)
+        features = result['features']
+        quality_status = quality_monitor.get_quality_status("voice", features)
+        if not quality_status["is_reliable"] or indicators.get('f0_mean', 0.0) == 0.0 or indicators.get('voiced_fraction', 0.0) < 0.05:
             score_buffer.clear('voice')
-            print(f"[Voice Expert] Silence/Unvoiced audio detected in features (F0: {indicators.get('f0_mean', 0.0):.1f} Hz, Voiced Frac: {indicators.get('voiced_fraction', 0.0):.3f}). Clearing voice buffer.")
+            print(f"[Voice Expert] Silence/Unvoiced/Low quality audio detected in features (F0: {indicators.get('f0_mean', 0.0):.1f} Hz, Voiced Frac: {indicators.get('voiced_fraction', 0.0):.3f}). Clearing voice buffer.")
             return jsonify({'score': None, 'reason': 'unvoiced_or_silence', 'indicators': indicators})
 
         features = result['features']
@@ -1156,6 +1164,15 @@ def calibrate_finalize():
         mean_raw_voice = np.mean(cal._voice_baseline_matrix, axis=0)
         mean_raw_physio = np.mean(cal._physio_baseline_matrix, axis=0)
         
+        # Run AVB-MSIA BaselineVerifier on candidate calibration session
+        from backend.core.baseline_verifier import BaselineVerifier
+        verifier = BaselineVerifier()
+        ver_report = verifier.verify_calibration_session(
+            face_data=np.array(cal._face_baseline_matrix) if len(cal._face_baseline_matrix) > 0 else None,
+            voice_data=np.array(cal._voice_baseline_matrix) if len(cal._voice_baseline_matrix) > 0 else None,
+            physio_data=np.array(cal._physio_baseline_matrix) if len(cal._physio_baseline_matrix) > 0 else None
+        )
+        
         # 2. Run uncalibrated predictions to verify if baseline window is neutral
         # Temporarily disable completed status so inference runs in population/uncalibrated space
         was_complete = cal.is_complete
@@ -1229,17 +1246,31 @@ def calibrate_finalize():
             if drivers_desc:
                 explanation_summary = f"Baseline features show primary contributions from: {', '.join(drivers_desc)}."
                 
-        # 6. Recommendation: Auto-accept if stress probability < 0.40 and no modality score > 0.50
+        # 6. Recommendation: Auto-accept if stress probability < 0.40, no modality score > 0.50, and verification is verified
         max_modality_prob = max(biomarker_scores.values())
-        if stress_prob < 0.40 and max_modality_prob < 0.50:
+        if stress_prob < 0.40 and max_modality_prob < 0.50 and ver_report["status"] == "verified":
             recommendation = 'ACCEPT_BASELINE'
             cal.is_complete = True
             cal.save_to_file(user_id)
             try:
                 shutil.copyfile(save_path, accepted_path)
                 print(f"[Calibration] Saved automatically accepted baseline to {accepted_path}")
+                # Save to BaselineStore
+                from backend.core.baseline_store import BaselineStore
+                store = BaselineStore()
+                store.save_subject_baseline(
+                    subject_id=user_id,
+                    face_baseline=mean_raw_face,
+                    voice_baseline=mean_raw_voice,
+                    physio_baseline=mean_raw_physio,
+                    metadata={"verification_status": ver_report["status"]}
+                )
             except Exception as e:
                 print(f"Error copying accepted baseline file: {e}")
+        elif ver_report["status"] == "recalibration_needed":
+            recommendation = 'NEEDS_RECALIBRATION'
+            cal.is_complete = False
+            cal.save_to_file(user_id)
         else:
             recommendation = 'NEEDS_CONFIRMATION'
             cal.is_complete = False
@@ -1252,7 +1283,8 @@ def calibrate_finalize():
             'pop_deviations': pop_deviations,
             'prior_deviations': prior_devs,
             'explanation_summary': explanation_summary,
-            'top_features': top_drivers[:3]
+            'top_features': top_drivers[:3],
+            'calm_verification': ver_report
         }
         
         cal.verification_results = verification_results
@@ -1289,6 +1321,19 @@ def calibrate_confirm():
         accepted_path = save_path.replace(".json", "_accepted.json")
         try:
             shutil.copyfile(save_path, accepted_path)
+            # Store in persistent BaselineStore
+            from backend.core.baseline_store import BaselineStore
+            store = BaselineStore()
+            mean_raw_face = np.mean(cal._face_baseline_matrix, axis=0) if len(cal._face_baseline_matrix) > 0 else None
+            mean_raw_voice = np.mean(cal._voice_baseline_matrix, axis=0) if len(cal._voice_baseline_matrix) > 0 else None
+            mean_raw_physio = np.mean(cal._physio_baseline_matrix, axis=0) if len(cal._physio_baseline_matrix) > 0 else None
+            store.save_subject_baseline(
+                subject_id=user_id,
+                face_baseline=mean_raw_face,
+                voice_baseline=mean_raw_voice,
+                physio_baseline=mean_raw_physio,
+                metadata={"notes": notes, "verification_status": "low_confidence"}
+            )
             print(f"[Calibration] Manually accepted low-confidence baseline saved to {accepted_path}")
         except Exception as e:
             print(f"Error copying accepted calibration: {e}")
