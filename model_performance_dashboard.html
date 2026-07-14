@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal Stress Detection Architecture Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(17, 24, 39, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --accent-green: #00ff87;
+            --accent-purple: #a855f7;
+            --glow-color: rgba(0, 242, 254, 0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 280px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px var(--glow-color));
+        }
+
+        .logo-text {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 0.25rem;
+        }
+
+        /* Custom Scrollbar for Sidebar Navigation */
+        .nav-menu::-webkit-scrollbar {
+            width: 4px;
+        }
+        .nav-menu::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.85rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .nav-item i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.15), rgba(0, 242, 254, 0.05));
+            border-color: rgba(0, 242, 254, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 242, 254, 0.05);
+        }
+
+        .nav-category {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.3);
+            margin: 1.5rem 0 0.5rem 0.5rem;
+        }
+
+        /* Main Content Container */
+        .main-content {
+            margin-left: 280px;
+            flex-grow: 1;
+            padding: 2.5rem 3rem;
+            max-width: 1600px;
+        }
+
+        /* Header Dashboard Info */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header-title h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, #e5e7eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .system-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        /* Grid Layouts */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        /* Stat Cards */
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.75rem;
+            backdrop-filter: blur(20px);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.05), transparent);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.cyan {
+            background: rgba(0, 242, 254, 0.1);
+            color: var(--accent-cyan);
+        }
+
+        .stat-icon.green {
+            background: rgba(0, 255, 135, 0.1);
+            color: var(--accent-green);
+        }
+
+        .stat-icon.purple {
+            background: rgba(168, 85, 247, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.25rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Leaderboard and Comparison Grid */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .leaderboard-table th {
+            text-align: left;
+            padding: 0.85rem 1rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .leaderboard-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.9rem;
+        }
+
+        .leaderboard-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .leaderboard-table tr {
+            transition: var(--transition);
+        }
+
+        .leaderboard-table tr:hover td {
+            background: rgba(255, 255, 255, 0.015);
+            color: #fff;
+        }
+
+        .rank-badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .rank-badge.gold {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .rank-badge.silver {
+            background: rgba(209, 213, 219, 0.1);
+            color: #d1d5db;
+            border: 1px solid rgba(209, 213, 219, 0.3);
+        }
+
+        .rank-badge.bronze {
+            background: rgba(180, 83, 9, 0.1);
+            color: #b45309;
+            border: 1px solid rgba(180, 83, 9, 0.3);
+        }
+
+        .rank-badge.other {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+        }
+
+        .model-cell {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .prod-tag {
+            background: rgba(0, 242, 254, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .metric-cell {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+        }
+
+        .metric-cell.high {
+            color: var(--accent-green);
+        }
+
+        /* Detail View Layout */
+        .content-panel {
+            display: none;
+        }
+
+        .content-panel.active {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .section-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .section-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+
+        /* Architecture Grid */
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .architecture-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Flow Diagrams (SVG container) */
+        .diagram-container {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .diagram-container svg {
+            width: 100%;
+            height: auto;
+            max-height: 480px;
+        }
+
+        /* Methodology Info */
+        .methodology-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .method-block {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .method-block h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .method-block h3 i {
+            color: var(--accent-blue);
+        }
+
+        .method-block p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .method-block ul {
+            list-style: none;
+            padding-left: 0.25rem;
+            margin-top: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .method-block ul li {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .method-block ul li i {
+            color: var(--accent-green);
+            font-size: 0.8rem;
+        }
+
+        /* Validation Charts Block */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .chart-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(20px);
+            text-align: center;
+        }
+
+        .chart-box h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .chart-box img {
+            width: 100%;
+            max-width: 480px;
+            height: auto;
+            border-radius: 12px;
+            background: #111827;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: var(--transition);
+        }
+
+        .chart-box img:hover {
+            transform: scale(1.02);
+            border-color: rgba(79, 172, 254, 0.3);
+        }
+
+        /* SVG Architecture Styles */
+        .node {
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .node rect {
+            fill: #1e293b;
+            stroke: var(--border-color);
+            stroke-width: 1.5;
+            rx: 8;
+            ry: 8;
+            transition: var(--transition);
+        }
+        .node:hover rect {
+            fill: #334155;
+            stroke: var(--accent-cyan);
+            filter: drop-shadow(0 0 4px var(--glow-color));
+        }
+        .node text {
+            fill: var(--text-primary);
+            font-size: 11px;
+            font-weight: 600;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        .edge-path {
+            fill: none;
+            stroke: #475569;
+            stroke-width: 1.5;
+            marker-end: url(#arrow);
+            transition: var(--transition);
+        }
+        .edge-label {
+            font-size: 9px;
+            fill: var(--text-secondary);
+            font-weight: 500;
+            text-anchor: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo-container">
+            <i class="fa-solid fa-brain logo-icon"></i>
+            <span class="logo-text">StressML Dashboard</span>
+        </div>
+
+        <ul class="nav-menu">
+            <div class="nav-category">Overview</div>
+            <li class="nav-item active" onclick="switchTab('overview')">
+                <i class="fa-solid fa-chart-line"></i>Performance Leaderboard
+            </li>
+
+            <div class="nav-category">Advanced Models</div>
+            <li class="nav-item" onclick="switchTab('ssvb-casa-ais')">
+                <i class="fa-solid fa-shield-halved"></i>SSVB-CASA-AIS
+            </li>
+            <li class="nav-item" onclick="switchTab('vbc-casa-is')">
+                <i class="fa-solid fa-sliders"></i>VBC-CASA-IS
+            </li>
+
+            <div class="nav-category">Fusion Architectures</div>
+            <li class="nav-item" onclick="switchTab('cnn-gru-adv-fusion')">
+                <i class="fa-solid fa-diagram-project"></i>CNN-GRU Adv Fusion
+            </li>
+            <li class="nav-item" onclick="switchTab('cnn-gru-fusion')">
+                <i class="fa-solid fa-code-fork"></i>CNN-GRU Standard Fusion
+            </li>
+            <li class="nav-item" onclick="switchTab('cross-attention-fusion')">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i>Cross-Attention Fusion
+            </li>
+            <li class="nav-item" onclick="switchTab('gated-fusion')">
+                <i class="fa-solid fa-door-closed"></i>Gated Fusion
+            </li>
+            <li class="nav-item" onclick="switchTab('early-fusion')">
+                <i class="fa-solid fa-compress"></i>Early Concat Fusion
+            </li>
+            <li class="nav-item" onclick="switchTab('fleximodal-moe')">
+                <i class="fa-solid fa-network-wired"></i>FlexiModal MoE
+            </li>
+
+            <div class="nav-category">Unimodal Experts</div>
+            <li class="nav-item" onclick="switchTab('voice-expert')">
+                <i class="fa-solid fa-microphone"></i>Voice Sequence Experts
+            </li>
+            <li class="nav-item" onclick="switchTab('physio-expert')">
+                <i class="fa-solid fa-heart-pulse"></i>Physio Sequence Experts
+            </li>
+            <li class="nav-item" onclick="switchTab('face-expert')">
+                <i class="fa-solid fa-face-smile"></i>Face Sequence Experts
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="main-content">
+        
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <h1 id="dashboard-title">Performance Leaderboard</h1>
+                <p id="dashboard-subtitle">Multi-fold Leave-One-Subject-Out (LOSO) Stress Prediction Benchmarks</p>
+            </div>
+            <div class="system-pill">
+                <i class="fa-solid fa-microchip"></i>
+                <span>NVIDIA GPU CUDA ENABLED</span>
+            </div>
+        </div>
+
+        <!-- TAB: OVERVIEW -->
+        <div id="panel-overview" class="content-panel active">
+            <!-- Stats Row -->
+            <div class="grid-3">
+                <div class="card">
+                    <div class="stat-header">
+                        <span class="stat-label">Best Generalization Accuracy</span>
+                        <div class="stat-icon cyan"><i class="fa-solid fa-trophy"></i></div>
+                    </div>
+                    <div class="stat-value">70.51%</div>
+                    <div class="stat-desc">Achieved by <span style="color: var(--accent-cyan)">CNN-GRU Adv Fusion</span></div>
+                </div>
+                <div class="card">
+                    <div class="stat-header">
+                        <span class="stat-label">Total Architectures Trained</span>
+                        <div class="stat-icon green"><i class="fa-solid fa-cubes"></i></div>
+                    </div>
+                    <div class="stat-value">14 Models</div>
+                    <div class="stat-desc">Classified under strict LOSO separation</div>
+                </div>
+                <div class="card">
+                    <div class="stat-header">
+                        <span class="stat-label">Optimal Generalization Bounds</span>
+                        <div class="stat-icon purple"><i class="fa-solid fa-user-check"></i></div>
+                    </div>
+                    <div class="stat-value">65 Subjects</div>
+                    <div class="stat-desc">No biological or visual identity leakage</div>
+                </div>
+            </div>
+
+            <!-- Leaderboard and Charts Grid -->
+            <div class="comparison-grid">
+                <!-- Leaderboard Table -->
+                <div class="card" style="padding-bottom: 1rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Performance Leaderboard</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Ranked by average Accuracy across all validation folds.</p>
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%">Rank</th>
+                                <th>Model Configuration</th>
+                                <th style="width: 15%">Accuracy</th>
+                                <th style="width: 15%">F1-Score</th>
+                                <th style="width: 15%">ROC-AUC</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Comparison Chart -->
+                <div class="card" style="display: flex; flex-direction: column;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.5rem;">Accuracy vs ROC-AUC</h3>
+                    <div style="position: relative; flex-grow: 1; min-height: 350px;">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SSVB-CASA-AIS -->
+        <div id="panel-ssvb-casa-ais" class="content-panel">
+            <div class="section-header">
+                <h2>SSVB-CASA-AIS Model Details</h2>
+                <p class="section-description">Self-Supervised Verified-Baseline Cross-Attention Stress Architecture with Identity Suppression</p>
+            </div>
+            
+            <div class="architecture-grid">
+                <!-- SVG Diagram -->
+                <div class="diagram-container">
+                    <svg viewBox="0 0 600 450" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                            </marker>
+                        </defs>
+                        <!-- Title -->
+                        <text x="300" y="25" fill="#f3f4f6" font-size="14" font-weight="bold" text-anchor="middle">SSVB-CASA-AIS Flow Topology</text>
+                        
+                        <!-- Inputs -->
+                        <g class="node"><rect x="40" y="60" width="140" height="40"/><text x="110" y="80">Face Sub-slices (16)</text></g>
+                        <g class="node"><rect x="230" y="60" width="140" height="40"/><text x="300" y="80">Voice Sub-slices (10)</text></g>
+                        <g class="node"><rect x="420" y="60" width="140" height="40"/><text x="490" y="80">Physio Sub-slices (4)</text></g>
+
+                        <!-- Encoders -->
+                        <g class="node"><rect x="40" y="140" width="140" height="45"/><text x="110" y="162.5">Face CNN-GRU + Attn</text></g>
+                        <g class="node"><rect x="230" y="140" width="140" height="45"/><text x="300" y="162.5">Voice CNN-GRU + Attn</text></g>
+                        <g class="node"><rect x="420" y="140" width="140" height="45"/><text x="490" y="162.5">Physio TCN + Attn</text></g>
+
+                        <!-- Gated Routing -->
+                        <g class="node"><rect x="40" y="220" width="140" height="40"/><text x="110" y="240">Gated Face Router</text></g>
+                        <g class="node"><rect x="230" y="220" width="140" height="40"/><text x="300" y="240">Gated Voice Router</text></g>
+                        <g class="node"><rect x="420" y="220" width="140" height="40"/><text x="490" y="240">Gated Physio Router</text></g>
+
+                        <!-- Fusion -->
+                        <g class="node"><rect x="180" y="295" width="240" height="45"/><text x="300" y="317.5">Cross-Attention Reinforcement & Gate</text></g>
+
+                        <!-- Heads -->
+                        <g class="node"><rect x="80" y="375" width="120" height="40"/><text x="140" y="395">Adversarial GRL Head</text></g>
+                        <g class="node"><rect x="240" y="375" width="120" height="40"/><text x="300" y="395">Stress Class Head</text></g>
+                        <g class="node"><rect x="400" y="375" width="120" height="40"/><text x="460" y="395">Aux Confidence Head</text></g>
+
+                        <!-- Edges -->
+                        <path class="edge-path" d="M 110 100 L 110 140"/>
+                        <path class="edge-path" d="M 300 100 L 300 140"/>
+                        <path class="edge-path" d="M 490 100 L 490 140"/>
+
+                        <path class="edge-path" d="M 110 185 L 110 220"/>
+                        <path class="edge-path" d="M 300 185 L 300 220"/>
+                        <path class="edge-path" d="M 490 185 L 490 220"/>
+
+                        <path class="edge-path" d="M 110 260 L 180 305"/>
+                        <path class="edge-path" d="M 300 260 L 300 295"/>
+                        <path class="edge-path" d="M 490 260 L 420 305"/>
+
+                        <path class="edge-path" d="M 300 340 L 140 375"/>
+                        <path class="edge-path" d="M 300 340 L 300 375"/>
+                        <path class="edge-path" d="M 300 340 L 460 375"/>
+                    </svg>
+                </div>
+                <!-- Methodology Info -->
+                <div class="methodology-container">
+                    <div class="method-block">
+                        <h3><i class="fa-solid fa-circle-check"></i> Key Parameters</h3>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> <strong>Accuracy:</strong> 67.23%</li>
+                            <li><i class="fa-solid fa-check"></i> <strong>F1-Score:</strong> 59.09%</li>
+                            <li><i class="fa-solid fa-check"></i> <strong>ROC-AUC:</strong> 0.7311</li>
+                        </ul>
+                    </div>
+                    <div class="method-block">
+                        <h3><i class="fa-solid fa-gears"></i> Methodology Summary</h3>
+                        <p>This model integrates standard Leave-One-Subject-Out (LOSO) cross-validation with high-capacity unimodal sequence encoders and gradient reversal suppression (GRL). Self-supervised pretraining is done contrastively inside each modality stream to extract user-independent representations before task-specific fine-tuning.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Charts -->
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h3>ROC-AUC Curves</h3>
+                    <img src="evaluation_reports/production_model/ssvb_casa_ais/roc_auc_curves.png" alt="ROC-AUC curves for SSVB-CASA-AIS">
+                </div>
+                <div class="chart-box">
+                    <h3>Confusion Matrices</h3>
+                    <img src="evaluation_reports/production_model/ssvb_casa_ais/confusion_matrices.png" alt="Confusion Matrices for SSVB-CASA-AIS">
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: VBC-CASA-IS -->
+        <div id="panel-vbc-casa-is" class="content-panel">
+            <div class="section-header">
+                <h2>VBC-CASA-IS Model Details</h2>
+                <p class="section-description">Verified-Baseline Contrastive Cross-Attention Stress Architecture with Identity Suppression</p>
+            </div>
+            
+            <div class="architecture-grid">
+                <!-- SVG Diagram -->
+                <div class="diagram-container">
+                    <svg viewBox="0 0 600 450" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <marker id="arrow2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                            </marker>
+                        </defs>
+                        <!-- Title -->
+                        <text x="300" y="25" fill="#f3f4f6" font-size="14" font-weight="bold" text-anchor="middle">VBC-CASA-IS Dual-Representation Flow</text>
+                        
+                        <!-- Inputs -->
+                        <g class="node"><rect x="40" y="60" width="140" height="40"/><text x="110" y="80">Face Absolute (32)</text></g>
+                        <g class="node"><rect x="230" y="60" width="140" height="40"/><text x="300" y="80">Voice Absolute (20)</text></g>
+                        <g class="node"><rect x="420" y="60" width="140" height="40"/><text x="490" y="80">Physio Absolute (8)</text></g>
+
+                        <!-- Encoders -->
+                        <g class="node"><rect x="40" y="140" width="140" height="45"/><text x="110" y="162.5">Face Sequence Encoder</text></g>
+                        <g class="node"><rect x="230" y="140" width="140" height="45"/><text x="300" y="162.5">Voice Sequence Encoder</text></g>
+                        <g class="node"><rect x="420" y="140" width="140" height="45"/><text x="490" y="162.5">Physio Sequence Encoder</text></g>
+
+                        <!-- Quality Mask Routing -->
+                        <g class="node"><rect x="180" y="220" width="240" height="40"/><text x="300" y="240">Quality Scorer & Attention Gate</text></g>
+
+                        <!-- Fusion -->
+                        <g class="node"><rect x="180" y="295" width="240" height="45"/><text x="300" y="317.5">Quality-Masked Cross-Attention & Gating</text></g>
+
+                        <!-- Heads -->
+                        <g class="node"><rect x="80" y="375" width="120" height="40"/><text x="140" y="395">Adversarial GRL Head</text></g>
+                        <g class="node"><rect x="240" y="375" width="120" height="40"/><text x="300" y="395">Stress Class Head</text></g>
+                        <g class="node"><rect x="400" y="375" width="120" height="40"/><text x="460" y="395">Aux Confidence Head</text></g>
+
+                        <!-- Edges -->
+                        <path class="edge-path" d="M 110 100 L 110 140"/>
+                        <path class="edge-path" d="M 300 100 L 300 140"/>
+                        <path class="edge-path" d="M 490 100 L 490 140"/>
+
+                        <path class="edge-path" d="M 110 185 L 180 230"/>
+                        <path class="edge-path" d="M 300 185 L 300 220"/>
+                        <path class="edge-path" d="M 490 185 L 420 230"/>
+
+                        <path class="edge-path" d="M 300 260 L 300 295"/>
+
+                        <path class="edge-path" d="M 300 340 L 140 375"/>
+                        <path class="edge-path" d="M 300 340 L 300 375"/>
+                        <path class="edge-path" d="M 300 340 L 460 375"/>
+                    </svg>
+                </div>
+                <!-- Methodology Info -->
+                <div class="methodology-container">
+                    <div class="method-block">
+                        <h3><i class="fa-solid fa-circle-check"></i> Key Parameters</h3>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> <strong>Accuracy:</strong> 63.72%</li>
+                            <li><i class="fa-solid fa-check"></i> <strong>F1-Score:</strong> 55.06%</li>
+                            <li><i class="fa-solid fa-check"></i> <strong>ROC-AUC:</strong> 0.7044</li>
+                        </ul>
+                    </div>
+                    <div class="method-block">
+                        <h3><i class="fa-solid fa-gears"></i> Methodology Summary</h3>
+                        <p>VBC-CASA-IS implements dual-representation inputs, processing raw absolute features alongside user-relative baseline deviations to help the model learn physiological variance. A custom Quality Gate rejects artifacts, and cross-attention is quality-masked to down-weight unreliable signals. Optimization is regularized via a joint contrastive pretraining penalty to align modalities under temporal step dimensions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Charts -->
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h3>ROC-AUC Curves</h3>
+                    <img src="evaluation_reports/production_model/vbc_casa_is/roc_auc_curves.png" alt="ROC-AUC curves for VBC-CASA-IS">
+                </div>
+                <div class="chart-box">
+                    <h3>Confusion Matrices</h3>
+                    <img src="evaluation_reports/production_model/vbc_casa_is/confusion_matrices.png" alt="Confusion Matrices for VBC-CASA-IS">
+                </div>
+            </div>
+        </div>
+
+        <!-- OTHER TABS (GENERATED DYNAMICALLY BY JAVASCRIPT) -->
+        <div id="dynamic-panels"></div>
+
+    </div>
+
+    <script>
+        // All models data
+        const modelsData = [
+            {
+                id: "cnn-gru-adv-fusion",
+                name: "CNN-GRU Adv Fusion",
+                accuracy: 0.7051,
+                f1: 0.5931,
+                auc: 0.7184,
+                type: "Fusion Router",
+                status: "Production",
+                path: "evaluation_reports/production_model/cnn_gru_adv_fusion_router",
+                description: "Multimodal CNN-GRU architecture with GRL adversarial subject classification to suppress biometric identifiers.",
+                methodology: "Features are encoded using CNN-GRU layers and fused dynamically using an adversarial gated router. Loss includes supervised stress classification and adversarial cross-entropy via GRL."
+            },
+            {
+                id: "cnn-gru-fusion",
+                name: "CNN-GRU Standard Fusion",
+                accuracy: 0.6944,
+                f1: 0.5899,
+                auc: 0.7254,
+                type: "Fusion Router",
+                status: "Baseline",
+                path: "evaluation_reports/production_model/cnn_gru_fusion_router",
+                description: "Standard multimodal fusion model using GRU temporal pooling and gated routing logic.",
+                methodology: "Supervised classification using CNN-GRU layers. The modal weights are trained using standard backpropagation without adversarial identity constraint."
+            },
+            {
+                id: "cross-attention-fusion",
+                name: "Cross-Attention Fusion",
+                accuracy: 0.6840,
+                f1: 0.6024,
+                auc: 0.7285,
+                type: "Early Fusion",
+                status: "Experimental",
+                path: "high_capacity_research/early_fusion/reports/cross_attention_fusion_classifier",
+                description: "Attention-reinforced classifier that aligns modality sequences over time steps.",
+                methodology: "Multi-head attention blocks compute query, key, and value vectors between the raw modalities before gated sequence routing."
+            },
+            {
+                id: "voice-expert-adv",
+                name: "Voice Sequence Expert (Adv)",
+                accuracy: 0.6816,
+                f1: 0.5833,
+                auc: 0.6939,
+                type: "Unimodal Expert",
+                status: "Experimental",
+                path: "evaluation_reports/production_model/cnn_gru_adv_voice_expert",
+                description: "Unimodal acoustic stress sequence classifier featuring adversarial biometric suppression.",
+                methodology: "Processes audio pause-rate, pitch fluctuations, MFCC variance, and spectral flux using a CNN-GRU encoder with GRL."
+            },
+            {
+                id: "gated-fusion",
+                name: "Gated Fusion",
+                accuracy: 0.6811,
+                f1: 0.5905,
+                auc: 0.7136,
+                type: "Early Fusion",
+                status: "Baseline",
+                path: "high_capacity_research/early_fusion/reports/gated_fusion_classifier",
+                description: "Evaluates the gated routing coefficient block without the cross-attention layer.",
+                methodology: "A dynamic routing gate learns to calculate coefficients for each modality based on their temporal statistics."
+            },
+            {
+                id: "voice-expert",
+                name: "Voice Sequence Expert",
+                accuracy: 0.6772,
+                f1: 0.5904,
+                auc: 0.7136,
+                type: "Unimodal Expert",
+                status: "Baseline",
+                path: "evaluation_reports/production_model/cnn_gru_voice_expert",
+                description: "Standard unimodal voice sequence classifier without identity suppression.",
+                methodology: "Processes acoustic sequences with standard 1D CNN + GRU encoders optimized solely on the stress cross-entropy."
+            },
+            {
+                id: "early-fusion",
+                name: "Early Concat Fusion",
+                accuracy: 0.6740,
+                f1: 0.5740,
+                auc: 0.7157,
+                type: "Early Fusion",
+                status: "Baseline",
+                path: "high_capacity_research/early_fusion/reports/early_fusion_classifier",
+                description: "Classical raw feature concatenation followed by 1D CNN sequence processing.",
+                methodology: "All features are concatenated along the feature dimension at the input layer before entering the sequence model."
+            },
+            {
+                id: "fleximodal-moe",
+                name: "FlexiModal MoE",
+                accuracy: 0.6701,
+                f1: 0.5676,
+                auc: 0.7058,
+                type: "Early Fusion",
+                status: "Experimental",
+                path: "high_capacity_research/early_fusion/reports/fleximodal_moe_classifier",
+                description: "Evaluates a Mixture of Experts model where specialized networks process sub-features.",
+                methodology: "A gating network selects sub-experts based on feature slices, processing eye, mouth, prosody, and cardio inputs separately."
+            },
+            {
+                id: "physio-expert-adv",
+                name: "Physio Sequence Expert (Adv)",
+                accuracy: 0.6603,
+                f1: 0.5488,
+                auc: 0.6918,
+                type: "Unimodal Expert",
+                status: "Experimental",
+                path: "evaluation_reports/production_model/cnn_gru_adv_physio_expert",
+                description: "A unimodal physiological expert featuring GRL identity suppression.",
+                methodology: "Processes heart rate, SDNN, RMSSD, and respiration rate sequences. Adversarial GRL prevents memorization of physiological signatures."
+            },
+            {
+                id: "face-expert-adv",
+                name: "Face Sequence Expert (Adv)",
+                accuracy: 0.6603,
+                f1: 0.5229,
+                auc: 0.6672,
+                type: "Unimodal Expert",
+                status: "Experimental",
+                path: "evaluation_reports/production_model/cnn_gru_adv_face_expert",
+                description: "Unimodal face landmark sequence expert featuring GRL identity suppression.",
+                methodology: "Processes facial variance, eye aspect ratio, and head pose sequences. Suppression is applied to prevent identity identification."
+            },
+            {
+                id: "physio-expert",
+                name: "Physio Sequence Expert",
+                accuracy: 0.6430,
+                f1: 0.5574,
+                auc: 0.6674,
+                type: "Unimodal Expert",
+                status: "Baseline",
+                path: "evaluation_reports/production_model/cnn_gru_physio_expert",
+                description: "Unimodal physiological expert without GRL suppression.",
+                methodology: "Supervised training on physiological sequences, using raw heart-rate variance and respiration changes to detect stress."
+            },
+            {
+                id: "face-expert",
+                name: "Face Sequence Expert",
+                accuracy: 0.6338,
+                f1: 0.5197,
+                auc: 0.6548,
+                type: "Unimodal Expert",
+                status: "Baseline",
+                path: "evaluation_reports/production_model/cnn_gru_face_expert",
+                description: "Unimodal face landmarks expert without GRL identity suppression.",
+                methodology: "Uses 1D CNN + GRU to learn facial micro-expressions and eye blink/brow tension dynamics."
+            }
+        ];
+
+        // Populate Leaderboard
+        function populateLeaderboard() {
+            // Sort by accuracy desc (first insert custom models at their correct sorted positions)
+            const allModels = [
+                {
+                    id: "ssvb-casa-ais",
+                    name: "SSVB-CASA-AIS (Production)",
+                    accuracy: 0.6723,
+                    f1: 0.5909,
+                    auc: 0.7311,
+                    type: "Production",
+                    status: "Production",
+                    path: "evaluation_reports/production_model/ssvb_casa_ais"
+                },
+                {
+                    id: "vbc-casa-is",
+                    name: "VBC-CASA-IS (Production)",
+                    accuracy: 0.6372,
+                    f1: 0.5506,
+                    auc: 0.7044,
+                    type: "Production",
+                    status: "Production",
+                    path: "evaluation_reports/production_model/vbc_casa_is"
+                },
+                ...modelsData
+            ];
+
+            allModels.sort((a, b) => b.accuracy - a.accuracy);
+
+            const tbody = document.getElementById("leaderboard-tbody");
+            tbody.innerHTML = "";
+
+            allModels.forEach((model, index) => {
+                const rank = index + 1;
+                let rankClass = "other";
+                if (rank === 1) rankClass = "gold";
+                else if (rank === 2) rankClass = "silver";
+                else if (rank === 3) rankClass = "bronze";
+
+                const isProd = model.status === "Production" ? '<span class="prod-tag">PROD</span>' : '';
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                    <td class="model-cell" onclick="switchTab('${model.id}')" style="cursor:pointer; color: var(--accent-blue)">
+                        ${model.name} ${isProd}
+                    </td>
+                    <td class="metric-cell ${rank <= 3 ? 'high' : ''}">${(model.accuracy * 100).toFixed(2)}%</td>
+                    <td class="metric-cell">${(model.f1 * 100).toFixed(2)}%</td>
+                    <td class="metric-cell">${model.auc.toFixed(4)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Draw Chart
+            drawChart(allModels);
+        }
+
+        // Draw Comparison Chart
+        let myChart = null;
+        function drawChart(models) {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            
+            const labels = models.map(m => m.name.replace(" (Production)", ""));
+            const accuracies = models.map(m => m.accuracy * 100);
+            const aucs = models.map(m => m.auc * 100);
+
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Accuracy (%)',
+                            data: accuracies,
+                            backgroundColor: 'rgba(0, 242, 254, 0.4)',
+                            borderColor: 'rgba(0, 242, 254, 1)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'ROC-AUC (%)',
+                            data: aucs,
+                            backgroundColor: 'rgba(168, 85, 247, 0.4)',
+                            borderColor: 'rgba(168, 85, 247, 1)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#9ca3af' },
+                            min: 50,
+                            max: 80
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#f3f4f6' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Generate dynamic panels for other models
+        function generateDynamicPanels() {
+            const container = document.getElementById("dynamic-panels");
+            container.innerHTML = "";
+
+            modelsData.forEach(model => {
+                const panel = document.createElement("div");
+                panel.id = `panel-${model.id}`;
+                panel.className = "content-panel";
+                panel.innerHTML = `
+                    <div class="section-header">
+                        <h2>${model.name} Details</h2>
+                        <p class="section-description">${model.description}</p>
+                    </div>
+                    
+                    <div class="architecture-grid">
+                        <!-- SVG Diagram -->
+                        <div class="diagram-container">
+                            <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                                <text x="300" y="35" fill="#f3f4f6" font-size="13" font-weight="bold" text-anchor="middle">${model.name} Sequence Pipeline</text>
+                                
+                                <g class="node"><rect x="40" y="100" width="140" height="40"/><text x="110" y="120">Unimodal Inputs</text></g>
+                                <g class="node"><rect x="230" y="100" width="140" height="40"/><text x="300" y="120">GRU Sequence Encoder</text></g>
+                                <g class="node"><rect x="420" y="100" width="140" height="40"/><text x="490" y="120">Supervised stress_head</text></g>
+
+                                <path class="edge-path" d="M 180 120 L 230 120" marker-end="url(#arrow)"/>
+                                <path class="edge-path" d="M 370 120 L 420 120" marker-end="url(#arrow)"/>
+
+                                <text x="300" y="200" fill="#9ca3af" font-size="11" text-anchor="middle">Methodology: ${model.methodology}</text>
+                            </svg>
+                        </div>
+                        <!-- Stats block -->
+                        <div class="methodology-container">
+                            <div class="method-block">
+                                <h3><i class="fa-solid fa-circle-check"></i> Key Parameters</h3>
+                                <ul>
+                                    <li><i class="fa-solid fa-check"></i> <strong>Accuracy:</strong> ${(model.accuracy * 100).toFixed(2)}%</li>
+                                    <li><i class="fa-solid fa-check"></i> <strong>F1-Score:</strong> ${(model.f1 * 100).toFixed(2)}%</li>
+                                    <li><i class="fa-solid fa-check"></i> <strong>ROC-AUC:</strong> ${model.auc.toFixed(4)}</li>
+                                </ul>
+                            </div>
+                            <div class="method-block">
+                                <h3><i class="fa-solid fa-gears"></i> Preprocessing Details</h3>
+                                <p>Standard leave-one-subject-out (LOSO) feature scaling. Absolute scaling maps variables using z-scores calculated over all training participants.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Charts -->
+                    <div class="charts-container">
+                        <div class="chart-box">
+                            <h3>ROC-AUC Curves</h3>
+                            <img src="${model.path}/roc_auc_curves.png" onerror="this.src='https://placehold.co/600x400/111827/ffffff?text=Chart+Not+Generated'" alt="ROC-AUC curve">
+                        </div>
+                        <div class="chart-box">
+                            <h3>Confusion Matrices</h3>
+                            <img src="${model.path}/confusion_matrices.png" onerror="this.src='https://placehold.co/600x400/111827/ffffff?text=Matrix+Not+Generated'" alt="Confusion matrix">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(panel);
+            });
+        }
+
+        // Switch Tabs
+        function switchTab(tabId) {
+            // Update active state in sidebar
+            const items = document.querySelectorAll(".nav-item");
+            items.forEach(item => item.classList.remove("active"));
+            
+            // Find correct item to activate
+            let clickedItem = Array.from(items).find(item => {
+                const onclickStr = item.getAttribute("onclick");
+                return onclickStr && onclickStr.includes(tabId);
+            });
+            if (clickedItem) clickedItem.classList.add("active");
+
+            // Update Panel visibility
+            const panels = document.querySelectorAll(".content-panel");
+            panels.forEach(panel => panel.classList.remove("active"));
+            
+            const targetPanel = document.getElementById(`panel-${tabId}`);
+            if (targetPanel) {
+                targetPanel.classList.add("active");
+            }
+
+            // Update Title Text in Header dynamically based on Tab Selection
+            const titleElem = document.getElementById("dashboard-title");
+            const subtitleElem = document.getElementById("dashboard-subtitle");
+            
+            if (tabId === 'overview') {
+                titleElem.innerText = "Performance Leaderboard";
+                subtitleElem.innerText = "Multi-fold Leave-One-Subject-Out (LOSO) Stress Prediction Benchmarks";
+            } else {
+                titleElem.innerText = "Model Evaluation Insights";
+                subtitleElem.innerText = "Exact performance metrics, confusion matrices, and routing topology";
+            }
+        }
+
+        // Initialize Page
+        window.onload = function() {
+            generateDynamicPanels();
+            populateLeaderboard();
+        };
+    </script>
+</body>
+</html>
