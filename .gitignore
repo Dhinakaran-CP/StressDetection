@@ -58,6 +58,7 @@ data/
 datasets/
 certified_data/*.csv
 !certified_data/*.json
+stress_features_*.csv
 
 # ===========================================
 # Uploads & Temp Files
@@ -98,6 +99,9 @@ Physiological/
 # Deployment Export Packages
 # ===========================================
 StressDetectionUsingML_Deploy/
+StressID Dataset/
+WorkStress3D Dataset/
+loso_evaluation_results/
 
 # ===========================================
 # Early Fusion Workspace ignores

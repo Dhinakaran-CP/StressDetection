@@ -1,8 +1,7 @@
 import os
 import sys
 import time
-import json
-import warnings
+import argparse
 import numpy as np
 import pandas as pd
 import torch
@@ -12,948 +11,558 @@ from torch.utils.data import Dataset, DataLoader
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import seaborn as sns
-
-from sklearn.model_selection import KFold, StratifiedKFold, RepeatedStratifiedKFold, StratifiedGroupKFold, train_test_split
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
-    confusion_matrix, roc_curve, mean_squared_error, mean_absolute_error, r2_score
-)
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.model_selection import StratifiedKFold, GroupKFold
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, roc_curve
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+try:
+    from xgboost import XGBClassifier
+    HAS_XGBOOST = True
+except ImportError:
+    HAS_XGBOOST = False
+from sklearn.neighbors import KNeighborsClassifier
+import warnings
 
+# Suppress warnings
 warnings.filterwarnings('ignore')
 
-# Ensure backend root is in sys.path
+# Set path and device config
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Training acceleration device: {DEVICE}")
+
+# Add path for models import
 backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:
     sys.path.append(backend_dir)
 
-from backend.core.feature_runtime_lock import FeatureRuntimeLock
+from high_capacity_research.models import (
+    UnimodalExpert, EarlyFusionModel, GatedFusionModel,
+    CrossAttentionFusionModel, HybridMoEAttentionModel
+)
 
-# GPU Device Configuration
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using training device: {DEVICE}")
-print("Subject-independent validation enabled (leakage-safe).")
-
-# Set plotting style
-plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['figure.titlesize'] = 16
-
-# Configuration for training and subject counts (to ensure fast run times on CPU)
-DOWNSAMPLE_LIMIT = 5000  # Frame limit for training split in standard CVs
-LOSO_SUBJECTS_LIMIT = 10 # Subsampled subjects to run Leave-One-Subject-Out (LOSO) CV
-EPOCHS = 5               # Epochs for deep sequence models
-BATCH_SIZE = 256
-SEQ_LEN = 5
-
-# Create evaluation report directory
-REPORTS_DIR = os.path.join(backend_dir, "evaluation_reports")
-os.makedirs(REPORTS_DIR, exist_ok=True)
+# Output directory for results
+OUTPUT_DIR = os.path.join(backend_dir, "loso_evaluation_results")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ---------------------------------------------------------
-# PyTorch Architectures
+# Helpers to extract sub-modality slices for deep models
 # ---------------------------------------------------------
-class ModalityEncoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim=16):
-        super().__init__()
-        self.conv = nn.Conv1d(in_channels=input_dim, out_channels=hidden_dim, kernel_size=3, padding=1)
-        self.bn = nn.BatchNorm1d(hidden_dim)
-        self.relu = nn.ReLU()
-        self.gru = nn.GRU(hidden_dim, hidden_dim, batch_first=True)
-        self.classifier = nn.Linear(hidden_dim, 2)
-        
-    def forward(self, x):
-        x = x.permute(0, 2, 1)
-        x = self.conv(x)
-        x = self.bn(x)
-        x = self.relu(x)
-        x = x.permute(0, 2, 1)
-        gru_out, _ = self.gru(x)
-        latent = gru_out[:, -1, :] 
-        logits = self.classifier(latent) 
-        return logits
+def get_modality_slices(df, dual=False):
+    suffix = "" if not dual else "_abs"
+    
+    # 1. Face sub-features
+    eye_cols = [f"face_ear_mean{suffix}"]
+    mouth_cols = [f"face_mar_mean{suffix}"]
+    gface_cols = [f"face_brow_mean{suffix}"] + [f"face_deep_embed_{i}{suffix}" for i in range(1, 513) if f"face_deep_embed_{i}{suffix}" in df.columns]
+    
+    # 2. Voice sub-features
+    prosody_cols = [f"voice_rms_mean{suffix}", f"voice_zcr_mean{suffix}", f"voice_pitch_mean{suffix}", f"voice_pitch_std{suffix}"]
+    spectral_cols = [f"voice_mfcc_{i}{suffix}" for i in range(1, 14) if f"voice_mfcc_{i}{suffix}" in df.columns]
+    quality_cols = [f"quality_score{suffix}", f"face_confidence{suffix}", f"physio_continuity_flag{suffix}"]
+    
+    # 3. Physio sub-features
+    cardio_cols = [f"ecg_hr{suffix}", f"ecg_mean{suffix}", f"ecg_std{suffix}", f"eda_tonic_mean{suffix}", f"eda_phasic_mean{suffix}"]
+    motion_cols = [f"resp_rate_mean{suffix}", f"resp_std{suffix}"]
+    
+    # Padding functions to match expected PyTorch input shapes if columns are empty
+    def safe_slice(cols, target_dim):
+        existing = [c for c in cols if c in df.columns]
+        if len(existing) == 0:
+            return np.zeros((len(df), target_dim), dtype=np.float32)
+        arr = df[existing].fillna(0).values
+        if arr.shape[1] < target_dim:
+            pad = np.zeros((len(df), target_dim - arr.shape[1]), dtype=np.float32)
+            arr = np.hstack([arr, pad])
+        return arr[:, :target_dim]
 
-class FlexDynamicRouter(nn.Module):
-    def __init__(self, num_modalities=3):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(num_modalities * 2 + num_modalities, 16),
-            nn.ReLU(),
-            nn.Linear(16, num_modalities),
-            nn.Softmax(dim=1)
-        )
-    def forward(self, x):
-        return self.mlp(x)
+    factor = 2 if dual else 1
+    eye_arr = safe_slice(eye_cols, 5 * factor)
+    mouth_arr = safe_slice(mouth_cols, 3 * factor)
+    gface_arr = safe_slice(gface_cols, 8 * factor)
+    
+    prosody_arr = safe_slice(prosody_cols, 3 * factor)
+    spectral_arr = safe_slice(spectral_cols, 2 * factor)
+    quality_arr = safe_slice(quality_cols, 5 * factor)
+    
+    cardio_arr = safe_slice(cardio_cols, 3 * factor)
+    motion_arr = safe_slice(motion_cols, 1 * factor)
+    
+    return eye_arr, mouth_arr, gface_arr, prosody_arr, spectral_arr, quality_arr, cardio_arr, motion_arr
 
 # ---------------------------------------------------------
-# Preformed Dataset for Deep Learning
+# PyTorch DataLoader Setup for sequential learning
 # ---------------------------------------------------------
-class PreformedSeqDataset(Dataset):
-    def __init__(self, X_seqs, y_seqs):
-        self.X_seqs = torch.FloatTensor(X_seqs)
-        self.y_seqs = torch.LongTensor(y_seqs)
-        
+class SeqMultimodalDataset(Dataset):
+    def __init__(self, data_dict, labels, subjects=None):
+        self.labels = torch.LongTensor(labels)
+        self.subjects = torch.LongTensor(subjects) if subjects is not None else None
+        self.data = {}
+        for k, v in data_dict.items():
+            self.data[k] = torch.FloatTensor(v)
+            
     def __len__(self):
-        return len(self.y_seqs)
+        return len(self.labels)
         
     def __getitem__(self, idx):
-        return self.X_seqs[idx], self.y_seqs[idx]
+        item = {k: v[idx] for k, v in self.data.items()}
+        item["label"] = self.labels[idx]
+        if self.subjects is not None:
+            item["subject"] = self.subjects[idx]
+        return item
+
+def make_sequences(arr, seq_len=5):
+    # Repeat padding at start for sequence learning
+    N, D = arr.shape
+    seqs = []
+    for i in range(N):
+        if i < seq_len - 1:
+            pad = np.repeat(arr[i:i+1], seq_len - 1 - i, axis=0)
+            seq = np.vstack([pad, arr[0:i+1]])
+        else:
+            seq = arr[i - seq_len + 1 : i + 1]
+        seqs.append(seq)
+    return np.array(seqs)
+
 
 # ---------------------------------------------------------
-# Sequence Extractor
+# Trainer / Evaluator Core Module
 # ---------------------------------------------------------
-def extract_sequences(X, y, groups, task_groups):
-    sequences = []
-    labels = []
-    df_temp = pd.DataFrame({'s': groups, 't': task_groups})
-    unique_groups = df_temp.drop_duplicates().values
-    
-    for s, t in unique_groups:
-        idx = np.where((groups == s) & (task_groups == t))[0]
-        if len(idx) < SEQ_LEN:
-            continue
-        x_data, l_data = X[idx], y[idx]
-        for i in range(len(idx) - SEQ_LEN + 1):
-            sequences.append(x_data[i:i+SEQ_LEN])
-            labels.append(l_data[i+SEQ_LEN-1])
-            
-    return np.array(sequences), np.array(labels)
-
-# ---------------------------------------------------------
-# Deep Learning Training Helper
-# ---------------------------------------------------------
-def train_deep_model(model, train_loader, val_loader=None, epochs=EPOCHS):
-    model = model.to(DEVICE)
-    optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
-    criterion = nn.CrossEntropyLoss()
+def train_and_eval_pytorch_model(model_name, make_model_fn, train_loader, val_loader, epochs=5, is_adversarial=False):
+    model = make_model_fn().to(DEVICE)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion_stress = nn.CrossEntropyLoss()
+    criterion_subj = nn.CrossEntropyLoss()
     
     for epoch in range(epochs):
         model.train()
-        for b_x, b_y in train_loader:
-            b_x, b_y = b_x.to(DEVICE), b_y.to(DEVICE)
+        for batch in train_loader:
             optimizer.zero_grad()
-            logits = model(b_x)
-            loss = criterion(logits, b_y)
+            
+            # Map batch keys to model inputs
+            inputs = []
+            for k in ["eye", "mouth", "global_face", "prosody", "spectral", "quality", "cardio", "motion"]:
+                if k in batch:
+                    inputs.append(batch[k].to(DEVICE))
+                    
+            labels = batch["label"].to(DEVICE)
+            
+            if is_adversarial:
+                subjects = batch["subject"].to(DEVICE)
+                stress_logits, subj_logits = model(*inputs)
+                loss = criterion_stress(stress_logits, labels) + 0.1 * criterion_subj(subj_logits, subjects)
+            else:
+                if len(inputs) == 3 and model_name in ["EarlyFusion", "GatedFusion", "CrossAttentionFusion"]:
+                    stress_logits = model(*inputs[-3:]) # early fusion expects face_x, voice_x, physio_x
+                elif model_name.startswith("Unimodal"):
+                    stress_logits = model(inputs[0]) # unimodal encoder expects x
+                else:
+                    stress_logits = model(*inputs)
+                loss = criterion_stress(stress_logits, labels)
+                
             loss.backward()
             optimizer.step()
             
     # Evaluation
     model.eval()
-    all_probs = []
-    all_targets = []
-    
-    loader = val_loader if val_loader is not None else train_loader
+    all_preds, all_probs, all_targets = [], [], []
     with torch.no_grad():
-        for b_x, b_y in loader:
-            b_x = b_x.to(DEVICE)
-            logits = model(b_x)
-            probs = torch.softmax(logits, dim=1)[:, 1].cpu().numpy()
-            all_probs.append(probs)
-            all_targets.append(b_y.numpy())
+        for batch in val_loader:
+            inputs = []
+            for k in ["eye", "mouth", "global_face", "prosody", "spectral", "quality", "cardio", "motion"]:
+                if k in batch:
+                    inputs.append(batch[k].to(DEVICE))
+            labels = batch["label"].to(DEVICE)
             
-    return np.hstack(all_probs), np.hstack(all_targets)
-
-# ---------------------------------------------------------
-# Feature Scaling and Transform Utils
-# ---------------------------------------------------------
-def apply_subject_aware_normalization(df, feature_cols):
-    df_norm = df.copy()
-    for subject in df['subject_id'].unique():
-        sub_mask = df['subject_id'] == subject
-        subject_data = df.loc[sub_mask].sort_values(by=['task_id', 'window_index'])
-        if len(subject_data) > 0:
-            mean_vals = subject_data[feature_cols].iloc[:2].mean()
-            df_norm.loc[sub_mask, feature_cols] = df.loc[sub_mask, feature_cols] - mean_vals
-    return df_norm
-
-def apply_temporal_windowing(df, feature_cols, window_size=2):
-    df_grouped = df.copy()
-    df_grouped = df_grouped.sort_values(by=['subject_id', 'task_id', 'window_index'])
-    df_grouped[feature_cols] = df_grouped.groupby(['subject_id', 'task_id'])[feature_cols].transform(
-        lambda x: x.rolling(window_size, min_periods=1).mean()
-    )
-    return df_grouped
-
-# ---------------------------------------------------------
-# Metrics Calculation (Classification + Regression)
-# ---------------------------------------------------------
-def calculate_metrics(y_true, y_prob):
-    y_pred = (y_prob >= 0.5).astype(int)
-    
-    # Classification Metrics
-    acc = accuracy_score(y_true, y_pred)
-    prec = precision_score(y_true, y_pred, zero_division=0)
-    rec = recall_score(y_true, y_pred, zero_division=0)
-    f1 = f1_score(y_true, y_pred, zero_division=0)
-    try:
-        roc_auc = roc_auc_score(y_true, y_prob)
-    except Exception:
-        roc_auc = 0.5
-        
-    # Regression Metrics (treating probabilities as continuous outputs)
-    mse = mean_squared_error(y_true, y_prob)
-    mae = mean_absolute_error(y_true, y_prob)
-    r2 = r2_score(y_true, y_prob)
-    rmse = np.sqrt(mse)
-    
-    return {
-        "Accuracy": acc,
-        "Precision": prec,
-        "Recall": rec,
-        "F1-Score": f1,
-        "ROC-AUC": roc_auc,
-        "MSE": mse,
-        "MAE": mae,
-        "R2-Score": r2,
-        "RMSE": rmse
-    }
-
-# ---------------------------------------------------------
-# Visualization Helper
-# ---------------------------------------------------------
-def generate_visual_reports(model_name, results):
-    model_dir = os.path.join(REPORTS_DIR, model_name.replace(" ", "_").lower())
-    os.makedirs(model_dir, exist_ok=True)
-    
-    colors = {
-        "Train-Test Split (Subject-wise)": "#2b5c8f",
-        "k-Fold CV (Subject-wise)": "#d95f02",
-        "Stratified Group CV": "#7570b3",
-        "LOSO CV (Subsampled)": "#e7298a",
-        "Repeated Group CV": "#66a61e"
-    }
-    
-    # Plot 1: ROC-AUC Curves
-    plt.figure(figsize=(8, 6), dpi=150)
-    for strategy, data in results.items():
-        if len(data['y_true']) == 0:
-            continue
-        try:
-            fpr, tpr, _ = roc_curve(data['y_true'], data['y_prob'])
-            auc_val = data['metrics']['ROC-AUC']
-            plt.plot(fpr, tpr, color=colors[strategy], lw=2, label=f"{strategy} (AUC = {auc_val:.4f})")
-        except Exception as e:
-            print(f"Skipping ROC plot for {strategy} due to: {e}")
-            
-    plt.plot([0, 1], [0, 1], color='#999999', linestyle='--', lw=1.5)
-    plt.xlim([-0.02, 1.02])
-    plt.ylim([-0.02, 1.02])
-    plt.xlabel("False Positive Rate", fontsize=11, fontweight='bold', labelpad=8)
-    plt.ylabel("True Positive Rate", fontsize=11, fontweight='bold', labelpad=8)
-    plt.title(f"ROC-AUC Curves - {model_name}", fontsize=13, fontweight='bold', pad=15)
-    plt.legend(loc="lower right", frameon=True, facecolor='white', edgecolor='#e0e0e0')
-    plt.tight_layout()
-    plt.savefig(os.path.join(model_dir, "roc_auc_curves.png"), bbox_inches='tight')
-    plt.close()
-    
-    # Plot 2: Confusion Matrices
-    fig, axes = plt.subplots(2, 3, figsize=(15, 9), dpi=150)
-    axes = axes.flatten()
-    
-    for idx, (strategy, data) in enumerate(results.items()):
-        if len(data['y_true']) == 0:
-            continue
-        y_pred = (data['y_prob'] >= 0.5).astype(int)
-        cm = confusion_matrix(data['y_true'], y_pred)
-        
-        cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        cm_norm = np.nan_to_num(cm_norm, nan=0.0)
-        
-        labels = np.array([
-            [f"TN\n{cm[0,0]}\n({cm_norm[0,0]*100:.1f}%)", f"FP\n{cm[0,1]}\n({cm_norm[0,1]*100:.1f}%)"],
-            [f"FN\n{cm[1,0]}\n({cm_norm[1,0]*100:.1f}%)", f"TP\n{cm[1,1]}\n({cm_norm[1,1]*100:.1f}%)"]
-        ])
-        
-        sns.heatmap(
-            cm, annot=labels, fmt="", cmap="Blues", cbar=False, ax=axes[idx],
-            annot_kws={"size": 11, "weight": "bold"}, linewidths=1.5, linecolor='white'
-        )
-        axes[idx].set_title(strategy, fontsize=12, fontweight='bold', pad=10)
-        axes[idx].set_xlabel("Predicted Label", fontsize=10, labelpad=5)
-        axes[idx].set_ylabel("True Label", fontsize=10, labelpad=5)
-        
-    for idx in range(len(results), len(axes)):
-        fig.delaxes(axes[idx])
-        
-    plt.suptitle(f"Confusion Matrices - {model_name}", fontsize=15, fontweight='bold', y=0.98)
-    plt.tight_layout()
-    plt.savefig(os.path.join(model_dir, "confusion_matrices.png"), bbox_inches='tight')
-    plt.close()
-    
-    # Plot 3: Metrics Dashboard Table
-    fig, ax = plt.subplots(figsize=(10.5, 4.5), dpi=150)
-    ax.axis('off')
-    
-    metrics_list = ["Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC", "MSE", "MAE", "R2-Score", "RMSE"]
-    header = ["Validation Strategy"] + metrics_list
-    
-    table_data = []
-    for strategy, data in results.items():
-        row = [strategy]
-        for m in metrics_list:
-            row.append(f"{data['metrics'][m]:.4f}")
-        table_data.append(row)
-        
-    table = ax.table(
-        cellText=table_data, colLabels=header, loc='center', cellLoc='center'
-    )
-    
-    table.auto_set_font_size(False)
-    table.set_fontsize(9)
-    table.scale(1.1, 1.8)
-    
-    for col_idx in range(len(header)):
-        cell = table[0, col_idx]
-        cell.set_text_props(weight='bold', color='white')
-        cell.set_facecolor('#1e3d59')
-        
-    for row_idx in range(1, len(table_data) + 1):
-        face_color = '#f5f5f5' if row_idx % 2 == 0 else 'white'
-        for col_idx in range(len(header)):
-            cell = table[row_idx, col_idx]
-            cell.set_facecolor(face_color)
-            if col_idx == 0:
-                cell.set_text_props(weight='bold')
-                
-    ax.set_title(f"Model Performance Metrics - {model_name}", fontsize=14, fontweight='bold', pad=15)
-    plt.tight_layout()
-    plt.savefig(os.path.join(model_dir, "metrics_comparison.png"), bbox_inches='tight')
-    plt.close()
-    
-    with open(os.path.join(model_dir, "metrics.json"), "w") as f:
-        json.dump({k: v['metrics'] for k, v in results.items()}, f, indent=4)
-        
-    print(f"Visual reports saved successfully in {model_dir}")
-
-# ---------------------------------------------------------
-# Core Evaluation Loop (Subject-Independent)
-# ---------------------------------------------------------
-def run_cv_evaluation(model_type, model_builder, X, y, groups, task_groups=None):
-    """
-    Runs the 5 subject-independent validation strategies:
-    1. Train-Test Split (Subject-wise, 80/20)
-    2. 5-Fold Cross Validation (Subject-wise GroupKFold)
-    3. Stratified 5-Fold Cross Validation (StratifiedGroupKFold)
-    4. Leave-One-Subject-Out CV (Subsampled LOSO)
-    5. Repeated Group Cross Validation
-    """
-    results = {}
-    unique_subjects = np.unique(groups)
-    
-    # Helper to downsample a training partition to avoid CPU execution freeze
-    def downsample_indices(train_indices):
-        if len(train_indices) > DOWNSAMPLE_LIMIT:
-            np.random.seed(42)
-            return np.random.choice(train_indices, DOWNSAMPLE_LIMIT, replace=False)
-        return train_indices
-
-    # 1. Train-Test Split (Subject-wise, 80/20)
-    print("  -> Running Train-Test Split (Subject-wise)...")
-    train_subjs, test_subjs = train_test_split(unique_subjects, test_size=0.2, random_state=42)
-    train_idx = np.isin(groups, train_subjs)
-    test_idx = np.isin(groups, test_subjs)
-    
-    # Extract raw data splits
-    X_tr, y_tr = X[train_idx], y[train_idx]
-    X_te, y_te = X[test_idx], y[test_idx]
-    
-    groups_tr, task_groups_tr = groups[train_idx], (task_groups[train_idx] if task_groups is not None else None)
-    groups_te, task_groups_te = groups[test_idx], (task_groups[test_idx] if task_groups is not None else None)
-    
-    # Downsample train only for runtime performance
-    tr_indices = downsample_indices(np.arange(len(X_tr)))
-    X_tr_down, y_tr_down = X_tr[tr_indices], y_tr[tr_indices]
-    groups_tr_down = groups_tr[tr_indices]
-    task_groups_tr_down = task_groups_tr[tr_indices] if task_groups_tr is not None else None
-    
-    # Preprocess (Fold-level scaling)
-    scaler = StandardScaler()
-    X_tr_s = scaler.fit_transform(X_tr_down)
-    X_te_s = scaler.transform(X_te)
-    
-    if model_type == "sklearn":
-        clf = model_builder()
-        clf.fit(X_tr_s, y_tr_down)
-        y_prob = clf.predict_proba(X_te_s)[:, 1]
-        y_true = y_te
-    else:  # PyTorch
-        train_ds = PreformedSeqDataset(*extract_sequences(X_tr_s, y_tr_down, groups_tr_down, task_groups_tr_down))
-        test_ds = PreformedSeqDataset(*extract_sequences(X_te_s, y_te, groups_te, task_groups_te))
-        
-        train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-        test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
-        
-        model = model_builder()
-        y_prob, y_true = train_deep_model(model, train_loader, test_loader)
-        
-    results["Train-Test Split (Subject-wise)"] = {
-        "y_true": y_true, "y_prob": y_prob, "metrics": calculate_metrics(y_true, y_prob)
-    }
-    
-    # 2. 5-Fold Cross Validation (Subject-wise GroupKFold)
-    print("  -> Running 5-Fold CV (Subject-wise)...")
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
-    kf_probs, kf_trues = [], []
-    
-    for train_subj_idx, test_subj_idx in kf.split(unique_subjects):
-        train_subjs = unique_subjects[train_subj_idx]
-        test_subjs = unique_subjects[test_subj_idx]
-        
-        train_idx = np.isin(groups, train_subjs)
-        test_idx = np.isin(groups, test_subjs)
-        
-        X_tr, y_tr = X[train_idx], y[train_idx]
-        X_te, y_te = X[test_idx], y[test_idx]
-        
-        groups_tr, task_groups_tr = groups[train_idx], (task_groups[train_idx] if task_groups is not None else None)
-        groups_te, task_groups_te = groups[test_idx], (task_groups[test_idx] if task_groups is not None else None)
-        
-        tr_indices = downsample_indices(np.arange(len(X_tr)))
-        X_tr_down, y_tr_down = X_tr[tr_indices], y_tr[tr_indices]
-        groups_tr_down = groups_tr[tr_indices]
-        task_groups_tr_down = task_groups_tr[tr_indices] if task_groups_tr is not None else None
-        
-        scaler = StandardScaler()
-        X_tr_s = scaler.fit_transform(X_tr_down)
-        X_te_s = scaler.transform(X_te)
-        
-        if model_type == "sklearn":
-            clf = model_builder()
-            clf.fit(X_tr_s, y_tr_down)
-            kf_probs.append(clf.predict_proba(X_te_s)[:, 1])
-            kf_trues.append(y_te)
-        else:
-            train_ds = PreformedSeqDataset(*extract_sequences(X_tr_s, y_tr_down, groups_tr_down, task_groups_tr_down))
-            test_ds = PreformedSeqDataset(*extract_sequences(X_te_s, y_te, groups_te, task_groups_te))
-            train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-            test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
-            
-            model = model_builder()
-            probs, trues = train_deep_model(model, train_loader, test_loader)
-            kf_probs.append(probs)
-            kf_trues.append(trues)
-            
-    y_prob_kf = np.hstack(kf_probs)
-    y_true_kf = np.hstack(kf_trues)
-    results["k-Fold CV (Subject-wise)"] = {
-        "y_true": y_true_kf, "y_prob": y_prob_kf, "metrics": calculate_metrics(y_true_kf, y_prob_kf)
-    }
-    
-    # 3. Stratified Group K-Fold Cross Validation
-    print("  -> Running Stratified Group CV...")
-    sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
-    sgkf_probs, sgkf_trues = [], []
-    
-    for train_idx, test_idx in sgkf.split(X, y, groups):
-        X_tr, y_tr = X[train_idx], y[train_idx]
-        X_te, y_te = X[test_idx], y[test_idx]
-        
-        groups_tr, task_groups_tr = groups[train_idx], (task_groups[train_idx] if task_groups is not None else None)
-        groups_te, task_groups_te = groups[test_idx], (task_groups[test_idx] if task_groups is not None else None)
-        
-        tr_indices = downsample_indices(np.arange(len(X_tr)))
-        X_tr_down, y_tr_down = X_tr[tr_indices], y_tr[tr_indices]
-        groups_tr_down = groups_tr[tr_indices]
-        task_groups_tr_down = task_groups_tr[tr_indices] if task_groups_tr is not None else None
-        
-        scaler = StandardScaler()
-        X_tr_s = scaler.fit_transform(X_tr_down)
-        X_te_s = scaler.transform(X_te)
-        
-        if model_type == "sklearn":
-            clf = model_builder()
-            clf.fit(X_tr_s, y_tr_down)
-            sgkf_probs.append(clf.predict_proba(X_te_s)[:, 1])
-            sgkf_trues.append(y_te)
-        else:
-            train_ds = PreformedSeqDataset(*extract_sequences(X_tr_s, y_tr_down, groups_tr_down, task_groups_tr_down))
-            test_ds = PreformedSeqDataset(*extract_sequences(X_te_s, y_te, groups_te, task_groups_te))
-            train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-            test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
-            
-            model = model_builder()
-            probs, trues = train_deep_model(model, train_loader, test_loader)
-            sgkf_probs.append(probs)
-            sgkf_trues.append(trues)
-            
-    y_prob_sgkf = np.hstack(sgkf_probs)
-    y_true_sgkf = np.hstack(sgkf_trues)
-    results["Stratified Group CV"] = {
-        "y_true": y_true_sgkf, "y_prob": y_prob_sgkf, "metrics": calculate_metrics(y_true_sgkf, y_prob_sgkf)
-    }
-    
-    # 4. Leave-One-Subject-Out CV (Subsampled LOSO)
-    print(f"  -> Running LOSO CV (on {LOSO_SUBJECTS_LIMIT} subjects)...")
-    np.random.seed(42)
-    loso_subjects = np.random.choice(unique_subjects, size=min(len(unique_subjects), LOSO_SUBJECTS_LIMIT), replace=False)
-    loso_probs, loso_trues = [], []
-    
-    for test_subj in loso_subjects:
-        train_idx = groups != test_subj
-        test_idx = groups == test_subj
-        
-        X_tr, y_tr = X[train_idx], y[train_idx]
-        X_te, y_te = X[test_idx], y[test_idx]
-        
-        groups_tr, task_groups_tr = groups[train_idx], (task_groups[train_idx] if task_groups is not None else None)
-        groups_te, task_groups_te = groups[test_idx], (task_groups[test_idx] if task_groups is not None else None)
-        
-        tr_indices = downsample_indices(np.arange(len(X_tr)))
-        X_tr_down, y_tr_down = X_tr[tr_indices], y_tr[tr_indices]
-        groups_tr_down = groups_tr[tr_indices]
-        task_groups_tr_down = task_groups_tr[tr_indices] if task_groups_tr is not None else None
-        
-        scaler = StandardScaler()
-        X_tr_s = scaler.fit_transform(X_tr_down)
-        X_te_s = scaler.transform(X_te)
-        
-        if model_type == "sklearn":
-            clf = model_builder()
-            clf.fit(X_tr_s, y_tr_down)
-            loso_probs.append(clf.predict_proba(X_te_s)[:, 1])
-            loso_trues.append(y_te)
-        else:
-            # sequence validation for PyTorch
-            train_seq = extract_sequences(X_tr_s, y_tr_down, groups_tr_down, task_groups_tr_down)
-            test_seq = extract_sequences(X_te_s, y_te, groups_te, task_groups_te)
-            
-            if len(train_seq[0]) == 0 or len(test_seq[0]) == 0:
-                continue
-                
-            train_ds = PreformedSeqDataset(*train_seq)
-            test_ds = PreformedSeqDataset(*test_seq)
-            train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-            test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
-            
-            model = model_builder()
-            probs, trues = train_deep_model(model, train_loader, test_loader)
-            loso_probs.append(probs)
-            loso_trues.append(trues)
-            
-    if len(loso_probs) > 0:
-        y_prob_loso = np.hstack(loso_probs)
-        y_true_loso = np.hstack(loso_trues)
-    else:
-        y_prob_loso = np.array([])
-        y_true_loso = np.array([])
-        
-    results["LOSO CV (Subsampled)"] = {
-        "y_true": y_true_loso, "y_prob": y_prob_loso, "metrics": calculate_metrics(y_true_loso, y_prob_loso) if len(y_true_loso) > 0 else {}
-    }
-    
-    # 5. Repeated Group Cross Validation
-    print("  -> Running Repeated Group CV...")
-    rskf_probs, rskf_trues = [], []
-    for repeat in range(2):
-        shuffled_subjs = unique_subjects.copy()
-        np.random.seed(42 + repeat)
-        np.random.shuffle(shuffled_subjs)
-        kf_group = KFold(n_splits=5, shuffle=False)
-        
-        for train_subj_idx, test_subj_idx in kf_group.split(shuffled_subjs):
-            train_subjs = shuffled_subjs[train_subj_idx]
-            test_subjs = shuffled_subjs[test_subj_idx]
-            
-            train_idx = np.isin(groups, train_subjs)
-            test_idx = np.isin(groups, test_subjs)
-            
-            X_tr, y_tr = X[train_idx], y[train_idx]
-            X_te, y_te = X[test_idx], y[test_idx]
-            
-            groups_tr, task_groups_tr = groups[train_idx], (task_groups[train_idx] if task_groups is not None else None)
-            groups_te, task_groups_te = groups[test_idx], (task_groups[test_idx] if task_groups is not None else None)
-            
-            tr_indices = downsample_indices(np.arange(len(X_tr)))
-            X_tr_down, y_tr_down = X_tr[tr_indices], y_tr[tr_indices]
-            groups_tr_down = groups_tr[tr_indices]
-            task_groups_tr_down = task_groups_tr[tr_indices] if task_groups_tr is not None else None
-            
-            scaler = StandardScaler()
-            X_tr_s = scaler.fit_transform(X_tr_down)
-            X_te_s = scaler.transform(X_te)
-            
-            if model_type == "sklearn":
-                clf = model_builder()
-                clf.fit(X_tr_s, y_tr_down)
-                rskf_probs.append(clf.predict_proba(X_te_s)[:, 1])
-                rskf_trues.append(y_te)
+            if is_adversarial:
+                stress_logits, _ = model(*inputs)
             else:
-                train_ds = PreformedSeqDataset(*extract_sequences(X_tr_s, y_tr_down, groups_tr_down, task_groups_tr_down))
-                test_ds = PreformedSeqDataset(*extract_sequences(X_te_s, y_te, groups_te, task_groups_te))
-                train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-                test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
-                
-                model = model_builder()
-                probs, trues = train_deep_model(model, train_loader, test_loader)
-                rskf_probs.append(probs)
-                rskf_trues.append(trues)
-                
-    y_prob_rskf = np.hstack(rskf_probs)
-    y_true_rskf = np.hstack(rskf_trues)
-    results["Repeated Group CV"] = {
-        "y_true": y_true_rskf, "y_prob": y_prob_rskf, "metrics": calculate_metrics(y_true_rskf, y_prob_rskf)
-    }
-    
-    return results
-
-# ---------------------------------------------------------
-# Dynamic Router CV Loop (Subject-Independent)
-# ---------------------------------------------------------
-def run_router_cv_evaluation(router_X, y, groups):
-    """
-    Evaluates the FlexDynamicRouter MLP classifier using subject-wise splits.
-    """
-    unique_subjects = np.unique(groups)
-    results = {}
-    
-    def router_builder():
-        return FlexDynamicRouter(num_modalities=3)
-        
-    def train_router_model(model, train_loader, val_loader=None, epochs=15):
-        model = model.to(DEVICE)
-        optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
-        criterion = nn.CrossEntropyLoss()
-        
-        for epoch in range(epochs):
-            model.train()
-            for b_x, b_y in train_loader:
-                b_x, b_y = b_x.to(DEVICE), b_y.to(DEVICE)
-                optimizer.zero_grad()
-                
-                weights = model(b_x) # [batch, 3]
-                pf = b_x[:, 0:2]
-                pv = b_x[:, 2:4]
-                pp = b_x[:, 4:6]
-                
-                fused_probs = (
-                    weights[:, 0:1] * pf +
-                    weights[:, 1:2] * pv +
-                    weights[:, 2:3] * pp
-                )
-                
-                loss = criterion(fused_probs, b_y)
-                loss.backward()
-                optimizer.step()
-                
-        model.eval()
-        all_probs, all_targets = [], []
-        loader = val_loader if val_loader is not None else train_loader
-        with torch.no_grad():
-            for b_x, b_y in loader:
-                b_x = b_x.to(DEVICE)
-                weights = model(b_x)
-                pf = b_x[:, 0:2]
-                pv = b_x[:, 2:4]
-                pp = b_x[:, 4:6]
-                fused_probs = (
-                    weights[:, 0:1] * pf +
-                    weights[:, 1:2] * pv +
-                    weights[:, 2:3] * pp
-                )
-                probs = fused_probs[:, 1].cpu().numpy()
-                all_probs.append(probs)
-                all_targets.append(b_y.numpy())
-                
-        return np.hstack(all_probs), np.hstack(all_targets)
-
-    class RouterDataset(Dataset):
-        def __init__(self, X, y):
-            self.X = torch.FloatTensor(X)
-            self.y = torch.LongTensor(y)
-        def __len__(self):
-            return len(self.y)
-        def __getitem__(self, idx):
-            return self.X[idx], self.y[idx]
-
-    # 1. Train-Test Split (Subject-wise, 80/20)
-    print("  -> Running Train-Test Split (Subject-wise)...")
-    train_subjs, test_subjs = train_test_split(unique_subjects, test_size=0.2, random_state=42)
-    train_idx = np.isin(groups, train_subjs)
-    test_idx = np.isin(groups, test_subjs)
-    
-    train_loader = DataLoader(RouterDataset(router_X[train_idx], y[train_idx]), batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(RouterDataset(router_X[test_idx], y[test_idx]), batch_size=BATCH_SIZE, shuffle=False)
-    probs, trues = train_router_model(router_builder(), train_loader, test_loader)
-    results["Train-Test Split (Subject-wise)"] = {
-        "y_true": trues, "y_prob": probs, "metrics": calculate_metrics(trues, probs)
-    }
-    
-    # 2. k-Fold CV (Subject-wise GroupKFold)
-    print("  -> Running 5-Fold CV (Subject-wise)...")
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
-    kf_probs, kf_trues = [], []
-    for train_subj_idx, test_subj_idx in kf.split(unique_subjects):
-        train_subjs = unique_subjects[train_subj_idx]
-        test_subjs = unique_subjects[test_subj_idx]
-        train_idx = np.isin(groups, train_subjs)
-        test_idx = np.isin(groups, test_subjs)
-        
-        train_loader = DataLoader(RouterDataset(router_X[train_idx], y[train_idx]), batch_size=BATCH_SIZE, shuffle=True)
-        test_loader = DataLoader(RouterDataset(router_X[test_idx], y[test_idx]), batch_size=BATCH_SIZE, shuffle=False)
-        probs, trues = train_router_model(router_builder(), train_loader, test_loader)
-        kf_probs.append(probs)
-        kf_trues.append(trues)
-    y_prob_kf = np.hstack(kf_probs)
-    y_true_kf = np.hstack(kf_trues)
-    results["k-Fold CV (Subject-wise)"] = {
-        "y_true": y_true_kf, "y_prob": y_prob_kf, "metrics": calculate_metrics(y_true_kf, y_prob_kf)
-    }
-    
-    # 3. Stratified Group CV
-    print("  -> Running Stratified Group CV...")
-    sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
-    sgkf_probs, sgkf_trues = [], []
-    for train_idx, test_idx in sgkf.split(router_X, y, groups):
-        train_loader = DataLoader(RouterDataset(router_X[train_idx], y[train_idx]), batch_size=BATCH_SIZE, shuffle=True)
-        test_loader = DataLoader(RouterDataset(router_X[test_idx], y[test_idx]), batch_size=BATCH_SIZE, shuffle=False)
-        probs, trues = train_router_model(router_builder(), train_loader, test_loader)
-        sgkf_probs.append(probs)
-        sgkf_trues.append(trues)
-    y_prob_sgkf = np.hstack(sgkf_probs)
-    y_true_sgkf = np.hstack(sgkf_trues)
-    results["Stratified Group CV"] = {
-        "y_true": y_true_sgkf, "y_prob": y_prob_sgkf, "metrics": calculate_metrics(y_true_sgkf, y_prob_sgkf)
-    }
-    
-    # 4. Leave-One-Subject-Out CV (Subsampled LOSO)
-    print(f"  -> Running LOSO CV (on {LOSO_SUBJECTS_LIMIT} subjects)...")
-    np.random.seed(42)
-    loso_subjects = np.random.choice(unique_subjects, size=min(len(unique_subjects), LOSO_SUBJECTS_LIMIT), replace=False)
-    loso_probs, loso_trues = [], []
-    for test_subj in loso_subjects:
-        train_idx = groups != test_subj
-        test_idx = groups == test_subj
-        train_loader = DataLoader(RouterDataset(router_X[train_idx], y[train_idx]), batch_size=BATCH_SIZE, shuffle=True)
-        test_loader = DataLoader(RouterDataset(router_X[test_idx], y[test_idx]), batch_size=BATCH_SIZE, shuffle=False)
-        probs, trues = train_router_model(router_builder(), train_loader, test_loader)
-        loso_probs.append(probs)
-        loso_trues.append(trues)
-    y_prob_loso = np.hstack(loso_probs)
-    y_true_loso = np.hstack(loso_trues)
-    results["LOSO CV (Subsampled)"] = {
-        "y_true": y_true_loso, "y_prob": y_prob_loso, "metrics": calculate_metrics(y_true_loso, y_prob_loso)
-    }
-    
-    # 5. Repeated Group Cross Validation
-    print("  -> Running Repeated Group CV...")
-    rskf_probs, rskf_trues = [], []
-    for repeat in range(2):
-        shuffled_subjs = unique_subjects.copy()
-        np.random.seed(42 + repeat)
-        np.random.shuffle(shuffled_subjs)
-        kf_group = KFold(n_splits=5, shuffle=False)
-        for train_subj_idx, test_subj_idx in kf_group.split(shuffled_subjs):
-            train_subjs = shuffled_subjs[train_subj_idx]
-            test_subjs = shuffled_subjs[test_subj_idx]
-            train_idx = np.isin(groups, train_subjs)
-            test_idx = np.isin(groups, test_subjs)
+                if len(inputs) == 3 and model_name in ["EarlyFusion", "GatedFusion", "CrossAttentionFusion"]:
+                    stress_logits = model(*inputs[-3:])
+                elif model_name.startswith("Unimodal"):
+                    stress_logits = model(inputs[0])
+                else:
+                    stress_logits = model(*inputs)
+                    
+            probs = torch.softmax(stress_logits, dim=1)[:, 1].cpu().numpy()
+            preds = stress_logits.argmax(dim=1).cpu().numpy()
             
-            train_loader = DataLoader(RouterDataset(router_X[train_idx], y[train_idx]), batch_size=BATCH_SIZE, shuffle=True)
-            test_loader = DataLoader(RouterDataset(router_X[test_idx], y[test_idx]), batch_size=BATCH_SIZE, shuffle=False)
-            probs, trues = train_router_model(router_builder(), train_loader, test_loader)
-            rskf_probs.append(probs)
-            rskf_trues.append(trues)
-    y_prob_rskf = np.hstack(rskf_probs)
-    y_true_rskf = np.hstack(rskf_trues)
-    results["Repeated Group CV"] = {
-        "y_true": y_true_rskf, "y_prob": y_prob_rskf, "metrics": calculate_metrics(y_true_rskf, y_prob_rskf)
-    }
-    
-    generate_visual_reports("Deep Fusion Router", results)
+            all_preds.extend(preds)
+            all_probs.extend(probs)
+            all_targets.extend(labels.cpu().numpy())
+            
+    return np.array(all_targets), np.array(all_preds), np.array(all_probs)
+
 
 # ---------------------------------------------------------
-# Main Pipeline
+# Main Execution Module
 # ---------------------------------------------------------
 def main():
-    lock = FeatureRuntimeLock()
+    parser = argparse.ArgumentParser(description="Master Stress Model Benchmarking Suite")
+    parser.add_argument("--mode", type=str, default="group_kfold", choices=["random_split", "group_kfold", "full_loso"],
+                        help="Validation mode to run: random_split, group_kfold (5-fold, fast LOSO), or full_loso (65-fold)")
+    args = parser.parse_args()
     
-    # Risky/identity-adjacent features filter logic (arch_.md section 6 compliance)
-    excluded_features = ["face_height_norm", "landmark_confidence", "f0_mean", "f0_range", "eda_scl_mean"]
+    feature_file = os.path.join(OUTPUT_DIR, "stress_features_fusion_5s.csv")
+    if not os.path.exists(feature_file):
+        print(f"Error: {feature_file} not found. Please run feature extraction first.")
+        sys.exit(1)
+        
+    print(f"Loading feature store: {feature_file}...")
+    df = pd.read_csv(feature_file)
     
-    face_features = [f for f in lock.contract["modalities"]["face"]["features"] if f not in excluded_features]
-    voice_features = [f for f in lock.contract["modalities"]["voice"]["features"] if f not in excluded_features]
-    physio_features = [f for f in lock.contract["modalities"]["physio"]["features"] if f not in excluded_features]
+    # Filter out NaNs in labels
+    df = df.dropna(subset=["label"]).reset_index(drop=True)
     
-    # ---------------------------------------------------------
-    # Part 1: Evaluate Classical Modality Experts
-    # ---------------------------------------------------------
-    print("\n=========================================================")
-    # 1. Face Expert (Gradient Boosting)
-    print("Evaluating Classical Face Expert (Gradient Boosting)...")
-    df_face = pd.read_csv("certified_data/face_certified.csv")
-    X_clean_face = df_face[face_features].fillna(0).values
-    y_face = df_face["label"].values
-    groups_face = df_face["subject_id"].values
-    task_groups_face = df_face["task_id"].values
+    # Map subject labels to integers for classification
+    subj_list = df["subject_id"].unique().tolist()
+    subj_map = {s: i for i, s in enumerate(subj_list)}
+    subj_indices = df["subject_id"].map(subj_map).values
     
-    face_results = run_cv_evaluation(
-        "sklearn",
-        lambda: GradientBoostingClassifier(n_estimators=100, max_depth=3, random_state=42),
-        X_clean_face, y_face, groups_face, task_groups_face
-    )
-    generate_visual_reports("Classical Face Expert", face_results)
+    labels = df["label"].astype(int).values
+    subjects = df["subject_id"].values
     
-    # 2. Voice Expert (Random Forest)
-    print("\nEvaluating Classical Voice Expert (Random Forest)...")
-    df_voice = pd.read_csv("certified_data/voice_certified.csv")
-    X_clean_voice = df_voice[voice_features].fillna(0).values
-    y_voice = df_voice["label"].values
-    groups_voice = df_voice["subject_id"].values
-    task_groups_voice = df_voice["task_id"].values
+    # Slices for classical model (exclude identifiers and metadata)
+    exclude_cols = ["subject_id", "task_id", "window_index", "label"]
+    feature_cols = [c for c in df.columns if c not in exclude_cols and not c.endswith("_abs")]
+    X_classical = StandardScaler().fit_transform(df[feature_cols].fillna(0).values)
     
-    voice_results = run_cv_evaluation(
-        "sklearn",
-        lambda: RandomForestClassifier(n_estimators=100, max_depth=8, class_weight='balanced', random_state=42, n_jobs=-1),
-        X_clean_voice, y_voice, groups_voice, task_groups_voice
-    )
-    generate_visual_reports("Classical Voice Expert", voice_results)
+    # Extract modality slices for sequential encoders
+    eye, mouth, gface, prosody, spectral, quality, cardio, motion = get_modality_slices(df, dual=True)
     
-    # 3. Physio Expert (Gradient Boosting)
-    print("\nEvaluating Classical Physio Expert (Gradient Boosting)...")
-    df_physio = pd.read_csv("certified_data/physio_certified.csv")
-    X_clean_physio = df_physio[physio_features].fillna(0).values
-    y_physio = df_physio["label"].values
-    groups_physio = df_physio["subject_id"].values
-    task_groups_physio = df_physio["task_id"].values
+    # Form sequence inputs (seq_len = 5)
+    seq_len = 5
+    seq_data = {
+        "eye": make_sequences(eye, seq_len),
+        "mouth": make_sequences(mouth, seq_len),
+        "global_face": make_sequences(gface, seq_len),
+        "prosody": make_sequences(prosody, seq_len),
+        "spectral": make_sequences(spectral, seq_len),
+        "quality": make_sequences(quality, seq_len),
+        "cardio": make_sequences(cardio, seq_len),
+        "motion": make_sequences(motion, seq_len)
+    }
     
-    physio_results = run_cv_evaluation(
-        "sklearn",
-        lambda: GradientBoostingClassifier(n_estimators=100, max_depth=3, random_state=42),
-        X_clean_physio, y_physio, groups_physio, task_groups_physio
-    )
-    generate_visual_reports("Classical Physio Expert", physio_results)
-    
-    # ---------------------------------------------------------
-    # Part 2: Evaluate Classical RF Experts (Methodology Phase 4)
-    # ---------------------------------------------------------
-    print("\n=========================================================")
-    print("Evaluating Classical RF Experts (Methodology Phase 4 - with Temporal Windowing & Normalization)...")
-    
-    # Face RF
-    print("Running Classical RF Face...")
-    df_face_norm = apply_subject_aware_normalization(df_face, face_features)
-    df_face_win = apply_temporal_windowing(df_face_norm, face_features)
-    X_face_rf = df_face_win[face_features].values
-    y_face_rf = df_face_win["label"].values
-    groups_face_rf = df_face_win["subject_id"].values
-    task_groups_face_rf = df_face_win["task_id"].values
-    
-    rf_face_results = run_cv_evaluation(
-        "sklearn",
-        lambda: RandomForestClassifier(n_estimators=100, max_depth=10, min_samples_leaf=4, class_weight='balanced', random_state=42, n_jobs=-1),
-        X_face_rf, y_face_rf, groups_face_rf, task_groups_face_rf
-    )
-    generate_visual_reports("Classical RF Face Expert", rf_face_results)
-    
-    # Voice RF
-    print("Running Classical RF Voice...")
-    df_voice_norm = apply_subject_aware_normalization(df_voice, voice_features)
-    df_voice_win = apply_temporal_windowing(df_voice_norm, voice_features)
-    X_voice_rf = df_voice_win[voice_features].values
-    y_voice_rf = df_voice_win["label"].values
-    groups_voice_rf = df_voice_win["subject_id"].values
-    task_groups_voice_rf = df_voice_win["task_id"].values
-    
-    rf_voice_results = run_cv_evaluation(
-        "sklearn",
-        lambda: RandomForestClassifier(n_estimators=100, max_depth=10, min_samples_leaf=4, class_weight='balanced', random_state=42, n_jobs=-1),
-        X_voice_rf, y_voice_rf, groups_voice_rf, task_groups_voice_rf
-    )
-    generate_visual_reports("Classical RF Voice Expert", rf_voice_results)
-    
-    # Physio RF
-    print("Running Classical RF Physio...")
-    df_physio_norm = apply_subject_aware_normalization(df_physio, physio_features)
-    df_physio_win = apply_temporal_windowing(df_physio_norm, physio_features)
-    X_physio_rf = df_physio_win[physio_features].values
-    y_physio_rf = df_physio_win["label"].values
-    groups_physio_rf = df_physio_win["subject_id"].values
-    task_groups_physio_rf = df_physio_win["task_id"].values
-    
-    rf_physio_results = run_cv_evaluation(
-        "sklearn",
-        lambda: RandomForestClassifier(n_estimators=100, max_depth=10, min_samples_leaf=4, class_weight='balanced', random_state=42, n_jobs=-1),
-        X_physio_rf, y_physio_rf, groups_physio_rf, task_groups_physio_rf
-    )
-    generate_visual_reports("Classical RF Physio Expert", rf_physio_results)
+    # Setup cross validation folds
+    if args.mode == "random_split":
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        splits = list(cv.split(X_classical, labels))
+        print("Using Stratified 5-Fold Random Split validation.")
+    elif args.mode == "group_kfold":
+        cv = GroupKFold(n_splits=5)
+        splits = list(cv.split(X_classical, labels, groups=subjects))
+        print("Using Group 5-Fold (Subject-independent) validation.")
+    else:
+        # Full LOSO (65 folds)
+        cv = GroupKFold(n_splits=len(subj_list))
+        splits = list(cv.split(X_classical, labels, groups=subjects))
+        print(f"Using full Leave-One-Subject-Out ({len(subj_list)} folds) validation.")
+        
+    # Dictionary to hold final evaluation results
+    summary_results = []
     
     # ---------------------------------------------------------
-    # Part 3: Evaluate Deep Modality Sequence Experts (PyTorch CNN-GRU)
+    # Helper to calculate and store model stats
     # ---------------------------------------------------------
-    print("\n=========================================================")
-    print("Loading and Preprocessing Datasets for Deep Experts (Sequential)...")
+    def evaluate_predictions(name, category, targets, preds, probs):
+        acc = accuracy_score(targets, preds)
+        prec = precision_score(targets, preds, average="binary", zero_division=0)
+        rec = recall_score(targets, preds, average="binary", zero_division=0)
+        f1 = f1_score(targets, preds, average="binary", zero_division=0)
+        try:
+            auc = roc_auc_score(targets, probs)
+        except ValueError:
+            auc = 0.5
+            
+        summary_results.append({
+            "Model Name": name,
+            "Category": category,
+            "Accuracy": acc,
+            "Precision": prec,
+            "Recall": rec,
+            "F1-Score": f1,
+            "ROC-AUC": auc
+        })
+        print(f"[{name}] Acc: {acc:.4f} | F1: {f1:.4f} | AUC: {auc:.4f}")
+        
+        # Save plots for top performers
+        if name in ["VBC-CASA-IS", "SSVB-CASA-AIS", "XGBoost", "Random Forest"]:
+            # ROC curves
+            fpr, tpr, _ = roc_curve(targets, probs)
+            plt.figure()
+            plt.plot(fpr, tpr, label=f'{name} (AUC = {auc:.2f})')
+            plt.plot([0, 1], [0, 1], 'k--')
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title(f'ROC Curve - {name}')
+            plt.legend(loc='lower right')
+            plt.savefig(os.path.join(OUTPUT_DIR, f"{name.lower().replace('-', '_')}_roc.png"))
+            plt.close()
+            
+            # Confusion matrices
+            cm = confusion_matrix(targets, preds)
+            plt.figure()
+            plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+            plt.title(f'Confusion Matrix - {name}')
+            plt.colorbar()
+            tick_marks = np.arange(2)
+            plt.xticks(tick_marks, ['Calm', 'Stress'])
+            plt.yticks(tick_marks, ['Calm', 'Stress'])
+            
+            # Labeling cells
+            thresh = cm.max() / 2.
+            for i, j in np.ndindex(cm.shape):
+                plt.text(j, i, format(cm[i, j], 'd'),
+                         horizontalalignment="center",
+                         color="white" if cm[i, j] > thresh else "black")
+            
+            plt.ylabel('True label')
+            plt.xlabel('Predicted label')
+            plt.tight_layout()
+            plt.savefig(os.path.join(OUTPUT_DIR, f"{name.lower().replace('-', '_')}_cm.png"))
+            plt.close()
+
+    # =========================================================
+    # Part 1: Train & Evaluate Classical ML Models
+    # =========================================================
+    # Configure GPU-accelerated XGBoost if available
+    xgb_clf = None
+    if HAS_XGBOOST:
+        # Try XGBoost 2.0+ GPU syntax
+        try:
+            xgb_clf = XGBClassifier(use_label_encoder=False, eval_metric="logloss", tree_method="hist", device="cuda")
+            # Fit on a tiny dummy array to verify GPU driver support
+            xgb_clf.fit(np.zeros((10, 2)), np.array([0, 1] * 5))
+            print("[INFO] XGBoost GPU acceleration initialized (device='cuda').")
+        except Exception:
+            # Try legacy XGBoost GPU syntax
+            try:
+                xgb_clf = XGBClassifier(use_label_encoder=False, eval_metric="logloss", tree_method="gpu_hist")
+                xgb_clf.fit(np.zeros((10, 2)), np.array([0, 1] * 5))
+                print("[INFO] XGBoost GPU acceleration initialized (tree_method='gpu_hist').")
+            except Exception:
+                xgb_clf = XGBClassifier(use_label_encoder=False, eval_metric="logloss")
+                print("[INFO] XGBoost GPU initialization failed. Running on CPU.")
+    else:
+        xgb_clf = GradientBoostingClassifier(n_estimators=100, max_depth=5)
+        print("[INFO] XGBoost not installed. Using sklearn Gradient Boosting on CPU.")
+
+    print("\n--- Training Classical ML Models ---")
+    classical_models = {
+        "Logistic Regression": LogisticRegression(max_iter=1000, class_weight="balanced"),
+        "SVM": SVC(probability=True, class_weight="balanced", max_iter=2000, cache_size=2000),
+        "Random Forest": RandomForestClassifier(n_estimators=100, max_depth=10, class_weight="balanced", n_jobs=-1),
+        "XGBoost": xgb_clf,
+        "KNN": KNeighborsClassifier(n_neighbors=5)
+    }
     
-    df_face_seq = pd.read_csv("certified_data/face_certified.csv").drop(columns=['video_id', 'window_start', 'window_end'], errors='ignore')
-    df_voice_seq = pd.read_csv("certified_data/voice_certified.csv").drop(columns=['video_id', 'window_start', 'window_end'], errors='ignore')
-    df_physio_seq = pd.read_csv("certified_data/physio_certified.csv").drop(columns=['video_id', 'window_start', 'window_end'], errors='ignore')
+    for name, clf in classical_models.items():
+        all_targets, all_preds, all_probs = [], [], []
+        for train_idx, val_idx in splits:
+            X_train, X_val = X_classical[train_idx], X_classical[val_idx]
+            y_train, y_val = labels[train_idx], labels[val_idx]
+            
+            clf.fit(X_train, y_train)
+            preds = clf.predict(X_val)
+            probs = clf.predict_proba(X_val)[:, 1]
+            
+            all_targets.extend(y_val)
+            all_preds.extend(preds)
+            all_probs.extend(probs)
+            
+        evaluate_predictions(name, "Classical", np.array(all_targets), np.array(all_preds), np.array(all_probs))
+
+    factor = 2
+
+    # =========================================================
+    # Part 2: Train & Evaluate Unimodal Sequence Experts (Deep)
+    # =========================================================
+    print("\n--- Training Unimodal sequence Experts ---")
     
-    df_merged = pd.merge(df_face_seq, df_voice_seq, on=['subject_id', 'task_id', 'window_index', 'label'], how='outer')
-    df_merged = pd.merge(df_merged, df_physio_seq, on=['subject_id', 'task_id', 'window_index', 'label'], how='outer')
-    df_merged = df_merged.dropna(subset=['label']).sort_values(by=['subject_id', 'task_id', 'window_index']).reset_index(drop=True).fillna(0)
+    # 1. Unimodal Face Expert
+    print("Evaluating Face Expert...")
+    face_inputs = {"eye": seq_data["eye"], "mouth": seq_data["mouth"], "global_face": seq_data["global_face"]}
+    targets_f, preds_f, probs_f = [], [], []
+    for train_idx, val_idx in splits:
+        train_d = {k: v[train_idx] for k, v in face_inputs.items()}
+        val_d = {k: v[val_idx] for k, v in face_inputs.items()}
+        
+        train_ds = SeqMultimodalDataset(train_d, labels[train_idx])
+        val_ds = SeqMultimodalDataset(val_d, labels[val_idx])
+        
+        train_loader = DataLoader(train_ds, batch_size=256, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=256, shuffle=False)
+        
+        t, p, pr = train_and_eval_pytorch_model(
+            "UnimodalFace",
+            lambda: UnimodalExpert(input_dim=5 * factor, hidden_dim=16, adversarial=False),
+            train_loader, val_loader
+        )
+        targets_f.extend(t)
+        preds_f.extend(p)
+        probs_f.extend(pr)
+    evaluate_predictions("Face Sequence Expert", "Unimodal Expert", np.array(targets_f), np.array(preds_f), np.array(probs_f))
+
+    # 2. Unimodal Voice Expert
+    print("Evaluating Voice Expert...")
+    voice_inputs = {"prosody": seq_data["prosody"], "spectral": seq_data["spectral"], "quality": seq_data["quality"]}
+    targets_v, preds_v, probs_v = [], [], []
+    for train_idx, val_idx in splits:
+        train_d = {k: v[train_idx] for k, v in voice_inputs.items()}
+        val_d = {k: v[val_idx] for k, v in voice_inputs.items()}
+        
+        train_ds = SeqMultimodalDataset(train_d, labels[train_idx])
+        val_ds = SeqMultimodalDataset(val_d, labels[val_idx])
+        
+        train_loader = DataLoader(train_ds, batch_size=256, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=256, shuffle=False)
+        
+        t, p, pr = train_and_eval_pytorch_model(
+            "UnimodalVoice",
+            lambda: UnimodalExpert(input_dim=3 * factor, hidden_dim=16, adversarial=False),
+            train_loader, val_loader
+        )
+        targets_v.extend(t)
+        preds_v.extend(p)
+        probs_v.extend(pr)
+    evaluate_predictions("Voice Sequence Expert", "Unimodal Expert", np.array(targets_v), np.array(preds_v), np.array(probs_v))
+
+    # =========================================================
+    # Part 3: Train & Evaluate Intermediate Fusion Models
+    # =========================================================
+    print("\n--- Training Multimodal Fusion & Gated Routers ---")
     
-    groups = df_merged['subject_id'].values
-    task_groups = df_merged['task_id'].values
-    y_merged = df_merged['label'].values
+    # Early Concat Fusion
+    print("Evaluating Early Fusion...")
+    targets_ef, preds_ef, probs_ef = [], [], []
+    for train_idx, val_idx in splits:
+        train_d = {"eye": seq_data["global_face"][train_idx], "mouth": seq_data["spectral"][train_idx], "global_face": seq_data["cardio"][train_idx]}
+        val_d = {"eye": seq_data["global_face"][val_idx], "mouth": seq_data["spectral"][val_idx], "global_face": seq_data["cardio"][val_idx]}
+        
+        train_ds = SeqMultimodalDataset(train_d, labels[train_idx])
+        val_ds = SeqMultimodalDataset(val_d, labels[val_idx])
+        train_loader = DataLoader(train_ds, batch_size=256, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=256, shuffle=False)
+        
+        t, p, pr = train_and_eval_pytorch_model(
+            "EarlyFusion",
+            lambda: EarlyFusionModel(face_dim=8 * factor, voice_dim=2 * factor, physio_dim=3 * factor, hidden_dim=16),
+            train_loader, val_loader
+        )
+        targets_ef.extend(t)
+        preds_ef.extend(p)
+        probs_ef.extend(pr)
+    evaluate_predictions("Early Concat Fusion", "Early Fusion", np.array(targets_ef), np.array(preds_ef), np.array(probs_ef))
+
+    # Gated Fusion
+    print("Evaluating Gated Fusion...")
+    targets_gf, preds_gf, probs_gf = [], [], []
+    for train_idx, val_idx in splits:
+        train_d = {"eye": seq_data["global_face"][train_idx], "mouth": seq_data["spectral"][train_idx], "global_face": seq_data["cardio"][train_idx]}
+        val_d = {"eye": seq_data["global_face"][val_idx], "mouth": seq_data["spectral"][val_idx], "global_face": seq_data["cardio"][val_idx]}
+        
+        train_ds = SeqMultimodalDataset(train_d, labels[train_idx])
+        val_ds = SeqMultimodalDataset(val_d, labels[val_idx])
+        train_loader = DataLoader(train_ds, batch_size=256, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=256, shuffle=False)
+        
+        t, p, pr = train_and_eval_pytorch_model(
+            "GatedFusion",
+            lambda: GatedFusionModel(face_dim=8 * factor, voice_dim=2 * factor, physio_dim=3 * factor, hidden_dim=16),
+            train_loader, val_loader
+        )
+        targets_gf.extend(t)
+        preds_gf.extend(p)
+        probs_gf.extend(pr)
+    evaluate_predictions("Gated Fusion", "Early Fusion", np.array(targets_gf), np.array(preds_gf), np.array(probs_gf))
+
+    # =========================================================
+    # Part 4: Train & Evaluate Production Models (VBC-CASA-IS)
+    # =========================================================
+    print("\n--- Training Production Models ---")
     
-    X_deep_face = df_merged[face_features].values
-    X_deep_voice = df_merged[voice_features].values
-    X_deep_physio = df_merged[physio_features].values
+    # VBC-CASA-IS (No GRL adversarial identity suppression)
+    print("Evaluating VBC-CASA-IS...")
+    targets_vbc, preds_vbc, probs_vbc = [], [], []
+    for train_idx, val_idx in splits:
+        train_d = {k: v[train_idx] for k, v in seq_data.items()}
+        val_d = {k: v[val_idx] for k, v in seq_data.items()}
+        
+        train_ds = SeqMultimodalDataset(train_d, labels[train_idx])
+        val_ds = SeqMultimodalDataset(val_d, labels[val_idx])
+        train_loader = DataLoader(train_ds, batch_size=256, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=256, shuffle=False)
+        
+        t, p, pr = train_and_eval_pytorch_model(
+            "VBC-CASA-IS",
+            lambda: HybridMoEAttentionModel(hidden_dim=16, num_subjects=len(subj_list), adversarial=False, dual_representation=True),
+            train_loader, val_loader
+        )
+        targets_vbc.extend(t)
+        preds_vbc.extend(p)
+        probs_vbc.extend(pr)
+    evaluate_predictions("VBC-CASA-IS", "Production", np.array(targets_vbc), np.array(preds_vbc), np.array(probs_vbc))
+
+    # SSVB-CASA-AIS (With GRL adversarial identity suppression)
+    print("Evaluating SSVB-CASA-AIS...")
+    targets_ssvbc, preds_ssvbc, probs_ssvbc = [], [], []
+    for train_idx, val_idx in splits:
+        train_d = {k: v[train_idx] for k, v in seq_data.items()}
+        val_d = {k: v[val_idx] for k, v in seq_data.items()}
+        
+        train_ds = SeqMultimodalDataset(train_d, labels[train_idx], subjects=subj_indices[train_idx])
+        val_ds = SeqMultimodalDataset(val_d, labels[val_idx], subjects=subj_indices[val_idx])
+        train_loader = DataLoader(train_ds, batch_size=256, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=256, shuffle=False)
+        
+        t, p, pr = train_and_eval_pytorch_model(
+            "SSVB-CASA-AIS",
+            lambda: HybridMoEAttentionModel(hidden_dim=16, num_subjects=len(subj_list), adversarial=True, dual_representation=True),
+            train_loader, val_loader,
+            is_adversarial=True
+        )
+        targets_ssvbc.extend(t)
+        preds_ssvbc.extend(p)
+        probs_ssvbc.extend(pr)
+    evaluate_predictions("SSVB-CASA-AIS", "Production", np.array(targets_ssvbc), np.array(preds_ssvbc), np.array(probs_ssvbc))
+
+    # Save final leaderboard table
+    df_results = pd.DataFrame(summary_results)
+    df_results = df_results.sort_values(by="Accuracy", ascending=False).reset_index(drop=True)
     
-    # Deep Face
-    print("\nEvaluating Deep Face Expert (PyTorch Conv1D-GRU)...")
-    deep_face_results = run_cv_evaluation(
-        "pytorch",
-        lambda: ModalityEncoder(len(face_features), 16),
-        X_deep_face, y_merged, groups, task_groups
-    )
-    generate_visual_reports("Deep Face Expert", deep_face_results)
+    # Save CSV
+    leaderboard_path = os.path.join(OUTPUT_DIR, "loso_leaderboard.csv")
+    df_results.to_csv(leaderboard_path, index=False)
+    print(f"\nLeaderboard CSV saved to: {leaderboard_path}")
     
-    # Deep Voice
-    print("\nEvaluating Deep Voice Expert (PyTorch Conv1D-GRU)...")
-    deep_voice_results = run_cv_evaluation(
-        "pytorch",
-        lambda: ModalityEncoder(len(voice_features), 16),
-        X_deep_voice, y_merged, groups, task_groups
-    )
-    generate_visual_reports("Deep Voice Expert", deep_voice_results)
-    
-    # Deep Physio
-    print("\nEvaluating Deep Physio Expert (PyTorch Conv1D-GRU)...")
-    deep_physio_results = run_cv_evaluation(
-        "pytorch",
-        lambda: ModalityEncoder(len(physio_features), 16),
-        X_deep_physio, y_merged, groups, task_groups
-    )
-    generate_visual_reports("Deep Physio Expert", deep_physio_results)
-    
-    # 4. Deep Dynamic Router (MLP Router)
-    print("\nEvaluating Deep Fusion Router (PyTorch MLP)...")
-    print("Running Dynamic Router CV Splits...")
-    
-    # Fit simple classifiers to build prediction inputs for the router
-    rf_f = RandomForestClassifier(n_estimators=50, random_state=42)
-    rf_v = RandomForestClassifier(n_estimators=50, random_state=42)
-    rf_p = RandomForestClassifier(n_estimators=50, random_state=42)
-    
-    rf_f.fit(StandardScaler().fit_transform(X_deep_face[:2000]), y_merged[:2000])
-    rf_v.fit(StandardScaler().fit_transform(X_deep_voice[:2000]), y_merged[:2000])
-    rf_p.fit(StandardScaler().fit_transform(X_deep_physio[:2000]), y_merged[:2000])
-    
-    prob_f = rf_f.predict_proba(StandardScaler().fit_transform(X_deep_face))
-    prob_v = rf_v.predict_proba(StandardScaler().fit_transform(X_deep_voice))
-    prob_p = rf_p.predict_proba(StandardScaler().fit_transform(X_deep_physio))
-    
-    masks = np.ones((len(y_merged), 3), dtype=np.float32)
-    router_X = np.hstack([prob_f, prob_v, prob_p, masks]) # shape: [N, 9]
-    
-    run_router_cv_evaluation(router_X, y_merged, groups)
-    
-    print("\n=========================================================")
-    print("Evaluation Pipeline completed successfully!")
-    print("All performance plots and metrics are generated under 'evaluation_reports/'.")
-    print("=========================================================")
+    # Save Markdown report
+    report_path = os.path.join(OUTPUT_DIR, "loso_report.md")
+    with open(report_path, "w") as f:
+        f.write("# Leave-One-Subject-Out (LOSO) Stress Detection Leaderboard\n\n")
+        f.write(f"**Validation Mode:** {args.mode.upper()}\n")
+        f.write(f"**Feature File Ingested:** {feature_file}\n")
+        f.write(f"**Total Records:** {len(df)}\n")
+        f.write(f"**Unique Subjects:** {len(subj_list)}\n\n")
+        
+        # Build markdown table manually to avoid tabulate dependency
+        headers = list(df_results.columns)
+        md_table = "| " + " | ".join(headers) + " |\n"
+        md_table += "| " + " | ".join(["---"] * len(headers)) + " |\n"
+        for _, row in df_results.iterrows():
+            vals = []
+            for val in row:
+                if isinstance(val, float):
+                    vals.append(f"{val:.4f}")
+                else:
+                    vals.append(str(val))
+            md_table += "| " + " | ".join(vals) + " |\n"
+            
+        f.write(md_table)
+        f.write("\n\n*Plots for top performing models have been generated inside the results directory.*")
+        
+    print(f"Leaderboard Markdown report saved to: {report_path}")
+    print("All training metrics completed successfully!")
 
 if __name__ == "__main__":
     main()
