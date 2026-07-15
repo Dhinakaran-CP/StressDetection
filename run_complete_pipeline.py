@@ -360,8 +360,18 @@ def main():
                     probs = clf.predict_proba(X_classical[val_idx])[:, 1]
                     t_fold = labels[val_idx]
                 else:
-                    train_d = {k: v[train_idx] for k, v in seq_data.items()}
-                    val_d = {k: v[val_idx] for k, v in seq_data.items()}
+                    # Extract only the relevant modal keys for this specific architecture to avoid contamination
+                    if model_name == "FaceSequenceExpert":
+                        keys = ["eye"]
+                    elif model_name == "VoiceSequenceExpert":
+                        keys = ["prosody"]
+                    elif model_name in ["EarlyConcatFusion", "GatedFusion"]:
+                        keys = ["global_face", "spectral", "cardio"]
+                    else:
+                        keys = list(seq_data.keys())
+                        
+                    train_d = {k: seq_data[k][train_idx] for k in keys}
+                    val_d = {k: seq_data[k][val_idx] for k in keys}
                     
                     # Handle subjects mapping for adversarial model
                     subj_in = subj_indices[train_idx] if model_name == "SSVB_CASA_AIS" else None
