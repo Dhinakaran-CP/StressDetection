@@ -264,7 +264,6 @@ def main():
         if not os.path.exists(link_path):
             try:
                 if sys.platform == "win32":
-                    import os
                     with open(link_path, "w") as f:
                         f.write(f"Linked Source: {file_path}\n")
                 else:
