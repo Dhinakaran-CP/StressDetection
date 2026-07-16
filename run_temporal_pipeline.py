@@ -534,6 +534,22 @@ def main():
             model_out_dir = os.path.join(PIPELINE_DIR, "outputs", scale, model_name)
             os.makedirs(model_out_dir, exist_ok=True)
             
+            # Save model checkpoint
+            if hardware == "CPU":
+                joblib.dump(clf, os.path.join(model_out_dir, "model.pkl"))
+            else:
+                torch.save(model.state_dict(), os.path.join(model_out_dir, "model.pt"))
+                
+            # Save split indices for auditability
+            split_info = {}
+            for f_idx, (tr_idx, val_idx) in enumerate(splits):
+                split_info[f"Fold {f_idx+1}"] = {
+                    "train_indices": tr_idx.tolist(),
+                    "val_indices": val_idx.tolist()
+                }
+            with open(os.path.join(model_out_dir, "split_indices.json"), "w") as s_f:
+                json.dump(split_info, s_f, indent=4)
+            
             # Save CSV reports
             pd.DataFrame({
                 "Actual": all_targets,
