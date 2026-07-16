@@ -1,0 +1,4 @@
+Scale,Tuned Single Forest Accuracy,Tuned Single Forest F1,Combined Ensemble Accuracy,Combined Ensemble F1,Selection Decision,Runtime
+2sec,0.7426128415222543,0.6352731759613245,0.7384874525366146,0.6315958815958816,RETAINED Tuned Single Forest (ensemble gain too small or negative),126.61471652984619
+5sec,0.7431469497564168,0.6339188558992694,0.738566131025958,0.6308711051794056,RETAINED Tuned Single Forest (ensemble gain too small or negative),47.21582341194153
+10sec,0.7398887385355586,0.6244029526704299,0.7430461584724102,0.6324731182795699,PROMOTED Combined Ensemble (improved > 0.5% F1-score),23.075297117233276

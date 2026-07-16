@@ -99,15 +99,20 @@ Physiological/
 # Deployment Export Packages
 # ===========================================
 StressDetectionUsingML_Deploy/
-StressID Dataset/
-WorkStress3D Dataset/
-loso_evaluation_results/
+data/raw/
+data/processed/
+data/features/
 
 # ===========================================
-# Early Fusion Workspace ignores
+# Phase-Wise Research Ignores (Exclude models & logs)
 # ===========================================
-early_fusion/outputs/checkpoints/
-early_fusion/outputs/final_model/
-early_fusion/outputs/predictions/
-early_fusion/logs/
-model_archive.zip
+research/Phase_4_Temporal_Deep/outputs/
+research/Phase_4_Temporal_Deep/logs/
+research/Phase_5_GAN_Augmentation/outputs/
+research/Phase_5_GAN_Augmentation/logs/
+research/Phase_6_Expert_Gating/outputs/
+research/Phase_6_Expert_Gating/logs/
+research/Phase_7_RF_Specialist/outputs/
+research/Phase_7_RF_Specialist/logs/
+research/model_archive.zip
+research/model_archive/

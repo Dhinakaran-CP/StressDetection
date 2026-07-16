@@ -36,14 +36,15 @@ print(f"Training acceleration device: {DEVICE}")
 backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:
     sys.path.append(backend_dir)
+sys.path.append(os.path.join(backend_dir, "research", "Phase_2_High_Capacity"))
 
-from high_capacity_research.models import (
+from models import (
     UnimodalExpert, EarlyFusionModel, GatedFusionModel,
     CrossAttentionFusionModel, HybridMoEAttentionModel
 )
 
 # Output directory for results
-OUTPUT_DIR = os.path.join(backend_dir, "loso_evaluation_results")
+OUTPUT_DIR = os.path.join(backend_dir, "research", "Phase_1_Baseline_LOSO")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ---------------------------------------------------------

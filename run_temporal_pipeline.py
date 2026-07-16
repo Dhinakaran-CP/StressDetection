@@ -32,7 +32,7 @@ warnings.filterwarnings('ignore')
 # Step 1: Directory Setup
 # ---------------------------------------------------------
 backend_dir = os.path.dirname(os.path.abspath(__file__))
-PIPELINE_DIR = os.path.join(backend_dir, "pipeline_runs")
+PIPELINE_DIR = os.path.join(backend_dir, "research", "Phase_4_Temporal_Deep")
 os.makedirs(os.path.join(PIPELINE_DIR, "configs"), exist_ok=True)
 os.makedirs(os.path.join(PIPELINE_DIR, "logs"), exist_ok=True)
 os.makedirs(os.path.join(PIPELINE_DIR, "models"), exist_ok=True)
@@ -339,12 +339,14 @@ def main():
         print(f"==========================================================\n")
         
         # Load features from organized results folder
-        file_path = os.path.join(backend_dir, "loso_evaluation_results", filename)
+        file_path = os.path.join(backend_dir, "data", "features", filename)
         if not os.path.exists(file_path):
-            file_path = os.path.join(backend_dir, filename)
+            file_path = os.path.join(backend_dir, "research", "Phase_1_Baseline_LOSO", filename)
             if not os.path.exists(file_path):
-                print(f"[WARNING] Feature store {filename} not found. Skipping scale {scale}.")
-                continue
+                file_path = os.path.join(backend_dir, filename)
+                if not os.path.exists(file_path):
+                    print(f"[WARNING] Feature store {filename} not found. Skipping scale {scale}.")
+                    continue
                 
         df = pd.read_csv(file_path)
         df = df.dropna(subset=["label"]).reset_index(drop=True)

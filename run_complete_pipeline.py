@@ -44,8 +44,9 @@ print(f"[SYSTEM] Hardware Acceleration: {DEVICE}")
 backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:
     sys.path.append(backend_dir)
+sys.path.append(os.path.join(backend_dir, "research", "Phase_2_High_Capacity"))
 
-from high_capacity_research.models import (
+from models import (
     UnimodalExpert, EarlyFusionModel, GatedFusionModel,
     CrossAttentionFusionModel, HybridMoEAttentionModel
 )
@@ -60,7 +61,7 @@ except ImportError:
 # ---------------------------------------------------------
 # Step 1: Folder Structure Setup
 # ---------------------------------------------------------
-BASE_DIR = os.path.join(backend_dir, "loso_evaluation_results")
+BASE_DIR = os.path.join(backend_dir, "research", "Phase_1_Baseline_LOSO")
 os.makedirs(os.path.join(BASE_DIR, "configs"), exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, "data_links"), exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, "logs"), exist_ok=True)

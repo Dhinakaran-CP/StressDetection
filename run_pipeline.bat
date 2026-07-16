@@ -62,8 +62,8 @@ if %errorlevel% neq 0 (
 echo.
 echo ==========================================================
 echo   Pipeline Execution Completed Successfully!
-echo   Outputs saved in: loso_evaluation_results/
+echo   Outputs saved in: research/Phase_1_Baseline_LOSO/
 echo ==========================================================
 echo.
-explorer loso_evaluation_results
+explorer research\Phase_1_Baseline_LOSO
 pause
