@@ -15,15 +15,15 @@
             "eligible_for_production": true
         },
         "mlp": {
-            "stressid_auc": 0.7459044873191122,
-            "empathicschool_auc": 0.5639166837335695,
+            "stressid_auc": 0.7439672044366817,
+            "empathicschool_auc": 0.5396932457379617,
             "gate_g2_passed": true,
-            "gate_g3_passed": true,
-            "eligible_for_production": true
+            "gate_g3_passed": false,
+            "eligible_for_production": false
         },
         "temporal": {
-            "stressid_auc": 0.747980180173193,
-            "empathicschool_auc": 0.5439663727538587,
+            "stressid_auc": 0.7440716671629115,
+            "empathicschool_auc": 0.5389466996820798,
             "gate_g2_passed": true,
             "gate_g3_passed": false,
             "eligible_for_production": false
@@ -31,8 +31,7 @@
     },
     "production_eligible_models": [
         "logistic_regression",
-        "lightgbm",
-        "mlp"
+        "lightgbm"
     ],
     "selected_production_candidate": "lightgbm",
     "gate_g2_threshold": 0.7,

@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 from pipeline.common.determinism import set_determinism
 from pipeline.common.io_utils import write_json, read_json
+import numpy as np
 
 # Set determinism
 set_determinism()
@@ -19,7 +20,6 @@ def generate_loso_splits(dataset_name, parquet_path):
     folds = []
     
     for sub in subjects:
-        # Test set is all windows of subject sub
         test_df = df[df["subject_id"] == sub]
         train_df = df[df["subject_id"] != sub]
         
@@ -48,9 +48,10 @@ def generate_loso_splits(dataset_name, parquet_path):
     return folds
 
 def main():
-    base_dir = Path(r"c:\Users\StressProject\Desktop\StressDetectionUsingML")
+    base_dir = Path(__file__).resolve().parents[3]
     sid_pq = base_dir / "pipeline" / "data" / "stressid" / "normalized_windows.parquet"
     es_pq = base_dir / "pipeline" / "data" / "empathicschool" / "normalized_windows.parquet"
+    combined_pq = base_dir / "pipeline" / "data" / "combined" / "normalized_windows.parquet"
     
     log_file = base_dir / "pipeline" / "logs" / "loso_split.log"
     if log_file.exists():
@@ -59,6 +60,7 @@ def main():
     # Generate splits
     sid_folds = generate_loso_splits("StressID", sid_pq)
     es_folds = generate_loso_splits("EmpathicSchool", es_pq)
+    combined_folds = generate_loso_splits("Combined", combined_pq)
     
     # Save splits registry
     registry = {
@@ -70,6 +72,10 @@ def main():
             "empathicschool": {
                 "folds": es_folds,
                 "total_folds": len(es_folds)
+            },
+            "combined": {
+                "folds": combined_folds,
+                "total_folds": len(combined_folds)
             }
         }
     }
@@ -80,15 +86,19 @@ def main():
     # Calculate stats for logging
     sid_test_sizes = [f["test_size"] for f in sid_folds]
     es_test_sizes = [f["test_size"] for f in es_folds]
+    combined_test_sizes = [f["test_size"] for f in combined_folds]
     
     sid_avg_test = np.mean(sid_test_sizes)
     es_avg_test = np.mean(es_test_sizes)
+    combined_avg_test = np.mean(combined_test_sizes)
     
     with open(log_file, "w", encoding="utf-8") as f_log:
         f_log.write(f"StressID LOSO folds count: {len(sid_folds)}\n")
         f_log.write(f"StressID average test fold size (windows): {sid_avg_test:.2f}\n")
         f_log.write(f"EmpathicSchool LOSO folds count: {len(es_folds)}\n")
         f_log.write(f"EmpathicSchool average test fold size (windows): {es_avg_test:.2f}\n")
+        f_log.write(f"Combined LOSO folds count: {len(combined_folds)}\n")
+        f_log.write(f"Combined average test fold size (windows): {combined_avg_test:.2f}\n")
         
     # Self-verification check
     issues = []
@@ -96,14 +106,13 @@ def main():
         issues.append("StressID folds count is 0")
     if len(es_folds) == 0:
         issues.append("EmpathicSchool folds count is 0")
+    if len(combined_folds) == 0:
+        issues.append("Combined folds count is 0")
         
     if issues:
         print("Self-verification FAILED:", issues)
     else:
         print("LOSO split registry verification PASSED.")
-
-# Import numpy locally inside main or at top
-import numpy as np
 
 if __name__ == "__main__":
     main()

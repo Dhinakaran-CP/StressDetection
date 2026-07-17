@@ -531,7 +531,7 @@ def run_empathicschool_extraction(raw_path, output_dir, log_file):
     print(f"EmpathicSchool Completed. Windows: {total_windows}")
 
 def main():
-    base_dir = Path(r"c:\Users\StressProject\Desktop\StressDetectionUsingML")
+    base_dir = Path(__file__).resolve().parents[3]
     config_path = base_dir / "pipeline" / "config" / "config.yaml"
     
     with open(config_path, "r", encoding="utf-8") as f:

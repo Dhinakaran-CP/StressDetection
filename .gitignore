@@ -118,3 +118,9 @@ research/Phase_7_RF_Specialist/outputs/
 research/Phase_7_RF_Specialist/logs/
 research/model_archive.zip
 research/model_archive/
+
+# ===========================================
+# Local runs & Large generated splits
+# ===========================================
+/pipeline/
+research/pipeline/logs/loso_splits.json

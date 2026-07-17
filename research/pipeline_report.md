@@ -68,16 +68,6 @@ This table shows the cross-validation metrics across unseen subjects (no subject
 | MLP | 0.8369 | 0.3209 | 0.0724 | 0.1060 | 0.5639 | 0.1293 |
 | CNN-GRU (Temporal) | 0.8141 | 0.2856 | 0.0892 | 0.1213 | 0.5440 | 0.1477 |
 
-### Production Model Training Statistics (Fitting Performance)
-Evaluated by predicting training targets on 100% of the datasets:
-* **StressID LightGBM Production Model**:
-  * Accuracy: `91.13%`
-  * F1-Score: `0.8971`
-  * AUC-ROC: `0.9756`
-* **EmpathicSchool LightGBM Production Model**:
-  * Accuracy: `99.16%`
-  * F1-Score: `0.9724`
-  * AUC-ROC: `0.9994`
 
 ---
 

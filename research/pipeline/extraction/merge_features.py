@@ -119,7 +119,7 @@ def merge_dataset_features(dataset_name, data_dir, has_voice=False):
     return df_merged.shape, np.shape(combined_seqs)
 
 def main():
-    base_dir = Path(r"c:\Users\StressProject\Desktop\StressDetectionUsingML")
+    base_dir = Path(__file__).resolve().parents[3]
     sid_out = base_dir / "pipeline" / "data" / "stressid"
     es_out = base_dir / "pipeline" / "data" / "empathicschool"
     

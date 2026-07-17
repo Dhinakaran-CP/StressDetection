@@ -50,7 +50,7 @@ def predict_stress(model_payload, df_windows):
 
 def main():
     # Simple self-test code
-    base_dir = Path(r"c:\Users\StressProject\Desktop\StressDetectionUsingML")
+    base_dir = Path(__file__).resolve().parents[3]
     model_path = base_dir / "pipeline" / "models" / "production" / "stressid_production.pkl"
     sample_pq = base_dir / "pipeline" / "data" / "stressid" / "normalized_windows.parquet"
     

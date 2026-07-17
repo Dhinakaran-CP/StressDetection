@@ -19,13 +19,20 @@ def train_production_model(dataset_name, data_dir, model_save_path, has_voice=Fa
     meta_keys = ["subject_id", "dataset_source", "task_name", "window_id", "face_available", "physio_available", "binary_stress"]
     if has_voice:
         meta_keys.insert(6, "voice_available")
+    else:
+        if "voice_available" in df.columns:
+            meta_keys.insert(6, "voice_available")
         
     feat_cols = [c for c in df.columns if c not in meta_keys]
     
     X = df[feat_cols].values
     y = df["binary_stress"].values
     
-    model = lgb.LGBMClassifier(n_estimators=50, random_state=42, n_jobs=-1, verbose=-1)
+    n_pos = sum(y)
+    n_neg = len(y) - n_pos
+    spw = n_neg / (n_pos + 1e-8)
+    
+    model = lgb.LGBMClassifier(n_estimators=50, random_state=42, n_jobs=-1, verbose=-1, scale_pos_weight=spw)
     model.fit(X, y)
     
     model_save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -44,9 +51,10 @@ def train_production_model(dataset_name, data_dir, model_save_path, has_voice=Fa
     return model_save_path
 
 def main():
-    base_dir = Path(r"c:\Users\StressProject\Desktop\StressDetectionUsingML")
+    base_dir = Path(__file__).resolve().parents[3]
     sid_out = base_dir / "pipeline" / "data" / "stressid"
     es_out = base_dir / "pipeline" / "data" / "empathicschool"
+    combined_out = base_dir / "pipeline" / "data" / "combined"
     
     prod_dir = base_dir / "pipeline" / "models" / "production"
     
@@ -64,6 +72,14 @@ def main():
         es_out, 
         prod_dir / "empathicschool_production.pkl", 
         has_voice=False
+    )
+    
+    # 3. Train Combined 95-subject Production Model
+    train_production_model(
+        "Combined",
+        combined_out,
+        prod_dir / "combined_production.pkl",
+        has_voice=True # Supports Voice channels (masked dynamically at runtime if unavailable)
     )
     
     print("Production training completed successfully.")

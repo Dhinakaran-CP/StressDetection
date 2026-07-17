@@ -30,18 +30,19 @@ def eval_model(dataset_name, pq_path, model_path):
     acc = accuracy_score(y, preds)
     prec = precision_score(y, preds, zero_division=0)
     rec = recall_score(y, preds, zero_division=0)
-    f1 = f1_score(y, preds, zero_division=0)
+    f1 = f1_score(y, preds, average='macro', zero_division=0)
     auc = roc_auc_score(y, probs)
     
-    print(f"\n--- Production Model Performance on 100% {dataset_name} ---")
-    print(f"Accuracy:  {acc:.4f}")
-    print(f"Precision: {prec:.4f}")
-    print(f"Recall:    {rec:.4f}")
-    print(f"F1-Score:  {f1:.4f}")
-    print(f"AUC-ROC:   {auc:.4f}")
+    print(f"\n--- Production Model Train-Set Fitting Verification ({dataset_name}) ---")
+    print(f"[NOTE: These are fitting sanity checks on train data, NOT generalizable metrics]")
+    print(f"Fitting Accuracy:  {acc:.4f}")
+    print(f"Fitting Precision: {prec:.4f}")
+    print(f"Fitting Recall:    {rec:.4f}")
+    print(f"Fitting F1-Score:  {f1:.4f}")
+    print(f"Fitting AUC-ROC:   {auc:.4f}")
 
 def main():
-    base_dir = Path(r"c:\Users\StressProject\Desktop\StressDetectionUsingML")
+    base_dir = Path(__file__).resolve().parents[3]
     
     # StressID
     eval_model(
@@ -55,6 +56,13 @@ def main():
         "EmpathicSchool",
         base_dir / "pipeline" / "data" / "empathicschool" / "normalized_windows.parquet",
         base_dir / "pipeline" / "models" / "production" / "empathicschool_production.pkl"
+    )
+    
+    # Combined
+    eval_model(
+        "Combined",
+        base_dir / "pipeline" / "data" / "combined" / "normalized_windows.parquet",
+        base_dir / "pipeline" / "models" / "production" / "combined_production.pkl"
     )
 
 if __name__ == "__main__":

@@ -2,3 +2,5 @@ StressID LOSO folds count: 53
 StressID average test fold size (windows): 320.26
 EmpathicSchool LOSO folds count: 23
 EmpathicSchool average test fold size (windows): 2896.61
+Combined LOSO folds count: 76
+Combined average test fold size (windows): 1099.95
