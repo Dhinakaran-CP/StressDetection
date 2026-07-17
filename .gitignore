@@ -59,6 +59,8 @@ datasets/
 certified_data/*.csv
 !certified_data/*.json
 stress_features_*.csv
+*.parquet
+*.npy
 
 # ===========================================
 # Uploads & Temp Files

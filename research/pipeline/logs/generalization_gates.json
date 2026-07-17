@@ -1,0 +1,40 @@
+{
+    "gates": {
+        "logistic_regression": {
+            "stressid_auc": 0.7440144506552026,
+            "empathicschool_auc": 0.5900650666542463,
+            "gate_g2_passed": true,
+            "gate_g3_passed": true,
+            "eligible_for_production": true
+        },
+        "lightgbm": {
+            "stressid_auc": 0.7372494066320417,
+            "empathicschool_auc": 0.6000353433763158,
+            "gate_g2_passed": true,
+            "gate_g3_passed": true,
+            "eligible_for_production": true
+        },
+        "mlp": {
+            "stressid_auc": 0.7459044873191122,
+            "empathicschool_auc": 0.5639166837335695,
+            "gate_g2_passed": true,
+            "gate_g3_passed": true,
+            "eligible_for_production": true
+        },
+        "temporal": {
+            "stressid_auc": 0.747980180173193,
+            "empathicschool_auc": 0.5439663727538587,
+            "gate_g2_passed": true,
+            "gate_g3_passed": false,
+            "eligible_for_production": false
+        }
+    },
+    "production_eligible_models": [
+        "logistic_regression",
+        "lightgbm",
+        "mlp"
+    ],
+    "selected_production_candidate": "lightgbm",
+    "gate_g2_threshold": 0.7,
+    "gate_g3_threshold": 0.55
+}
