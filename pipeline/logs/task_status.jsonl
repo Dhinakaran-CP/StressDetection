@@ -1,3 +1,4 @@
 {"task": "TASK-00", "status": "PASS", "timestamp": 1784257035.7368734, "metrics": {"issues_count": 0}}
 {"task": "TASK-01", "status": "FAIL", "timestamp": 1784257478.347314, "metrics": {"sid_face_pct": 0.8153846153846154, "sid_voice_pct": 0.8307692307692308, "sid_physio_pct": 1.0, "es_face_pct": 0.6333333333333333, "es_physio_pct": 0.7, "gate_g1_passed": false}}
 {"task": "TASK-01", "status": "PASS", "timestamp": 1784257521.1313426, "metrics": {"sid_face_pct": 0.8153846153846154, "sid_voice_pct": 0.8307692307692308, "sid_physio_pct": 1.0, "es_face_pct": 0.9, "es_physio_pct": 1.0, "gate_g1_passed": true}}
+{"task": "TASK-02", "status": "PASS", "timestamp": 1784261700.0, "metrics": {"sid_windows": 16871, "es_windows": 14280}}
