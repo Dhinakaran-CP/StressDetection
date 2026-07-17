@@ -1,14 +1,14 @@
 seed: 42
 datasets:
   stressid:
-    raw_path: "pipeline/data/raw/stressid"
+    raw_path: "data/stressid"
     modalities: [face, voice, physio]
     physio_signals: [ecg, eda, respiration]
     video_fps: 30
     audio_sr: 16000
     label_granularity: task
   empathicschool:
-    raw_path: "pipeline/data/raw/empathicschool"
+    raw_path: "data/empathicschool"
     modalities: [face, physio]
     physio_signals: [bvp, eda, hr, temp, acc]
     video_fps: 30
