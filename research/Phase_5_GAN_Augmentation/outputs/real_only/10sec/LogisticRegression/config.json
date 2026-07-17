@@ -1,0 +1,10 @@
+{
+    "model_name": "LogisticRegression",
+    "scale": "10sec",
+    "experiment_mode": "real_only",
+    "category": "classical",
+    "execution_hardware": "CPU",
+    "input_dimensions": 1041,
+    "optimizer": "N/A",
+    "learning_rate": "N/A"
+}

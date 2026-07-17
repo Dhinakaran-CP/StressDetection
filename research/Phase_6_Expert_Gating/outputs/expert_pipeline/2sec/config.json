@@ -1,0 +1,26 @@
+{
+    "scale": "2sec",
+    "subparts": [
+        "eye_expert",
+        "mouth_expert",
+        "face_embed_expert",
+        "prosody_expert",
+        "spectral_expert",
+        "cardio_expert",
+        "respiration_expert",
+        "quality_expert"
+    ],
+    "dimensions": [
+        10,
+        6,
+        16,
+        6,
+        4,
+        10,
+        6,
+        2
+    ],
+    "gating_router_input": "last_timestep_concat",
+    "device": "cuda",
+    "seed": 42
+}

@@ -108,16 +108,18 @@ data/features/
 # ===========================================
 # Phase-Wise Research Ignores (Exclude models & logs)
 # ===========================================
-research/Phase_4_Temporal_Deep/outputs/
 research/Phase_4_Temporal_Deep/logs/
-research/Phase_5_GAN_Augmentation/outputs/
 research/Phase_5_GAN_Augmentation/logs/
-research/Phase_6_Expert_Gating/outputs/
 research/Phase_6_Expert_Gating/logs/
-research/Phase_7_RF_Specialist/outputs/
 research/Phase_7_RF_Specialist/logs/
 research/model_archive.zip
 research/model_archive/
+
+# ===========================================
+# ML Models in Research Outputs (Do not commit large binaries)
+# ===========================================
+research/Phase_*/outputs/**/*.pkl
+research/Phase_*/outputs/**/*.pt
 
 # ===========================================
 # Local runs & Large generated splits

@@ -1,0 +1,10 @@
+{
+    "model_name": "LSTM",
+    "scale": "10sec",
+    "experiment_mode": "gan_augmented",
+    "category": "temporal_deep",
+    "execution_hardware": "GPU",
+    "input_dimensions": 60,
+    "optimizer": "Adam",
+    "learning_rate": 0.001
+}

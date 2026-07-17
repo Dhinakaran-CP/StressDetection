@@ -1,0 +1,18 @@
+{
+    "scale": "5sec",
+    "tuned_hyperparameters": {
+        "n_estimators": 100,
+        "min_samples_split": 2,
+        "min_samples_leaf": 2,
+        "max_depth": 5,
+        "class_weight": "balanced",
+        "bootstrap": true
+    },
+    "feature_subsets": {
+        "face": 516,
+        "voice": 516,
+        "physiology": 9
+    },
+    "ensemble_voting": "soft",
+    "seed": 42
+}
