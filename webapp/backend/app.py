@@ -10,6 +10,9 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
+research_path = os.path.join(ROOT, "research")
+if research_path not in sys.path:
+    sys.path.insert(0, research_path)
 
 # Force all print statements to flush immediately to avoid buffering in standard terminals/IDE logs
 def print(*args, **kwargs):
@@ -449,6 +452,246 @@ def explainability_status():
     if not runtime_engine or not runtime_engine.expl_engine:
         return jsonify({'loaded': False, 'error': 'ExplainabilityEngine not initialized'}), 503
     return jsonify(runtime_engine.expl_engine.status())
+
+
+@app.route('/api/model/version', methods=['GET'])
+def model_version():
+    """Return current active model strategy and versions from the registry."""
+    try:
+        active_models = {
+            'face_expert': runtime_engine.registry.get_active_model('face_expert'),
+            'voice_expert': runtime_engine.registry.get_active_model('voice_expert'),
+            'physio_expert': runtime_engine.registry.get_active_model('physio_expert'),
+            'deep_face_expert': runtime_engine.registry.get_active_model('adv_face_expert' if runtime_engine.strategy_used == 'adversarial' else 'face_expert'),
+            'deep_voice_expert': runtime_engine.registry.get_active_model('adv_voice_expert' if runtime_engine.strategy_used == 'adversarial' else 'voice_expert'),
+            'deep_physio_expert': runtime_engine.registry.get_active_model('adv_physio_expert' if runtime_engine.strategy_used == 'adversarial' else 'physio_expert'),
+            'deep_fusion_router': runtime_engine.registry.get_active_model('adv_fusion_router' if runtime_engine.strategy_used == 'adversarial' else 'deep_fusion_router')
+        }
+        return jsonify({
+            'status': 'success',
+            'use_deep': runtime_engine.use_deep,
+            'strategy': runtime_engine.strategy_used,
+            'active_models': active_models
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/predict/realtime', methods=['POST'])
+def predict_realtime():
+    """Accept streaming feature vectors and return primary or fallback model stress predictions."""
+    try:
+        data = request.json or {}
+        face = data.get("face")
+        voice = data.get("voice")
+        physio = data.get("physio")
+        user_id = data.get("user_id", "default")
+        sensitivity = data.get("sensitivity", 0.5)
+        
+        result = runtime_engine.predict_fused(
+            face=face,
+            voice=voice,
+            physio=physio,
+            user_id=user_id,
+            sensitivity=sensitivity
+        )
+        
+        if 'error' in result:
+            return jsonify({'status': 'error', 'message': result['error']}), 400
+            
+        prob = result.get("stress_probability", 0.5)
+        confidence_pct = max(prob, 1.0 - prob) * 100.0
+        uncertainty_note = ""
+        if abs(prob - 0.5) < 0.1:
+            uncertainty_note = "Score is close to the decision boundary (0.5). High uncertainty."
+        
+        fallback_active = not runtime_engine.use_deep
+        resilience_status = {
+            "face_available": face is not None,
+            "voice_available": voice is not None,
+            "physio_available": physio is not None,
+            "fallback_active": fallback_active,
+            "fallback_reason": "SSVB-CASA-AIS disabled or unavailable" if fallback_active else ""
+        }
+        
+        return jsonify({
+            "status": "success",
+            "predicted_class": result.get("predicted_class", "No Stress"),
+            "probability": float(prob),
+            "confidence_percentage": float(confidence_pct),
+            "threshold": 0.5,
+            "uncertainty_note": uncertainty_note,
+            "resilience_status": resilience_status,
+            "fusion_weights": result.get("fusion_weights", {}),
+            "active_modalities": result.get("active_modalities", []),
+            "explainability": result.get("explainability")
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+
+@app.route('/api/predict/upload', methods=['POST'])
+def predict_upload():
+    """Handle precomputed JSON features or file uploads, routing to the production Random Forest model."""
+    try:
+        facial_features = None
+        voice_features = None
+        phys_features = None
+        
+        # 1. Face file upload
+        if 'face_image' in request.files:
+            face_file = request.files['face_image']
+            if face_file and allowed_file(face_file.filename, ALLOWED_IMAGE_EXTENSIONS):
+                filename = secure_filename(face_file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                face_file.save(filepath)
+                facial_features, _ = model.extract_facial_features(filepath)
+                if os.path.exists(filepath): os.remove(filepath)
+        
+        # 2. Voice file upload
+        if 'voice_audio' in request.files:
+            audio_file = request.files['voice_audio']
+            if audio_file and allowed_file(audio_file.filename, ALLOWED_AUDIO_EXTENSIONS):
+                filename = secure_filename(audio_file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                audio_file.save(filepath)
+                voice_features = model.extract_voice_features(filepath)
+                if os.path.exists(filepath): os.remove(filepath)
+        
+        # 3. Physio files upload
+        eeg_array = None
+        gsr_array = None
+        if 'eeg_file' in request.files:
+            eeg_file = request.files['eeg_file']
+            if eeg_file and allowed_file(eeg_file.filename, ALLOWED_SIGNAL_EXTENSIONS):
+                eeg_array = parse_numeric_csv_file(eeg_file, 'eeg')
+        if 'gsr_file' in request.files:
+            gsr_file = request.files['gsr_file']
+            if gsr_file and allowed_file(gsr_file.filename, ALLOWED_SIGNAL_EXTENSIONS):
+                gsr_array = parse_numeric_csv_file(gsr_file, 'gsr')
+        
+        if eeg_array is not None or gsr_array is not None:
+            phys_features = model.extract_physiological_features(eeg_data=eeg_array, gsr_data=gsr_array)
+        
+        # Support raw JSON post of precomputed features
+        if request.is_json:
+            json_data = request.json or {}
+            if facial_features is None: facial_features = json_data.get("face")
+            if voice_features is None: voice_features = json_data.get("voice")
+            if phys_features is None: phys_features = json_data.get("physio")
+        
+        # Route to fast Random Forest (temporarily bypass deep mode)
+        was_deep = runtime_engine.use_deep
+        runtime_engine.use_deep = False
+        try:
+            result = runtime_engine.predict_fused(
+                face=facial_features,
+                voice=voice_features,
+                physio=phys_features
+            )
+        finally:
+            runtime_engine.use_deep = was_deep
+            
+        if 'error' in result:
+            return jsonify({'status': 'error', 'message': result['error']}), 400
+            
+        prob = result.get("stress_probability", 0.5)
+        confidence_pct = max(prob, 1.0 - prob) * 100.0
+        
+        shap_explanation = None
+        if runtime_engine.expl_engine and runtime_engine.expl_engine.is_loaded:
+            shap_explanation = runtime_engine.expl_engine.build_full_payload(
+                face_features=facial_features,
+                voice_features=voice_features,
+                physio_features=phys_features
+            )
+        
+        return jsonify({
+            "status": "success",
+            "model_used": "Random Forest (Production Classifier)",
+            "predicted_class": result.get("predicted_class", "No Stress"),
+            "probability": float(prob),
+            "fused_score": float(prob),
+            "stress_probability": float(prob),
+            "stress_level": result.get("stress_level", "Low"),
+            "percentage": float(prob * 100.0),
+            "confidence": float(max(prob, 1.0 - prob)),
+            "confidence_percentage": float(confidence_pct),
+            "active_modalities": result.get("active_modalities", []),
+            "individual_predictions": result.get("individual_predictions", {}),
+            "explainability": shap_explanation
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+
+@app.route('/api/explain/shap', methods=['POST'])
+@app.route('/api/explain', methods=['POST'])
+def explain_shap():
+    """Generate local SHAP values and feature drivers."""
+    try:
+        data = request.json or {}
+        face = data.get("face")
+        voice = data.get("voice")
+        physio = data.get("physio")
+        
+        if not runtime_engine.expl_engine or not runtime_engine.expl_engine.is_loaded:
+            return jsonify({'status': 'error', 'message': 'Explainability engine not loaded'}), 503
+            
+        shap_payload = runtime_engine.expl_engine.build_full_payload(
+            face_features=face,
+            voice_features=voice,
+            physio_features=physio
+        )
+        return jsonify({
+            "status": "success",
+            "explainability": shap_payload
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+
+@app.route('/api/modality/status', methods=['GET'])
+def modality_status():
+    """Return status of face, voice, and physio input streams."""
+    try:
+        status = runtime_engine.status()
+        buffer_status = {
+            "face": len(runtime_engine.deep_sequence_history.get("face", [])),
+            "voice": len(runtime_engine.deep_sequence_history.get("voice", [])),
+            "physio": len(runtime_engine.deep_sequence_history.get("physio", []))
+        }
+        return jsonify({
+            "status": "success",
+            "models": status.get("models", {}),
+            "buffers": buffer_status,
+            "calibration": runtime_engine.calibrating
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/fallback/status', methods=['GET'])
+def fallback_status():
+    """Return information about any active server fallbacks."""
+    try:
+        fallback_active = not runtime_engine.use_deep
+        reason = ""
+        if fallback_active:
+            if not TORCH_AVAILABLE:
+                reason = "PyTorch library is not installed/available"
+            elif not os.path.exists(os.path.join(EXPERT_MODELS_DIR, "research_champion", "deep_fusion_config.json")):
+                reason = "deep_fusion_config.json config file missing"
+            else:
+                reason = "Dynamic deep router disabled in config"
+        return jsonify({
+            "status": "success",
+            "fallback_active": fallback_active,
+            "active_model": "Random Forest / Classical Experts" if fallback_active else f"SSVB-CASA-AIS ({runtime_engine.strategy_used} MoE)",
+            "reason": reason
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 @app.route('/api/multimodal/analyze', methods=['POST'])

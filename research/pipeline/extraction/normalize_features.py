@@ -85,6 +85,7 @@ def main():
     base_dir = Path(__file__).resolve().parents[3]
     sid_out = base_dir / "pipeline" / "data" / "stressid"
     es_out = base_dir / "pipeline" / "data" / "empathicschool"
+    wesad_out = base_dir / "pipeline" / "data" / "wesad"
     
     log_file = base_dir / "pipeline" / "logs" / "normalization.log"
     if log_file.exists():
@@ -94,7 +95,10 @@ def main():
     sid_w_shape, sid_s_shape, sid_mean, sid_std = normalize_dataset("StressID", sid_out, has_voice=True)
     
     # 2. Normalize EmpathicSchool
-    es_w_shape, es_s_shape, es_mean, es_std = normalize_dataset("EmpathicSchool", es_out, has_voice=False)
+    es_w_shape, es_s_shape, es_mean, es_std = normalize_dataset("EmpathicSchool", es_out, has_voice=True)
+    
+    # 3. Normalize WESAD
+    wesad_w_shape, wesad_s_shape, wesad_mean, wesad_std = normalize_dataset("WESAD", wesad_out, has_voice=True)
     
     # Log results
     with open(log_file, "w", encoding="utf-8") as f_log:
@@ -104,6 +108,9 @@ def main():
         f_log.write(f"EmpathicSchool normalized windows shape: {es_w_shape}\n")
         f_log.write(f"EmpathicSchool normalized sequences shape: {es_s_shape}\n")
         f_log.write(f"EmpathicSchool sample feature stats: mean={es_mean:.6f}, std={es_std:.6f}\n")
+        f_log.write(f"WESAD normalized windows shape: {wesad_w_shape}\n")
+        f_log.write(f"WESAD normalized sequences shape: {wesad_s_shape}\n")
+        f_log.write(f"WESAD sample feature stats: mean={wesad_mean:.6f}, std={wesad_std:.6f}\n")
         
     # Verification check
     issues = []
@@ -111,6 +118,8 @@ def main():
         issues.append(f"StressID normalization mean is off: {sid_mean}")
     if abs(es_mean) > 1e-2:
         issues.append(f"EmpathicSchool normalization mean is off: {es_mean}")
+    if abs(wesad_mean) > 1e-2:
+        issues.append(f"WESAD normalization mean is off: {wesad_mean}")
         
     if issues:
         print("Self-verification FAILED:", issues)

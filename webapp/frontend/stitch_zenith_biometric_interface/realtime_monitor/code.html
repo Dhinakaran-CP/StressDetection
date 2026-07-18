@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VitalMind | Realtime Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#a2c6fd",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed-variant": "#454749",
+                    "tertiary": "#3c3a37",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#e5eeff",
+                    "secondary": "#5d5e61",
+                    "surface-bright": "#f8f9ff",
+                    "surface": "#f8f9ff",
+                    "on-primary": "#ffffff",
+                    "inverse-surface": "#213145",
+                    "on-primary-fixed-variant": "#204877",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#d3e4fe",
+                    "outline-variant": "#c3c6d0",
+                    "on-surface": "#0b1c30",
+                    "surface-container-lowest": "#ffffff",
+                    "outline": "#737780",
+                    "primary": "#0e3b69",
+                    "on-error": "#ffffff",
+                    "secondary-fixed": "#e2e2e2",
+                    "on-secondary-container": "#636467",
+                    "tertiary-fixed": "#e6e2dd",
+                    "on-background": "#0b1c30",
+                    "on-tertiary-fixed-variant": "#484643",
+                    "background": "#f8f9ff",
+                    "on-primary-fixed": "#001c3a",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed-dim": "#cac6c1",
+                    "surface-container-low": "#eff4ff",
+                    "surface-container-highest": "#d3e4fe",
+                    "inverse-primary": "#a5c8ff",
+                    "tertiary-container": "#53514d",
+                    "surface-tint": "#3b6090",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#1d1b19",
+                    "secondary-container": "#e2e2e5",
+                    "primary-fixed-dim": "#a5c8ff",
+                    "surface-container-high": "#dce9ff",
+                    "on-secondary-fixed": "#1a1c1e",
+                    "secondary-fixed-dim": "#c6c6c9",
+                    "primary-container": "#2c5282",
+                    "primary-fixed": "#d4e3ff",
+                    "on-tertiary-container": "#c8c4bf",
+                    "surface-dim": "#cbdbf5",
+                    "on-surface-variant": "#43474f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "container-max": "1280px",
+                    "margin-desktop": "48px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "section-gap": "80px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Source Serif 4"],
+                    "body-md": ["Inter"],
+                    "display-lg": ["Source Serif 4"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Source Serif 4"],
+                    "data-metric": ["JetBrains Mono"],
+                    "label-caps": ["Inter"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .face-overlay-point {
+            width: 4px;
+            height: 4px;
+            background: #a5c8ff;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 8px #a5c8ff;
+            animation: pulse-point 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-point {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .waveform-bar {
+            width: 3px;
+            background: #a5c8ff;
+            margin: 0 1px;
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+
+        .clinical-shadow {
+            box-shadow: 0 4px 20px rgba(26, 28, 30, 0.04);
+        }
+
+        .zen-scroll::-webkit-scrollbar { width: 4px; }
+        .zen-scroll::-webkit-scrollbar-track { background: transparent; }
+        .zen-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low shadow-sm z-50 flex flex-col py-8 px-6">
+<div class="mb-10">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">VitalMind</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mt-1">Clinical Stress Monitoring</p>
+</div>
+<nav class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-primary font-bold border-r-4 border-primary bg-surface-container transition-transform scale-[0.98]" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-body-md">History</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-body-md">Insights</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-body-md">Profile</span>
+</a>
+</nav>
+<button class="mt-auto bg-primary text-on-primary py-4 px-6 rounded-2xl font-label-caps text-label-caps shadow-lg hover:opacity-90 transition-all">
+            Calibrate Sensors
+        </button>
+</aside>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface/80 backdrop-blur-md z-40 flex justify-between items-center px-12 border-none">
+<div class="flex items-center gap-8">
+<span class="font-headline-sm text-headline-sm font-bold text-primary">Realtime Monitor</span>
+<div class="flex gap-6">
+<a class="text-primary border-b-2 border-primary pb-1 font-label-caps text-label-caps" href="#">Realtime</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-caps text-label-caps" href="#">Upload</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications_active</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+<button class="bg-primary-container text-on-primary-container px-6 py-2 rounded-full font-label-caps text-label-caps flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+                AI Copilot
+            </button>
+<div class="w-8 h-8 rounded-full bg-cover bg-center" data-alt="A professional studio portrait of a clinical researcher or participant, shot in soft, natural lighting with a minimalist white background. The subject has a calm, focused expression, embodying the 'Clinical-Zen' aesthetic. High-quality digital photography with shallow depth of field." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCqURDDxwaGWjbS_d0l46nP3r85lDGOIzjmpdQx3rfsJDvbRxD1e4hL8PDyCF-f3ekaSF1Y2dQiB0b5RyUs0o1nLsa7xA1RJrx5L_VPvjiI8yjLegiWjhzZAL7fKNXt6VwUM2kCgWi_185Z0BBOpvyn7vW0DesmOI_r02VDAViK_2p5BFYspnbw63HSbU4_MbQfp4b0W72YrL9iG9OUaC2B6W8BurQWrXzofY_G3jPZqbDdn0W0ieDu')"></div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 mt-16 p-12 min-h-screen">
+<div class="max-w-[1280px] mx-auto flex flex-col gap-10">
+<!-- Live Feed & Biomarkers Grid -->
+<div class="grid grid-cols-12 gap-8 items-stretch">
+<!-- Main Feed Container -->
+<div class="col-span-8 bg-white rounded-[32px] overflow-hidden clinical-shadow relative group">
+<div class="aspect-video relative bg-slate-900">
+<img class="w-full h-full object-cover opacity-80" data-alt="A first-person perspective of a human face looking directly into a webcam in a brightly lit, modern minimalist workspace. The lighting is soft and neutral, typical of a clinical wellness environment. The image is crisp and professional, serving as the base for digital biometric overlays." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3tE9WkNuMfIfEOxK-Reh961e2kaaffBo22vkulZmt2vp163setId5ZGx1QYdOmoSoqL_-EGAhCeufHifF_QWCu25UOjAw8gjynRyObU-Yc1EHlMu32JOl_xppnXhAFfXeiq_J9fuoohfzQ0VUxe9PPti9Oi6pi6JSHo2fFuNCoJnFU_mVuYdX9iYdSkhMLscFcyPdODENWYUUtllwl4vFZd5zkZVJGAHkz_f0ZMZdTIuYkLXB4BiC"/>
+<!-- Face Landmark Overlay -->
+<div class="absolute inset-0 pointer-events-none">
+<div class="face-overlay-point" style="top: 40%; left: 45%;"></div>
+<div class="face-overlay-point" style="top: 40%; left: 55%;"></div>
+<div class="face-overlay-point" style="top: 50%; left: 50%;"></div>
+<div class="face-overlay-point" style="top: 60%; left: 40%;"></div>
+<div class="face-overlay-point" style="top: 60%; left: 60%;"></div>
+<div class="face-overlay-point" style="top: 35%; left: 42%;"></div>
+<div class="face-overlay-point" style="top: 35%; left: 58%;"></div>
+<div class="face-overlay-point" style="top: 55%; left: 45%;"></div>
+<div class="face-overlay-point" style="top: 55%; left: 55%;"></div>
+</div>
+<!-- Status Badge -->
+<div class="absolute top-6 left-6 flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+<div class="w-2 h-2 bg-error rounded-full animate-pulse"></div>
+<span class="text-white font-label-caps text-[10px] tracking-widest uppercase">Live Signal</span>
+</div>
+</div>
+<!-- Audio Waveform Strip -->
+<div class="bg-primary px-8 py-6 flex items-end justify-between gap-1 h-20">
+<script>
+                            document.write([...Array(80)].map(() => `
+                                <div class="waveform-bar" style="height: ${Math.random() * 80 + 20}%"></div>
+                            `).join(''));
+                        </script>
+</div>
+</div>
+<!-- Sidebar Biomarkers -->
+<div class="col-span-4 flex flex-col gap-6">
+<!-- Metric Card 1 -->
+<div class="bg-white p-6 rounded-[24px] clinical-shadow border border-surface-container flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-surface-container rounded-lg">
+<span class="material-symbols-outlined text-primary">favorite</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Heart Rate</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-data-metric text-[48px] text-on-surface">74</span>
+<span class="text-on-surface-variant font-label-caps">BPM</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[70%]"></div>
+</div>
+</div>
+<!-- Metric Card 2 -->
+<div class="bg-white p-6 rounded-[24px] clinical-shadow border border-surface-container flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-surface-container rounded-lg">
+<span class="material-symbols-outlined text-primary">visibility</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Blink Rate</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-data-metric text-[48px] text-on-surface">12</span>
+<span class="text-on-surface-variant font-label-caps">/MIN</span>
+</div>
+<div class="flex items-center gap-2 text-error font-label-caps text-[10px]">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                            Slightly Low
+                        </div>
+</div>
+<!-- Metric Card 3 -->
+<div class="bg-white p-6 rounded-[24px] clinical-shadow border border-surface-container flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-surface-container rounded-lg">
+<span class="material-symbols-outlined text-primary">graphic_eq</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Vocal Pitch</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-data-metric text-[48px] text-on-surface">210</span>
+<span class="text-on-surface-variant font-label-caps">HZ</span>
+</div>
+<div class="flex items-center gap-2 text-primary font-label-caps text-[10px]">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                            Neutral Base
+                        </div>
+</div>
+</div>
+</div>
+<!-- Learning Panel Section -->
+<section class="mt-8">
+<div class="mb-8">
+<h2 class="font-headline-sm text-headline-sm text-primary">Biomarker Learning</h2>
+<p class="text-on-surface-variant mt-2 max-w-2xl">Understand the science behind your biometric data. Select a marker to explore clinical definitions and stress correlations.</p>
+</div>
+<div class="grid grid-cols-12 gap-8">
+<!-- Selector -->
+<div class="col-span-4 flex flex-col gap-3">
+<button class="learning-btn active text-left p-6 rounded-[24px] border-2 border-primary bg-primary/5 transition-all" onclick="updateLearning('zcr')">
+<h4 class="font-bold text-primary">Zero-crossing rate</h4>
+<p class="text-sm text-on-surface-variant mt-1">Audio Signal Analysis</p>
+</button>
+<button class="learning-btn text-left p-6 rounded-[24px] border border-surface-container bg-white hover:border-primary/50 transition-all" onclick="updateLearning('hrv')">
+<h4 class="font-bold text-on-surface">Heart Rate Variability</h4>
+<p class="text-sm text-on-surface-variant mt-1">Autonomic Function</p>
+</button>
+<button class="learning-btn text-left p-6 rounded-[24px] border border-surface-container bg-white hover:border-primary/50 transition-all" onclick="updateLearning('pupil')">
+<h4 class="font-bold text-on-surface">Pupillary Dilation</h4>
+<p class="text-sm text-on-surface-variant mt-1">Cognitive Load</p>
+</button>
+</div>
+<!-- Content Card -->
+<div class="col-span-8 bg-white rounded-[32px] p-10 clinical-shadow border border-surface-container relative overflow-hidden">
+<div class="relative z-10" id="learning-content">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined text-white">menu_book</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary" id="content-title">Zero-crossing rate (ZCR)</h3>
+<span class="text-xs font-label-caps text-on-surface-variant bg-surface-container px-2 py-1 rounded">Acoustic Metric</span>
+</div>
+</div>
+<div class="prose prose-slate max-w-none">
+<p class="text-body-lg text-on-surface-variant leading-relaxed" id="content-desc">
+                                    Zero-crossing rate is the rate at which a signal transitions from positive to zero or negative, or vice-versa. In clinical speech analysis, a higher ZCR is often correlated with increased cognitive demand or vocal tension associated with acute stress responses.
+                                </p>
+<div class="mt-8 grid grid-cols-2 gap-8">
+<div class="bg-surface-container-low p-6 rounded-2xl">
+<h5 class="font-label-caps text-primary mb-2">High Range Indicative</h5>
+<p class="text-sm">Agitation, high-arousal states, or respiratory strain.</p>
+</div>
+<div class="bg-surface-container-low p-6 rounded-2xl">
+<h5 class="font-label-caps text-primary mb-2">Clinical Correlation</h5>
+<p class="text-sm">Monitored during therapeutic sessions to gauge emotional regulation.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Atmospheric Abstract Shape -->
+<div class="absolute -right-20 -bottom-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<script>
+        // Update Learning Content Logic
+        const content = {
+            zcr: {
+                title: "Zero-crossing rate (ZCR)",
+                desc: "Zero-crossing rate is the rate at which a signal transitions from positive to zero or negative, or vice-versa. In clinical speech analysis, a higher ZCR is often correlated with increased cognitive demand or vocal tension associated with acute stress responses.",
+                badge: "Acoustic Metric"
+            },
+            hrv: {
+                title: "Heart Rate Variability (HRV)",
+                desc: "HRV measures the specific changes in time between successive heartbeats. Unlike the steady BPM, high variability is a sign of a robust autonomic nervous system. Low HRV is a clinically recognized precursor to chronic burnout and physical fatigue.",
+                badge: "Autonomic Health"
+            },
+            pupil: {
+                title: "Pupillary Dilation",
+                desc: "The involuntary change in pupil size in response to non-luminance stimuli. This 'Task-Evoked Pupillary Response' is a direct window into the prefrontal cortex, indicating how much mental effort is required to process current information.",
+                badge: "Cognitive Load"
+            }
+        };
+
+        function updateLearning(key) {
+            const data = content[key];
+            document.getElementById('content-title').innerText = data.title;
+            document.getElementById('content-desc').innerText = data.desc;
+            
+            // UI Toggle
+            document.querySelectorAll('.learning-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-primary', 'bg-primary/5');
+                btn.classList.add('border-surface-container', 'bg-white');
+                btn.querySelector('h4').classList.remove('text-primary');
+                btn.querySelector('h4').classList.add('text-on-surface');
+            });
+            
+            const activeBtn = event.currentTarget;
+            activeBtn.classList.add('active', 'border-primary', 'bg-primary/5');
+            activeBtn.classList.remove('border-surface-container', 'bg-white');
+            activeBtn.querySelector('h4').classList.add('text-primary');
+            activeBtn.querySelector('h4').classList.remove('text-on-surface');
+        }
+
+        // Live Audio Animation Simulation
+        setInterval(() => {
+            document.querySelectorAll('.waveform-bar').forEach(bar => {
+                bar.style.height = (Math.random() * 60 + 20) + '%';
+            });
+        }, 150);
+    </script>
+</body></html>

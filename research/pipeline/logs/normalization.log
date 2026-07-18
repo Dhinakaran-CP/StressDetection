@@ -1,6 +1,9 @@
 StressID normalized windows shape: (16974, 368)
 StressID normalized sequences shape: (16974, 30, 72)
 StressID sample feature stats: mean=0.000000, std=1.000000
-EmpathicSchool normalized windows shape: (66622, 247)
-EmpathicSchool normalized sequences shape: (66622, 30, 48)
+EmpathicSchool normalized windows shape: (66622, 368)
+EmpathicSchool normalized sequences shape: (66622, 30, 72)
 EmpathicSchool sample feature stats: mean=0.000000, std=0.999416
+WESAD normalized windows shape: (5517, 368)
+WESAD normalized sequences shape: (5517, 30, 72)
+WESAD sample feature stats: mean=0.000000, std=0.998686

@@ -27,7 +27,85 @@
     <!-- MediaPipe Global CDN Scripts to bypass Webpack WebAssembly bundling issues -->
     <script src="/mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="/mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-    <title>React App</title>
+    
+    <!-- Tailwind and Google Fonts CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "primary": "#0e3b69",
+              "on-primary": "#ffffff",
+              "primary-container": "#2c5282",
+              "on-primary-container": "#a2c6fd",
+              "secondary": "#5d5e61",
+              "secondary-container": "#e2e2e5",
+              "on-secondary-container": "#636467",
+              "background": "#f8f9ff",
+              "on-background": "#0b1c30",
+              "surface": "#f8f9ff",
+              "surface-variant": "#d3e4fe",
+              "on-surface": "#0b1c30",
+              "on-surface-variant": "#43474f",
+              "outline": "#737780",
+              "outline-variant": "#c3c6d0",
+              "error": "#ba1a1a",
+              "error-container": "#ffdad6",
+              "on-error": "#ffffff",
+              "on-error-container": "#93000a",
+              "surface-bright": "#f8f9ff",
+              "surface-dim": "#cbdbf5",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-low": "#eff4ff",
+              "surface-container": "#e5eeff",
+              "surface-container-high": "#dce9ff",
+              "surface-container-highest": "#d3e4fe",
+              "warm-sand": "#F7F2ED",
+              "deep-slate": "#1A1C1E"
+            },
+            "borderRadius": {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+            },
+            "spacing": {
+              "unit": "8px",
+              "container-max": "1280px",
+              "margin-desktop": "48px",
+              "gutter": "24px",
+              "margin-mobile": "16px",
+              "section-gap": "80px"
+            },
+            "fontFamily": {
+              "headline-sm": ["\"Source Serif 4\""],
+              "body-md": ["Inter"],
+              "display-lg": ["\"Source Serif 4\""],
+              "body-lg": ["Inter"],
+              "headline-md": ["\"Source Serif 4\""],
+              "data-metric": ["JetBrains Mono"],
+              "label-caps": ["Inter"]
+            },
+            "fontSize": {
+              "headline-sm": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+              "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+              "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+              "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+              "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+              "headline-md": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+              "data-metric": ["20px", {"lineHeight": "24px", "letterSpacing": "-0.03em", "fontWeight": "500"}],
+              "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+    <title>VitalMind | Clinical Stress Monitoring</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

@@ -1,0 +1,12 @@
+{
+    "artifact_id": "face_expert_v2",
+    "artifact_type": "model",
+    "version": "2.0.0",
+    "timestamp": 1783932604.3530464,
+    "hash": "2ddc81fa2efbf3c9d87bbc5b0e3573978ee901f7c0a3c0b09ed302492bb661c4",
+    "metadata": {
+        "accuracy": 0.6338482047961185,
+        "evaluation_protocol": "Leave-One-Subject-Out (GroupKFold)",
+        "framework": "PyTorch (1D-CNN+GRU)"
+    }
+}

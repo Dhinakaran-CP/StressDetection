@@ -1,7 +1,7 @@
 # Data Audit and Completeness Gate (G1) Summary Report
 
 **Status:** PASS
-**Timestamp:** 2026-07-17 11:50:58
+**Timestamp:** 2026-07-18 12:04:57
 
 ## 1. StressID Dataset (Primary)
 - **Total Subjects:** 65 (verified 65 subjects)
@@ -24,7 +24,16 @@
   - Face (Video/Landmarks): 27/30 (90.00%)
   - Physiology: 30/30 (100.00%)
 
-## 3. Gate G1 Evaluation
+## 3. WESAD Dataset (Supplementary)
+- **Total Subjects:** 15 (verified 15 subjects)
+- **Class Balance (Sample-level at 700Hz):**
+  - Stressed: 6976201
+  - Non-stressed: 12327702
+  - Ratio (Stressed/Total): 36.14%
+- **Modality Completeness:**
+  - Physiology: 15/15 (100.00%)
+
+## 4. Gate G1 Evaluation
 - **Condition:** Every required modality must be present for at least 80% of each dataset's subjects.
 - **Evaluation Result:**
   - StressID Face: PASS (81.54%)
@@ -32,4 +41,5 @@
   - StressID Physio: PASS (100.00%)
   - EmpathicSchool Face: PASS (90.00%)
   - EmpathicSchool Physio: PASS (100.00%)
+  - WESAD Physio: PASS (100.00%)
 - **Verdict:** **PASSED**

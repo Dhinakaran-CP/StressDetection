@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Insights | VitalMind</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chart-gradient {
+            background: linear-gradient(180deg, rgba(14, 59, 105, 0.1) 0%, rgba(14, 59, 105, 0) 100%);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md overflow-x-hidden">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-container": "#a2c6fd",
+                      "error": "#ba1a1a",
+                      "on-secondary-fixed-variant": "#454749",
+                      "tertiary": "#3c3a37",
+                      "error-container": "#ffdad6",
+                      "surface-container": "#e5eeff",
+                      "secondary": "#5d5e61",
+                      "surface-bright": "#f8f9ff",
+                      "surface": "#f8f9ff",
+                      "on-primary": "#ffffff",
+                      "inverse-surface": "#213145",
+                      "on-primary-fixed-variant": "#204877",
+                      "inverse-on-surface": "#eaf1ff",
+                      "on-secondary": "#ffffff",
+                      "surface-variant": "#d3e4fe",
+                      "outline-variant": "#c3c6d0",
+                      "on-surface": "#0b1c30",
+                      "surface-container-lowest": "#ffffff",
+                      "outline": "#737780",
+                      "primary": "#0e3b69",
+                      "on-error": "#ffffff",
+                      "secondary-fixed": "#e2e2e5",
+                      "on-secondary-container": "#636467",
+                      "tertiary-fixed": "#e6e2dd",
+                      "on-background": "#0b1c30",
+                      "on-tertiary-fixed-variant": "#484643",
+                      "background": "#f8f9ff",
+                      "on-primary-fixed": "#001c3a",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-fixed-dim": "#cac6c1",
+                      "surface-container-low": "#eff4ff",
+                      "surface-container-highest": "#d3e4fe",
+                      "inverse-primary": "#a5c8ff",
+                      "tertiary-container": "#53514d",
+                      "surface-tint": "#3b6090",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed": "#1d1b19",
+                      "secondary-container": "#e2e2e5",
+                      "primary-fixed-dim": "#a5c8ff",
+                      "surface-container-high": "#dce9ff",
+                      "on-secondary-fixed": "#1a1c1e",
+                      "secondary-fixed-dim": "#c6c6c9",
+                      "primary-container": "#2c5282",
+                      "primary-fixed": "#d4e3ff",
+                      "on-tertiary-container": "#c8c4bf",
+                      "surface-dim": "#cbdbf5",
+                      "on-surface-variant": "#43474f"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "container-max": "1280px",
+                      "margin-desktop": "48px",
+                      "gutter": "24px",
+                      "margin-mobile": "16px",
+                      "section-gap": "80px"
+              },
+              "fontFamily": {
+                      "headline-sm": ["\"Source Serif 4\""],
+                      "body-md": ["Inter"],
+                      "display-lg": ["\"Source Serif 4\""],
+                      "body-lg": ["Inter"],
+                      "headline-md": ["\"Source Serif 4\""],
+                      "data-metric": ["JetBrains Mono"],
+                      "label-caps": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-sm": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-md": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "data-metric": ["20px", {"lineHeight": "24px", "letterSpacing": "-0.03em", "fontWeight": "500"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<!-- SideNavBar Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low shadow-sm flex flex-col py-margin-desktop px-gutter z-50">
+<div class="mb-10">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">VitalMind</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Clinical Stress Monitoring</p>
+</div>
+<nav class="flex flex-col space-y-2 flex-grow">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="font-body-md text-body-md">History</span>
+</a>
+<!-- Active Tab: Insights -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-primary font-bold border-r-4 border-primary bg-surface-container transition-transform scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="insights" style="font-variation-settings: 'FILL' 1;">insights</span>
+<span class="font-body-md text-body-md">Insights</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-body-md text-body-md">Profile</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-outline-variant/30">
+<button class="w-full bg-primary text-on-primary py-3 px-4 rounded-xl font-label-caps text-label-caps transition-all active:scale-95 shadow-md">
+                CALIBRATE SENSORS
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen pb-20">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 bg-surface/80 backdrop-blur-md flex justify-between items-center w-full px-margin-desktop py-4">
+<div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-primary">Insights Summary</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex gap-4">
+<a class="font-label-caps text-label-caps text-primary border-b-2 border-primary pb-1" href="#">Realtime</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors" href="#">Upload</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" data-icon="notifications_active">notifications_active</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" data-icon="tune">tune</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A clean, professional portrait of a modern healthcare professional or user against a soft, clinical-zen background with gentle studio lighting and high-end editorial feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnzcs9l8eQmIJM3bPSijFI3SMP3EMcIIiRIMRNh8wwaRGSOZLlT9GZEABtvpS1conjD2QQnYClpNiozsGKi6VYhpi3OSNHhokmc4EKH1rDSQb-l1iRJLBQYxShxbSRfjPXxKrxqvy_KCuU8hmBjg8xUVFPQu__5NJQjGqSxj1ltddkh1NItChoO9BgJTsNmTluf0t183gLwMRXhMuhhkKsTuEm-9kjz9dxfQBY5nhZZaKCGjVjXXgF"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Content Grid -->
+<div class="px-margin-desktop max-w-container-max mx-auto mt-10">
+<!-- Hero Bento Section -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Main Chart: Stress Over Time -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-[16px] p-8 shadow-[0_4px_20px_rgba(26,28,30,0.04)] relative overflow-hidden">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Stress Resilience</h3>
+<p class="text-on-surface-variant">Weekly performance baseline</p>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-low px-3 py-1 rounded-full text-label-caps font-label-caps text-primary">7 DAYS</span>
+</div>
+</div>
+<div class="h-64 w-full relative">
+<!-- Chart Mockup SVG -->
+<svg class="w-full h-full stroke-primary fill-none overflow-visible" viewbox="0 0 800 200">
+<path d="M0,150 Q100,80 200,120 T400,60 T600,100 T800,40" stroke-linecap="round" stroke-width="3"></path>
+<path class="fill-primary/5 stroke-none" d="M0,150 Q100,80 200,120 T400,60 T600,100 T800,40 V200 H0 Z"></path>
+<circle class="fill-primary" cx="400" cy="60" r="6"></circle>
+<circle class="fill-primary/20" cx="400" cy="60" r="12"></circle>
+</svg>
+<!-- Chart Labels -->
+<div class="flex justify-between mt-4 text-label-caps font-label-caps text-outline">
+<span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+</div>
+</div>
+<div class="mt-8 pt-8 border-t border-outline-variant/30 grid grid-cols-3 gap-4">
+<div>
+<p class="font-label-caps text-label-caps text-outline uppercase">Peak Stress</p>
+<p class="font-data-metric text-data-metric text-error mt-1">74%</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-outline uppercase">Min Stress</p>
+<p class="font-data-metric text-data-metric text-on-tertiary-container mt-1">12%</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-outline uppercase">Avg Variation</p>
+<p class="font-data-metric text-data-metric text-primary mt-1">±4%</p>
+</div>
+</div>
+</div>
+<!-- Daily Goal Progress Ring -->
+<div class="col-span-12 lg:col-span-4 bg-primary text-on-primary rounded-[16px] p-8 flex flex-col items-center justify-center text-center">
+<h3 class="font-label-caps text-label-caps uppercase tracking-widest mb-6 opacity-80">Daily Focus Goal</h3>
+<div class="relative w-40 h-40 flex items-center justify-center mb-6">
+<svg class="w-full h-full -rotate-90">
+<circle class="opacity-20" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-width="12"></circle>
+<circle cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-dasharray="440" stroke-dashoffset="110" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-data-metric text-3xl">75%</span>
+<span class="text-xs opacity-70">Complete</span>
+</div>
+</div>
+<p class="font-body-md text-body-md font-medium">15/20 Calm Minutes</p>
+<p class="text-sm opacity-60 mt-1">Keep steady breathing for 5 more minutes.</p>
+<button class="mt-8 bg-white/10 hover:bg-white/20 transition-colors border border-white/20 px-6 py-2 rounded-full font-label-caps text-label-caps">RESUME SESSION</button>
+</div>
+</div>
+<!-- Detailed Stats & Triggers Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mt-gutter">
+<!-- Average Stats -->
+<div class="bg-surface-container-lowest rounded-[16px] p-6 shadow-[0_4px_20px_rgba(26,28,30,0.04)]">
+<div class="flex items-center gap-3 mb-6">
+<div class="bg-surface-container rounded-lg p-2">
+<span class="material-symbols-outlined text-primary" data-icon="avg_pace">avg_pace</span>
+</div>
+<h4 class="font-label-caps text-label-caps text-outline uppercase">Weekly Averages</h4>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between items-end mb-1">
+<span class="text-on-surface-variant text-sm">Stress Score</span>
+<span class="font-data-metric text-primary">32<span class="text-xs">/100</span></span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full">
+<div class="bg-primary h-2 rounded-full w-[32%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-end mb-1">
+<span class="text-on-surface-variant text-sm">Calm Minutes</span>
+<span class="font-data-metric text-primary">124<span class="text-xs">min</span></span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full">
+<div class="bg-primary-container h-2 rounded-full w-[65%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Common Triggers -->
+<div class="bg-surface-container-lowest rounded-[16px] p-6 shadow-[0_4px_20px_rgba(26,28,30,0.04)]">
+<div class="flex items-center gap-3 mb-6">
+<div class="bg-error-container/20 rounded-lg p-2">
+<span class="material-symbols-outlined text-error" data-icon="psychology_alt">psychology_alt</span>
+</div>
+<h4 class="font-label-caps text-label-caps text-outline uppercase">AI Identified Triggers</h4>
+</div>
+<ul class="space-y-4">
+<li class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<span class="text-on-surface-variant">Morning Meetings</span>
+</div>
+<span class="text-xs font-bold text-error">+22%</span>
+</li>
+<li class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-on-surface-variant">Late Night Screen</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant">+14%</span>
+</li>
+<li class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-outline"></div>
+<span class="text-on-surface-variant">Caffeine Intake</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant">+8%</span>
+</li>
+</ul>
+</div>
+<!-- Streak Badges -->
+<div class="bg-surface-container-lowest rounded-[16px] p-6 shadow-[0_4px_20px_rgba(26,28,30,0.04)]">
+<div class="flex items-center gap-3 mb-6">
+<div class="bg-surface-container-high rounded-lg p-2">
+<span class="material-symbols-outlined text-primary" data-icon="military_tech">military_tech</span>
+</div>
+<h4 class="font-label-caps text-label-caps text-outline uppercase">Active Streaks</h4>
+</div>
+<div class="flex flex-wrap gap-4">
+<div class="flex flex-col items-center gap-2 group cursor-help">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined" data-icon="local_fire_department" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-tighter">14 Days</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-help">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-outline-variant transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined" data-icon="spa">spa</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-tighter opacity-40">Zen Master</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-help">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined" data-icon="nights_stay" style="font-variation-settings: 'FILL' 1;">nights_stay</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Deep Rest</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Call to Action Banner -->
+<section class="mt-section-gap relative rounded-[24px] overflow-hidden p-12 bg-on-background text-on-primary">
+
+<div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+<div class="max-w-xl">
+<h2 class="font-headline-md text-headline-md mb-4">Deep Learning Analysis</h2>
+<p class="font-body-lg text-body-lg text-on-primary/70">Our clinical models suggest that your resilience peaks between 2:00 PM and 4:00 PM. We recommend scheduling high-intensity tasks during this window.</p>
+</div>
+<button class="bg-primary-fixed text-on-primary-fixed px-8 py-4 rounded-[16px] font-bold hover:bg-primary-fixed-dim transition-all flex items-center gap-2 whitespace-nowrap shadow-lg shadow-primary/20">
+                        View Detailed Report
+                        <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</section>
+</div>
+</main>
+<!-- Micro-interaction Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Hover scale for cards
+            const cards = document.querySelectorAll('.bg-surface-container-lowest');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'translateY(-4px)';
+                    card.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+                    card.classList.add('shadow-[0_8px_30px_rgba(26,28,30,0.08)]');
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(0px)';
+                    card.classList.remove('shadow-[0_8px_30px_rgba(26,28,30,0.08)]');
+                });
+            });
+        });
+    </script>
+</body></html>

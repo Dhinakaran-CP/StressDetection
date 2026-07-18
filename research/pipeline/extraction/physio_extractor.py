@@ -1,6 +1,8 @@
 import os
 import json
 import glob
+import pickle
+from collections import Counter
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -530,6 +532,261 @@ def run_empathicschool_extraction(raw_path, output_dir, log_file):
         
     print(f"EmpathicSchool Completed. Windows: {total_windows}")
 
+def process_wesad_subject(pkl_path):
+    print(f"Processing WESAD subject file {pkl_path.name}...")
+    with open(pkl_path, 'rb') as f:
+        data = pickle.load(f, encoding='latin1')
+        
+    signal = data['signal']
+    chest = signal['chest']
+    labels = data['label']
+    
+    # 700 Hz chest raw signals
+    ecg_700 = chest['ECG'].flatten()
+    eda_700 = chest['EDA'].flatten()
+    resp_700 = chest['Resp'].flatten()
+    temp_700 = chest['Temp'].flatten()
+    acc_700 = chest['ACC']  # shape (N, 3)
+    
+    duration_sec = len(labels) / 700.0
+    
+    # Decimate / Downsample for speed
+    # ECG to 175 Hz (decimate by 4)
+    ecg_sr = 175
+    ecg_dec = ecg_700[::4]
+    
+    # EDA to 10 Hz (decimate by 70)
+    eda_sr = 10
+    eda_dec = eda_700[::70]
+    
+    # Resp to 10 Hz (decimate by 70)
+    resp_sr = 10
+    resp_dec = resp_700[::70]
+    
+    # 1. ECG Process (at 175 Hz)
+    try:
+        ecg_signals, ecg_info = nk.ecg_process(ecg_dec, sampling_rate=ecg_sr)
+        hr_dec = ecg_signals["ECG_Rate"].values
+        r_peaks_dec = ecg_signals["ECG_R_Peaks"].values
+        hrv_dec = np.zeros_like(hr_dec)
+        window_samples = int(30 * ecg_sr)
+        for i in range(len(hr_dec)):
+            start_w = max(0, i - window_samples)
+            peaks_in_w = np.where(r_peaks_dec[start_w:i+1] == 1)[0]
+            if len(peaks_in_w) > 2:
+                rri = np.diff(peaks_in_w) / ecg_sr * 1000.0
+                hrv_dec[i] = np.sqrt(np.mean(np.diff(rri) ** 2))
+            else:
+                hrv_dec[i] = np.nan
+    except Exception:
+        hr_dec = np.ones(len(ecg_dec)) * 75.0
+        hrv_dec = np.ones(len(ecg_dec)) * 50.0
+        
+    # 2. EDA Process (at 10 Hz)
+    try:
+        eda_signals, eda_info = nk.eda_process(eda_dec, sampling_rate=eda_sr)
+        eda_clean_dec = eda_signals["EDA_Clean"].values
+        eda_tonic_dec = eda_signals["EDA_Tonic"].values
+        eda_phasic_dec = eda_signals["EDA_Phasic"].values
+        scr_peaks_dec = eda_signals["SCR_Peaks"].values
+        
+        scr_count_dec = np.zeros_like(eda_clean_dec)
+        window_samples = int(30 * eda_sr)
+        for i in range(len(eda_clean_dec)):
+            start_w = max(0, i - window_samples)
+            scr_count_dec[i] = np.sum(scr_peaks_dec[start_w:i+1])
+    except Exception:
+        eda_clean_dec = eda_dec
+        eda_tonic_dec = eda_dec
+        eda_phasic_dec = np.zeros_like(eda_dec)
+        scr_count_dec = np.zeros_like(eda_dec)
+        
+    # 3. Respiration Process (at 10 Hz)
+    try:
+        rsp_signals, rsp_info = nk.rsp_process(resp_dec, sampling_rate=resp_sr)
+        resp_rate_dec = rsp_signals["RSP_Rate"].values
+        resp_amplitude_dec = rsp_signals["RSP_Amplitude"].values
+    except Exception:
+        resp_rate_dec = np.ones(len(resp_dec)) * 15.0
+        resp_amplitude_dec = np.ones(len(resp_dec)) * 1.0
+        
+    # ACC decomposition at 700 Hz
+    acc_x_700 = acc_700[:, 0]
+    acc_y_700 = acc_700[:, 1]
+    acc_z_700 = acc_700[:, 2]
+    acc_mag_700 = np.sqrt(acc_x_700**2 + acc_y_700**2 + acc_z_700**2)
+    
+    # Interpolate all downsampled streams to 3 Hz target timeline
+    ts_target = np.arange(0, duration_sec, 1/3.0)
+    
+    # 3 Hz features packing
+    feats_3fps = []
+    labels_3fps = []
+    
+    for t in ts_target:
+        idx_ecg = min(len(ecg_dec) - 1, int(t * ecg_sr))
+        idx_10hz = min(len(eda_dec) - 1, int(t * eda_sr))
+        idx_700hz = min(len(labels) - 1, int(t * 700.0))
+        
+        feats_3fps.append({
+            "ecg_hr": hr_dec[idx_ecg],
+            "ecg_hrv": hrv_dec[idx_ecg] if not np.isnan(hrv_dec[idx_ecg]) else 50.0,
+            "eda_clean": eda_clean_dec[idx_10hz],
+            "eda_tonic": eda_tonic_dec[idx_10hz],
+            "eda_phasic": eda_phasic_dec[idx_10hz],
+            "eda_scr_count": scr_count_dec[idx_10hz],
+            "resp_rate": resp_rate_dec[idx_10hz],
+            "resp_amplitude": resp_amplitude_dec[idx_10hz],
+            "temp_mean": temp_700[idx_700hz],
+            "temp_std": 0.0,
+            "acc_x": acc_x_700[idx_700hz],
+            "acc_y": acc_y_700[idx_700hz],
+            "acc_z": acc_z_700[idx_700hz],
+            "acc_mag": acc_mag_700[idx_700hz]
+        })
+        labels_3fps.append(labels[idx_700hz])
+        
+    return feats_3fps, labels_3fps
+
+def extract_wesad_windows_and_sequences(features_list, labels_list, subject_id, window_size=30, stride=15):
+    flat_records = []
+    sequences_list = []
+    
+    n_frames = len(features_list)
+    n_windows = int((n_frames - window_size) // stride) + 1
+    
+    fields = [
+        "ecg_hr", "ecg_hrv", "eda_clean", "eda_tonic", "eda_phasic", "eda_scr_count",
+        "resp_rate", "resp_amplitude", "temp_mean", "temp_std", "acc_x", "acc_y", "acc_z", "acc_mag"
+    ]
+    
+    for w_idx in range(n_windows):
+        start = w_idx * stride
+        end = start + window_size
+        window_feats = features_list[start:end]
+        window_labels = labels_list[start:end]
+        
+        # Calculate majority label in WESAD
+        # 1 = baseline (neutral) -> binary_stress = 0
+        # 2 = stress -> binary_stress = 1
+        # others are discarded
+        counts = Counter(window_labels)
+        majority_raw, _ = counts.most_common(1)[0]
+        
+        if majority_raw == 1:
+            binary_stress = 0
+        elif majority_raw == 2:
+            binary_stress = 1
+        else:
+            # Skip this window because it represents amusement, meditation, or transitions
+            continue
+            
+        valid_feats = [f for f in window_feats if f is not None]
+        valid_subset = [f for f in valid_feats if not np.isnan(f["ecg_hr"])]
+        physio_available = 1 if len(valid_subset) > (window_size / 2) else 0
+        
+        task_name = "wesad_stress" if binary_stress == 1 else "wesad_neutral"
+        window_id = f"{subject_id}_{task_name}_W{w_idx}"
+        
+        flat_record = {
+            "subject_id": subject_id,
+            "dataset_source": "wesad",
+            "task_name": task_name,
+            "window_id": window_id,
+            "physio_available": physio_available,
+            "binary_stress": binary_stress
+        }
+        
+        sequence_matrix = np.zeros((window_size, len(fields)), dtype=np.float32)
+        
+        for i_f, f in enumerate(window_feats):
+            if f is not None:
+                for col_idx, field in enumerate(fields):
+                    sequence_matrix[i_f, col_idx] = f[field]
+            else:
+                sequence_matrix[i_f, :] = np.nan
+                
+        if physio_available:
+            for field in fields:
+                vals = [f[field] for f in valid_feats if not np.isnan(f[field])]
+                if vals:
+                    flat_record[f"{field}_mean"] = np.mean(vals)
+                    flat_record[f"{field}_std"] = np.std(vals) if len(vals) > 1 else 0.0
+                    flat_record[f"{field}_min"] = np.min(vals)
+                    flat_record[f"{field}_max"] = np.max(vals)
+                    flat_record[f"{field}_range"] = np.max(vals) - np.min(vals)
+                else:
+                    flat_record[f"{field}_mean"] = np.nan
+                    flat_record[f"{field}_std"] = np.nan
+                    flat_record[f"{field}_min"] = np.nan
+                    flat_record[f"{field}_max"] = np.nan
+                    flat_record[f"{field}_range"] = np.nan
+        else:
+            for field in fields:
+                flat_record[f"{field}_mean"] = np.nan
+                flat_record[f"{field}_std"] = np.nan
+                flat_record[f"{field}_min"] = np.nan
+                flat_record[f"{field}_max"] = np.nan
+                flat_record[f"{field}_range"] = np.nan
+                
+        flat_records.append(flat_record)
+        sequences_list.append(sequence_matrix)
+        
+    return flat_records, sequences_list
+
+def run_wesad_extraction(raw_path, output_dir, log_file):
+    print("Running WESAD Physio extraction...")
+    raw_path = Path(raw_path)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    subjects = sorted([x for x in os.listdir(raw_path) if x.startswith('S') and not x.startswith('.') and (raw_path / x).is_dir()])
+    
+    flat_records_all = []
+    sequences_all = []
+    window_meta_all = []
+    
+    total_processed = 0
+    total_windows = 0
+    
+    with open(log_file, "a", encoding="utf-8") as f_log:
+        f_log.write("--- WESAD Physio Extraction ---\n")
+        
+    for sub in tqdm(subjects, desc="WESAD Physio"):
+        sub_dir = raw_path / sub
+        pkl_path = sub_dir / f"{sub}.pkl"
+        if not pkl_path.exists():
+            continue
+            
+        feats, labels = process_wesad_subject(pkl_path)
+        if not feats:
+            continue
+            
+        flat_rec, seqs = extract_wesad_windows_and_sequences(feats, labels, sub)
+        
+        flat_records_all.extend(flat_rec)
+        for fr, seq in zip(flat_rec, seqs):
+            global_idx = len(sequences_all)
+            sequences_all.append(seq)
+            window_meta_all.append({
+                "window_id": fr["window_id"],
+                "sequence_index": global_idx
+            })
+            total_windows += 1
+            
+        total_processed += 1
+        with open(log_file, "a", encoding="utf-8") as f_log:
+            f_log.write(f"Subject: {sub}, Frames: {len(feats)}, Windows: {len(flat_rec)}\n")
+            
+    if flat_records_all:
+        df_flat = pd.DataFrame(flat_records_all)
+        df_flat.to_parquet(output_dir / "physio_windows.parquet")
+        
+        np.save(output_dir / "physio_sequences.npy", np.array(sequences_all, dtype=np.float32))
+        pd.DataFrame(window_meta_all).to_parquet(output_dir / "physio_sequences_index.parquet")
+        
+    print(f"WESAD Completed. Windows: {total_windows}")
+
 def main():
     base_dir = Path(__file__).resolve().parents[3]
     config_path = base_dir / "pipeline" / "config" / "config.yaml"
@@ -540,19 +797,33 @@ def main():
         
     stressid_raw = base_dir / config["datasets"]["stressid"]["raw_path"]
     empathic_raw = base_dir / config["datasets"]["empathicschool"]["raw_path"]
+    wesad_raw = base_dir / config["datasets"]["wesad"]["raw_path"]
     
     sid_out = base_dir / "pipeline" / "data" / "stressid"
     es_out = base_dir / "pipeline" / "data" / "empathicschool"
+    wesad_out = base_dir / "pipeline" / "data" / "wesad"
     
     log_file = base_dir / "pipeline" / "logs" / "physio_extraction.log"
     if log_file.exists():
         log_file.unlink()
         
     # 1. StressID Physio Extraction
-    run_stressid_extraction(stressid_raw, sid_out, log_file)
+    if not (sid_out / "physio_windows.parquet").exists():
+        run_stressid_extraction(stressid_raw, sid_out, log_file)
+    else:
+        print("StressID physio extraction output already exists, skipping.")
     
     # 2. EmpathicSchool Physio Extraction
-    run_empathicschool_extraction(empathic_raw, es_out, log_file)
+    if not (es_out / "physio_windows.parquet").exists():
+        run_empathicschool_extraction(empathic_raw, es_out, log_file)
+    else:
+        print("EmpathicSchool physio extraction output already exists, skipping.")
+    
+    # 3. WESAD Physio Extraction
+    if not (wesad_out / "physio_windows.parquet").exists():
+        run_wesad_extraction(wesad_raw, wesad_out, log_file)
+    else:
+        print("WESAD physio extraction output already exists, skipping.")
     
     # Self-verification check
     # Metadata columns: 6
@@ -560,7 +831,7 @@ def main():
     # Total columns: 76
     
     issues = []
-    for out_path, name in [(sid_out, "StressID"), (es_out, "EmpathicSchool")]:
+    for out_path, name in [(sid_out, "StressID"), (es_out, "EmpathicSchool"), (wesad_out, "WESAD")]:
         pq_file = out_path / "physio_windows.parquet"
         if not pq_file.exists():
             issues.append(f"{name} physio_windows.parquet missing")

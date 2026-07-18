@@ -111,69 +111,29 @@ This repository was developed across **8 research phases** to establish strict, 
 
 ---
 
-## 🏆 Final Production Validation Results (65 Subjects, Strict LOSO)
+## 🏆 Final Production Validation Results (91 Subjects, Strict LOSO Zoo)
 
-All models are validated using **Leave-One-Subject-Out (LOSO) 5-Fold GroupKFold** cross-subject validation. No subject is shared between training and testing splits.
+To ensure maximum robustness, we completed a **91-fold Leave-One-Subject-Out (LOSO)** validation run combining WESAD (15 subjects) and Combined Stress datasets. The top model selection:
 
-| Modality Combination | Strategy 4: Standard CNN-GRU | Strategy 5: Subject-Adversarial (Primary) |
-| :--- | :---: | :---: |
-| **Face-Only** | 66.14% (± 3.38%) | **67.06%** (± 3.01%) |
-| **Voice-Only** | 62.43% (± 4.59%) | **61.86%** (± 2.81%) |
-| **Physio-Only** | **65.56%** (± 2.97%) | 64.24% (± 2.41%) |
-| **Face + Physio** | 67.24% (± 3.28%) | **67.45%** (± 3.69%) |
-| **Face + Voice** | 65.35% (± 2.62%) | **66.86%** (± 2.24%) |
-| **Voice + Physio** | **65.39%** (± 4.20%) | 64.52% (± 2.73%) |
-| **3-Way Fusion (All Sensors)** | 67.24% (± 2.33%) | **67.36%** (± 3.84%) |
-
-*   **Primary Model**: **Strategy 5 (Adversarial)**. It provides superior generalization by suppressing subject traits.
-*   **Secondary Fallback**: **Strategy 4 (Standard)**. Acts as a backup model.
+*   **Primary Deep Model**: **SSVB-CASA-AIS** (Attention mixture of experts with Gradient-Reversed Adversarial Identity Suppression).
+    - **Combined-91 Accuracy**: **74.89%** (F1-score: **0.6366**)
+    - **WESAD-15 Accuracy**: **75.88%** (F1-score: **0.6622**)
+*   **Secondary Classical Fallback**: **Random Forest** (fast CPU inference, zero-latency).
+    - **Combined-91 Accuracy**: **70.52%** (F1-score: **0.6015**)
+    - **WESAD-15 Accuracy**: **71.60%** (F1-score: **0.6225**)
 
 ---
 
-## ⚠️ Critical Challenges Faced and Resolved
+## ⚡ Production Web Serving API (webapp/backend/app.py)
 
-### 1. The Voice Expert Overfitting Hazard
-Early classical Voice classifiers reported F1-scores of **0.82+**. However, when tested on unseen subjects (strict LOSO), performance crashed. The model had learned subject identity (voice timbre) rather than stress.
-*   *Solution*: We extracted robust speech acoustics (MFCCs, spectral contrast, chroma, and pitch) and applied Subject-Adaptive Normalization. We replaced the classical classifiers with a 1D-CNN + GRU sequence model, which stabilized cross-subject accuracy at **62.43%** (Strategy 4) and **61.86%** (Strategy 5).
+The serving engine leverages **Dynamic Routing and Automatic Fallbacks** to maintain service availability under missing streams or library issues:
 
-### 2. Identity Leakage Suppression
-Biometric stress classifiers often take "identity shortcuts" by learning who the user is instead of identifying physiological stress.
-*   *Solution*: We added a gradient reversal layer branching into a secondary `subject_head` (65 classes) during training. By applying an adversarial penalty:
-    $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{stress}} - \lambda_{\text{adv}} \mathcal{L}_{\text{subject}}$$
-    the encoder was penalized for retaining subject identity. This reduced the identity leakage gap (random-split vs. LOSO) from **18.99%** (classical) to a mere **7.43%** (adversarial).
-
-### 3. Resolving Adversarial Gradient Collapse
-During initial modality training, a high adversarial lambda ($\lambda = 0.15$) caused the subject loss to overpower the stress loss, collapsing unimodal sequence models to random guessing ($\sim 47\%$).
-*   *Solution*: We conducted a hyperparameter sweep to evaluate the effect of $\lambda_{\text{adv}}$:
-    *   $\lambda = 0.10 \to 64.26\%$ Face accuracy
-    *   $\lambda = 0.05 \to 65.01\%$ Face accuracy
-    *   $\lambda = 0.03 \to 67.62\%$ Face accuracy
-    *   $\lambda = 0.01 \to 67.75\%$ Face accuracy
-*   We selected **$\lambda_{\text{adv}} = 0.02$** as the optimal production threshold. This retains the highest stress classification accuracy while preventing identity memorization.
-
----
-
-## 🛠️ Early Fusion Workspace (Robust FlexiModal MoE Pipeline)
-
-The `early_fusion/` subdirectory contains a dedicated research workspace implementing a **Mask-Aware FlexiModal MoE** architecture with **Training Modality Dropout** to handle missing sensors (Face, Voice, Physio) without shortcut learning.
-
-### 5-Model Comparative Ablation Study
-The workspace trains, evaluates, and compares exactly five distinct architectures under various sensor failure scenarios:
-1. **Early Fusion Baseline:** Concatenates raw latent feature vectors.
-2. **Gated Fusion Baseline:** Learns sample-dependent gating scalars per modality.
-3. **Cross-Attention Fusion:** Maps modalities into a unified space using dot-product cross-attention.
-4. **Standard MoE Fusion:** Uses the FlexiModal MoE model but trains it without modality dropout.
-5. **Robust FlexiModal MoE:** The final model, trained with 30% independent modality dropout to force feature learning.
-
-### Jupyter Pipeline Sequence
-The research notebooks are organized under `early_fusion/notebooks/` and should be run in the following sequence:
-1. **[01_raw_sync_audit.ipynb](early_fusion/notebooks/01_raw_sync_audit.ipynb):** Audits raw sensor folders and outputs subject-task presence manifests.
-2. **[02_extract_and_align.ipynb](early_fusion/notebooks/02_extract_and_align.ipynb):** Syncs frame window keys, executes Subject-Adaptive calm baseline normalization, and exports splits (`data/processed/train/`, `val/`, `test/`).
-3. **[03_train_models.ipynb](early_fusion/notebooks/03_train_models.ipynb):** Trains all 5 models and saves checkpoints under `early_fusion/outputs/checkpoints/`.
-4. **[04_validate_models.ipynb](early_fusion/notebooks/04_validate_models.ipynb):** Restores all checkpoints, calculates parameter sizes, measures latency cost in milliseconds, and audits performance under simulated modality dropouts.
-5. **[05_final_report.ipynb](early_fusion/notebooks/05_final_report.ipynb):** Prints comparative metric tables and saves the final markdown report to `early_fusion/reports/evaluation/ablation_study_report.md`.
-
-For a critical analysis of modality alignment skews and sensor shortcuts, read the **[critical_analysis_report.md](early_fusion/reports/critical_analysis_report.md)** (or in the artifact directory).
+1.  **`/api/model/version` (GET)**: Reports the active model details and version tags from the registry.
+2.  **`/api/predict/realtime` (POST)**: Receives continuous video/audio indicators and executes sequence inference through `SSVB-CASA-AIS`.
+3.  **`/api/predict/upload` (POST)**: Receives file uploads (or flat vectors) and executes predictions using the promoted Random Forest model.
+4.  **`/api/explain/shap` (POST)**: Serves instant per-modality feature drivers utilizing a cached SHAP matrix.
+5.  **`/api/modality/status` (GET)**: Reports active/missing modalities, buffer size, and calibration state.
+6.  **`/api/fallback/status` (GET)**: Tracks whether a fallback model is active and details why.
 
 ---
 
@@ -203,23 +163,14 @@ Double-click the **`run.bat`** script at the root directory. This launcher scrip
 
 #### 1. Start Backend Server
 ```bash
-cd backend
-pip install -r requirements.txt
-python app.py
+cd webapp/backend
+..\..\venv\Scripts\pip.exe install -r requirements.txt
+..\..\venv\Scripts\python.exe app.py
 ```
 
 #### 2. Start Frontend Server
 ```bash
-cd frontend
+cd webapp/frontend
 npm install
 npm start
 ```
-
----
-
-## 📦 Migration Package for Another Laptop
-
-If you want to run the project on another laptop without copying raw datasets or retraining:
-1.  Locate the pre-packaged deployment folder: **`StressDetectionUsingML_Deploy/`** (located at the root directory).
-2.  Copy or zip this folder and transfer it to the target laptop.
-3.  Open the folder on the new laptop and run `run.bat`. Read the accompanying `README_MIGRATION.md` inside that folder for manual startup details and verification tests.

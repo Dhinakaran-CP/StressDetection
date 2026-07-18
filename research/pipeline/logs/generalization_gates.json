@@ -1,39 +1,43 @@
 {
+    "leader_model": "logistic_regression",
     "gates": {
-        "logistic_regression": {
-            "stressid_auc": 0.7440144506552026,
-            "empathicschool_auc": 0.5900650666542463,
-            "gate_g2_passed": true,
-            "gate_g3_passed": true,
-            "eligible_for_production": true
+        "g2_stability": {
+            "metric": 0.1247267048347074,
+            "passed": false
         },
-        "lightgbm": {
-            "stressid_auc": 0.7372494066320417,
-            "empathicschool_auc": 0.6000353433763158,
-            "gate_g2_passed": true,
-            "gate_g3_passed": true,
-            "eligible_for_production": true
+        "g3_biomarker_validity": {
+            "top_features": [
+                "temp_std_max",
+                "eda_clean_max",
+                "temp_mean_max",
+                "temp_mean_min",
+                "pitch_max",
+                "eda_clean_range",
+                "temp_std_min",
+                "eda_tonic_max",
+                "eda_clean_min",
+                "eda_scr_count_range"
+            ],
+            "passed": true
         },
-        "mlp": {
-            "stressid_auc": 0.7439672044366817,
-            "empathicschool_auc": 0.5396932457379617,
-            "gate_g2_passed": true,
-            "gate_g3_passed": false,
-            "eligible_for_production": false
+        "g4_identity_suppression": {
+            "random_acc": 0.9477068447093939,
+            "loso_acc": 0.6907198274134155,
+            "leakage_gap": 0.2569870172959784,
+            "passed": false
         },
-        "temporal": {
-            "stressid_auc": 0.7440716671629115,
-            "empathicschool_auc": 0.5389466996820798,
-            "gate_g2_passed": true,
-            "gate_g3_passed": false,
-            "eligible_for_production": false
+        "g5_domain_shift": {
+            "domain_classifier_accuracy": 0.999831675650096,
+            "passed": false
+        },
+        "g6_no_regression": {
+            "combined_loso_accuracy": 0.6907198274134155,
+            "passed": false
+        },
+        "d1_face_fixed": {
+            "stressed_f1": 0.5874533300835022,
+            "passed": true
         }
     },
-    "production_eligible_models": [
-        "logistic_regression",
-        "lightgbm"
-    ],
-    "selected_production_candidate": "lightgbm",
-    "gate_g2_threshold": 0.7,
-    "gate_g3_threshold": 0.55
+    "all_gates_passed": false
 }

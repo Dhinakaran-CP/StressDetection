@@ -19,8 +19,13 @@ from backend.explainability.explainability_contract import (
 
 DEFAULT_BUNDLE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "models", "explainability_bundle.json"
+    "models", "research_champion", "explainability_bundle.json"
 )
+if not os.path.exists(DEFAULT_BUNDLE_PATH):
+    DEFAULT_BUNDLE_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "models", "explainability_bundle.json"
+    )
 
 
 class ExplainabilityEngine:

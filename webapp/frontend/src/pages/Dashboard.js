@@ -1,9 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import RealtimeMonitor from "../components/RealtimeMonitor";
-import "../theme.css";
 import AnalysisPanel from "../components/AnalysisPanel";
 import CopilotMessage from "../components/CopilotMessage";
-import GamePanel from "../components/GamePanel";
 import StressChatbot from "../components/StressChatbot";
 import { validateAnalysisInputs, validateAnalysisResponse } from "../utils/validateInputs";
 import {
@@ -17,61 +15,9 @@ import {
   Legend,
 } from "recharts";
 
-import { API_BASE, STRESS_LEVELS } from "../config";
+import { API_BASE } from "../config";
 
-// Standard PCM WAV encoder helpers
-function bufferToWav(buffer, sampleRate) {
-  const bufferLength = buffer.length;
-  const wavBuffer = new ArrayBuffer(44 + bufferLength * 2);
-  const view = new DataView(wavBuffer);
-
-  /* RIFF identifier */
-  writeString(view, 0, 'RIFF');
-  /* file length */
-  view.setUint32(4, 36 + bufferLength * 2, true);
-  /* RIFF type */
-  writeString(view, 8, 'WAVE');
-  /* format chunk identifier */
-  writeString(view, 12, 'fmt ');
-  /* format chunk length */
-  view.setUint32(16, 16, true);
-  /* sample format (raw) */
-  view.setUint16(20, 1, true);
-  /* channel count */
-  view.setUint16(22, 1, true);
-  /* sample rate */
-  view.setUint32(24, sampleRate, true);
-  /* byte rate (sample rate * block align) */
-  view.setUint32(28, sampleRate * 2, true);
-  /* block align (channel count * bytes per sample) */
-  view.setUint16(32, 2, true);
-  /* bits per sample */
-  view.setUint16(34, 16, true);
-  /* data chunk identifier */
-  writeString(view, 36, 'data');
-  /* data chunk length */
-  view.setUint32(40, bufferLength * 2, true);
-
-  floatTo16BitPCM(view, 44, buffer);
-
-  return new Blob([view], { type: 'audio/wav' });
-}
-
-function floatTo16BitPCM(output, offset, input) {
-  for (let i = 0; i < input.length; i++, offset += 2) {
-    let s = Math.max(-1, Math.min(1, input[i]));
-    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-  }
-}
-
-function writeString(view, offset, string) {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i));
-  }
-}
-
-export default function Dashboard({ theme, toggleTheme }) {
-  const [mode, setMode] = useState('upload'); // 'upload' or 'realtime'
+export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, onRequestRecovery }) {
   const [serverOnline, setServerOnline] = useState(false);
 
   useEffect(() => {
@@ -115,24 +61,13 @@ export default function Dashboard({ theme, toggleTheme }) {
   const [isMicRecording, setIsMicRecording] = useState(false);
 
   // Phase state machine
-  const [phase, setPhase] = useState('idle'); // 'idle' | 'analyzing' | 'currentResult' | 'game' | 'reanalyzing' | 'comparison'
+  const [phase, setPhase] = useState('idle'); // 'idle' | 'analyzing' | 'currentResult' | 'reanalyzing'
   const [currentResult, setCurrentResult] = useState(null);
   const [previousResult, setPreviousResult] = useState(null);
-  const [analysisPayload, setAnalysisPayload] = useState(null);
 
   // Legacy UI states
   const [error, setError] = useState(null);
   const [webcamActive, setWebcamActive] = useState(false);
-
-  // Custom UI Overlays
-  const [toastMessage, setToastMessage] = useState(null);
-  const [confirmDialog, setConfirmDialog] = useState(null); // { message, onConfirm }
-  const [showInterventionPanel, setShowInterventionPanel] = useState(false);
-
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
 
   // Muse stream states
   const [museDuration, setMuseDuration] = useState(20);
@@ -150,29 +85,14 @@ export default function Dashboard({ theme, toggleTheme }) {
   const audioChunksRef = useRef([]);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
-  const waveformFrameRef = useRef(null);
   const micCanvasRef = useRef(null);
   const processorRef = useRef(null);
-
-  // Background Server Health check
-  useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/api/health`);
-        setServerOnline(response.ok);
-      } catch (err) {
-        setServerOnline(false);
-      }
-    };
-    checkHealth();
-    const interval = setInterval(checkHealth, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const museIntervalRef = useRef(null);
 
   // Scroll to top on navigation/redirect (e.g. mode or phase change)
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [mode, phase]);
+  }, [dashboardMode, phase]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -181,6 +101,7 @@ export default function Dashboard({ theme, toggleTheme }) {
       if (facePreview) URL.revokeObjectURL(facePreview);
       stopWebcam();
       stopMicRecording();
+      if (museIntervalRef.current) clearInterval(museIntervalRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voicePreviewUrl, facePreview]);
@@ -198,373 +119,140 @@ export default function Dashboard({ theme, toggleTheme }) {
 
   const parseDelimitedSeries = (text, keyName = "value") => {
     const values = (text || "")
-      .split(/[\s,;]+/)
-      .map((item) => Number(item.trim()))
-      .filter((item) => Number.isFinite(item));
-
-    return values.slice(0, 300).map((value, index) => ({ index, [keyName]: value }));
-  };
-
-  const parseSignalCsvForPreview = (file, preferredHeaders = []) =>
-    new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const text = String(reader.currentResult || "");
-          const rows = text
-            .split(/\r?\n/)
-            .map((row) => row.trim())
-            .filter(Boolean)
-            .slice(0, 1200);
-
-          if (rows.length === 0) {
-            resolve({ data: [], keys: [] });
-            return;
-          }
-
-          const firstRow = rows[0].split(",").map((cell) => cell.trim());
-          const hasHeader = firstRow.some((cell) => Number.isNaN(Number(cell)));
-          const headers = hasHeader ? firstRow : firstRow.map((_, index) => `col_${index}`);
-          const bodyRows = hasHeader ? rows.slice(1) : rows;
-
-          const normalizedPreferred = preferredHeaders.map((item) => item.toLowerCase());
-          const selectedIndexes = headers
-            .map((header, index) => ({ header, index }))
-            .filter(({ header }) => {
-              const normalized = header.toLowerCase().replace(/\s+/g, "");
-              if (normalized.includes("timestamp") || normalized === "time") return false;
-              return (
-                normalizedPreferred.length === 0 ||
-                normalizedPreferred.includes(normalized) ||
-                normalizedPreferred.includes(header.toLowerCase())
-              );
-            })
-            .map((entry) => entry.index);
-
-          const fallBackIndexes =
-            selectedIndexes.length > 0
-              ? selectedIndexes
-              : headers
-                .map((header, index) => ({ header, index }))
-                .filter(({ header }) => !header.toLowerCase().includes("timestamp"))
-                .map((entry) => entry.index)
-                .slice(0, 4);
-
-          const safeIndexes = fallBackIndexes.slice(0, 5);
-          const safeKeys = safeIndexes.map((idx) => headers[idx].replace(/\s+/g, "") || `col_${idx}`);
-
-          const points = [];
-          for (let i = 0; i < bodyRows.length && points.length < 280; i += 1) {
-            const cells = bodyRows[i].split(",").map((cell) => cell.trim());
-            const point = { index: points.length };
-            let hasAny = false;
-
-            safeIndexes.forEach((sourceIdx, kIdx) => {
-              const value = Number(cells[sourceIdx]);
-              if (Number.isFinite(value)) {
-                point[safeKeys[kIdx]] = value;
-                hasAny = true;
-              }
-            });
-
-            if (hasAny) points.push(point);
-          }
-
-          resolve({ data: points, keys: safeKeys });
-        } catch (_err) {
-          resolve({ data: [], keys: [] });
-        }
-      };
-
-      reader.onerror = () => resolve({ data: [], keys: [] });
-      reader.readAsText(file);
-    });
-
-  const stopMicRecording = (shouldAnalyze = false) => {
-    if (waveformFrameRef.current) {
-      cancelAnimationFrame(waveformFrameRef.current);
-      waveformFrameRef.current = null;
-    }
-    if (processorRef.current) {
-      processorRef.current.disconnect();
-      processorRef.current = null;
-    }
-    if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach((track) => track.stop());
-      micStreamRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close().catch(() => { });
-      audioContextRef.current = null;
-    }
-    analyserRef.current = null;
-    setIsMicRecording(false);
-
-    if (shouldAnalyze) {
-      const samples = audioChunksRef.current;
-      if (samples && samples.length > 0) {
-        const sampleRate = 16000;
-        const wavBlob = bufferToWav(samples, sampleRate);
-        const file = new File([wavBlob], "live-recording.wav", { type: "audio/wav" });
-        setVoiceFile(file);
-        const url = URL.createObjectURL(wavBlob);
-        setVoicePreviewUrl(url);
-        analyzeVoiceFile(file);
-      }
-    }
-    audioChunksRef.current = [];
-  };
-
-  const analyzeVoiceFile = async (fileToAnalyze) => {
-    try {
-      const formData = new FormData();
-      formData.append("file", fileToAnalyze);
-      const response = await fetch(`${API_BASE}/api/voice/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
-      if (data.status === "success") {
-        setLiveVoiceResult(data);
-      } else {
-        setError(data.message || "Live voice analysis failed.");
-      }
-    } catch (err) {
-      setError(`Live voice analysis failed: ${err.message}`);
-    }
-  };
-
-  const startMicRecording = async () => {
-    try {
-      setError(null);
-      setLiveVoiceResult(null);
-      audioChunksRef.current = [];
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
-      micStreamRef.current = stream;
-
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const audioContext = new AudioCtx({ sampleRate: 16000 });
-      audioContextRef.current = audioContext;
-      if (audioContext.state === "suspended") {
-        await audioContext.resume();
-      }
-
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      analyserRef.current = analyser;
-
-      const source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
-
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
-      source.connect(processor);
-      processor.connect(audioContext.destination);
-
-      processor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        audioChunksRef.current.push(...inputData);
-      };
-
-      const updateWaveform = () => {
-        if (!analyserRef.current || !micCanvasRef.current) return;
-        const canvas = micCanvasRef.current;
-        const ctx = canvas.getContext("2d");
-        const bufferLength = analyserRef.current.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-
-        const draw = () => {
-          if (!analyserRef.current || !micCanvasRef.current) return;
-          waveformFrameRef.current = requestAnimationFrame(draw);
-
-          analyserRef.current.getByteTimeDomainData(dataArray);
-
-          const styles = getComputedStyle(canvas);
-          const bgColor = styles.getPropertyValue('--chat-bg').trim() || '#050510';
-          const themePrimary = styles.getPropertyValue('--primary-color').trim() || '#00f2ff';
-
-          ctx.fillStyle = bgColor;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = themePrimary;
-          ctx.beginPath();
-
-          const sliceWidth = canvas.width / bufferLength;
-          let x = 0;
-
-          for (let i = 0; i < bufferLength; i++) {
-            const v = dataArray[i] / 128.0;
-            const y = (v * canvas.height) / 2;
-
-            if (i === 0) {
-              ctx.moveTo(x, y);
-            } else {
-              ctx.lineTo(x, y);
-            }
-            x += sliceWidth;
-          }
-
-          ctx.lineTo(canvas.width, canvas.height / 2);
-          ctx.stroke();
-        };
-
-        draw();
-      };
-      updateWaveform();
-
-      setIsMicRecording(true);
-    } catch (err) {
-      setError(`Could not start microphone recording: ${err.message}`);
-      stopMicRecording(false);
-    }
-  };
-
-  const analyzeLiveWebcam = async () => {
-    if (!videoRef.current || !canvasRef.current) {
-      setError("Webcam is not active. Please start webcam first.");
-      return;
-    }
-    try {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0);
-
-      const base64Image = canvas.toDataURL("image/jpeg", 0.9);
-      const response = await fetch(`${API_BASE}/api/webcam/capture`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64Image }),
-      });
-
-      const data = await response.json();
-      if (data.status === "success") {
-        setLiveFaceResult(data);
-      } else {
-        setError(data.message || "Live webcam analysis failed.");
-      }
-    } catch (err) {
-      setError(`Live webcam analysis failed: ${err.message}`);
-    }
+      .split(/[,\s]+/)
+      .map(v => parseFloat(v.trim()))
+      .filter(v => !isNaN(v));
+    return values.map((val, idx) => ({ index: idx, [keyName]: val }));
   };
 
   const handleFaceUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload a valid image file (JPG, JPEG, PNG)');
-        return;
-      }
       setFaceImage(file);
-      setFacePreview(URL.createObjectURL(file));
+      const url = URL.createObjectURL(file);
+      setFacePreview(url);
+      setLiveFaceResult(null);
       setError(null);
     }
   };
 
-  const handleVoiceUpload = async (e) => {
+  const handleVoiceUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (!file.type.startsWith('audio/')) {
-        setError('Please upload a valid audio file');
-        return;
-      }
-      try {
-        setError(null);
-        const arrayBuffer = await file.arrayBuffer();
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioCtx({ sampleRate: 16000 });
-
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        const channelData = audioBuffer.getChannelData(0);
-        const wavBlob = bufferToWav(channelData, 16000);
-
-        const cleanName = file.name.replace(/\.[^/.]+$/, "") + ".wav";
-        const wavFile = new File([wavBlob], cleanName, { type: 'audio/wav' });
-
-        audioCtx.close();
-
-        setVoiceFile(wavFile);
-        setVoicePreviewUrl(URL.createObjectURL(wavBlob));
-      } catch (err) {
-        console.error(err);
-        setError(`Failed to process audio file: ${err.message}. Please upload a standard WAV or MP3 file.`);
-      }
+      setVoiceFile(file);
+      const url = URL.createObjectURL(file);
+      setVoicePreviewUrl(url);
+      setLiveVoiceResult(null);
+      setError(null);
     }
   };
 
-  const handleEegTextChange = (value) => {
-    setEegData(value);
-    const preview = parseDelimitedSeries(value, "EEG");
-    setEegPreviewData(preview);
-    setEegPreviewKeys(preview.length > 0 ? ["EEG"] : []);
-  };
-
-  const handleGsrTextChange = (value) => {
-    setGsrData(value);
-    const preview = parseDelimitedSeries(value, "GSR");
-    setGsrPreviewData(preview);
-    setGsrPreviewKeys(preview.length > 0 ? ["GSR"] : []);
-  };
-
-  const handleEegFileUpload = async (file) => {
-    setEegFile(file || null);
-    if (!file) {
+  const handleEegTextChange = (text) => {
+    setEegData(text);
+    if (text.trim() === "") {
       setEegPreviewData([]);
       setEegPreviewKeys([]);
       return;
     }
-    const preview = await parseSignalCsvForPreview(file, ["tp9", "af7", "af8", "tp10", "rightaux", "right aux"]);
-    setEegPreviewData(preview.data);
-    setEegPreviewKeys(preview.keys);
+    const parsed = parseDelimitedSeries(text, 'EEG_Signal');
+    setEegPreviewData(parsed);
+    setEegPreviewKeys(['EEG_Signal']);
   };
 
-  const handleGsrFileUpload = async (file) => {
-    setGsrFile(file || null);
-    if (!file) {
+  const handleGsrTextChange = (text) => {
+    setGsrData(text);
+    if (text.trim() === "") {
       setGsrPreviewData([]);
       setGsrPreviewKeys([]);
       return;
     }
-    const preview = await parseSignalCsvForPreview(file, []);
-    setGsrPreviewData(preview.data);
-    setGsrPreviewKeys(preview.keys.slice(0, 2));
+    const parsed = parseDelimitedSeries(text, 'GSR_Signal');
+    setGsrPreviewData(parsed);
+    setGsrPreviewKeys(['GSR_Signal']);
   };
 
-  const startWebcam = async () => {
-    let stream = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 960 },
-          height: { ideal: 540 },
-          facingMode: "user",
+  const handleEegFileUpload = (file) => {
+    if (!file) return;
+    setEegFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length > 0) {
+        const firstLine = lines[0];
+        const isHeader = firstLine.split(',').some(cell => isNaN(parseFloat(cell)));
+        const dataLines = isHeader ? lines.slice(1) : lines;
+        const keys = [];
+        const numCols = dataLines[0] ? dataLines[0].split(',').length : 0;
+        
+        for (let i = 0; i < numCols; i++) {
+          keys.push(`Ch_${i + 1}`);
         }
-      });
+
+        const data = dataLines.map((line, rowIdx) => {
+          const cells = line.split(',').map(c => parseFloat(c.trim()));
+          const row = { index: rowIdx };
+          cells.forEach((val, colIdx) => {
+            if (!isNaN(val) && colIdx < keys.length) {
+              row[keys[colIdx]] = val;
+            }
+          });
+          return row;
+        });
+
+        setEegPreviewData(data);
+        setEegPreviewKeys(keys);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleGsrFileUpload = (file) => {
+    if (!file) return;
+    setGsrFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length > 0) {
+        const firstLine = lines[0];
+        const isHeader = firstLine.split(',').some(cell => isNaN(parseFloat(cell)));
+        const dataLines = isHeader ? lines.slice(1) : lines;
+        const keys = [];
+        const numCols = dataLines[0] ? dataLines[0].split(',').length : 0;
+        
+        for (let i = 0; i < numCols; i++) {
+          keys.push(`Ch_${i + 1}`);
+        }
+
+        const data = dataLines.map((line, rowIdx) => {
+          const cells = line.split(',').map(c => parseFloat(c.trim()));
+          const row = { index: rowIdx };
+          cells.forEach((val, colIdx) => {
+            if (!isNaN(val) && colIdx < keys.length) {
+              row[keys[colIdx]] = val;
+            }
+          });
+          return row;
+        });
+
+        setGsrPreviewData(data);
+        setGsrPreviewKeys(keys);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Webcam helpers
+  const startWebcam = async () => {
+    setError(null);
+    setLiveFaceResult(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
       streamRef.current = stream;
       setWebcamActive(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = streamRef.current;
-        videoRef.current.play().catch(() => { });
-      }
     } catch (err) {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-      streamRef.current = null;
-      setWebcamActive(false);
-      setError('Could not access webcam: ' + err.message);
+      setError("Unable to access camera. Please check permissions.");
     }
   };
 
@@ -573,185 +261,327 @@ export default function Dashboard({ theme, toggleTheme }) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
     setWebcamActive(false);
   };
 
   const captureWebcam = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      canvas.toBlob((blob) => {
-        const file = new File([blob], 'webcam-capture.jpg', { type: 'image/jpeg' });
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], "webcam_snap.png", { type: "image/png" });
         setFaceImage(file);
         setFacePreview(URL.createObjectURL(file));
         stopWebcam();
-      }, 'image/jpeg');
+      }
+    }, 'image/png');
+  };
+
+  const analyzeLiveWebcam = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const formData = new FormData();
+      formData.append('face_image', blob, 'live_frame.png');
+      try {
+        const response = await fetch(`${API_BASE}/api/analyze`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setLiveFaceResult(data);
+        } else {
+          setError(data.error || "Failed to analyze live webcam frame.");
+        }
+      } catch (err) {
+        setError("Network error communicating with flask server.");
+      }
+    }, 'image/png');
+  };
+
+  // Audio Recorder helpers
+  const startMicRecording = async () => {
+    setError(null);
+    setLiveVoiceResult(null);
+    audioChunksRef.current = [];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = audioContext;
+
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyserRef.current = analyser;
+      source.connect(analyser);
+
+      const bufferSize = 4096;
+      const processor = audioContext.createScriptProcessor(bufferSize, 1, 1);
+      processorRef.current = processor;
+
+      processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
+        audioChunksRef.current.push(new Float32Array(inputData));
+      };
+
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+
+      setIsMicRecording(true);
+      drawLiveAudioWaveform();
+    } catch (err) {
+      setError("Unable to access microphone. Please check permissions.");
     }
   };
 
-  const analyzeMultimodal = async () => {
-    setError(null);
-    const formData = new FormData();
-    if (faceImage) formData.append('face_image', faceImage);
-    if (voiceFile) formData.append('voice_audio', voiceFile);
-    if (eegData) formData.append('eeg_data', eegData);
-    if (gsrData) formData.append('gsr_data', gsrData);
-    if (eegFile) formData.append('eeg_file', eegFile);
-    if (gsrFile) formData.append('gsr_file', gsrFile);
+  const drawLiveAudioWaveform = () => {
+    if (!micCanvasRef.current || !analyserRef.current) return;
+    const canvas = micCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const analyser = analyserRef.current;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
 
-    const validationErrors = validateAnalysisInputs({
-      faceFile: faceImage,
-      voiceFile,
-      eegData,
-      gsrData,
-      eegFile,
-      gsrFile
-    });
+    const draw = () => {
+      if (!analyserRef.current) return;
+      requestAnimationFrame(draw);
+      analyser.getByteTimeDomainData(dataArray);
 
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join(' '));
-      return;
+      ctx.fillStyle = '#f8f9ff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#0e3b69';
+      ctx.beginPath();
+
+      const sliceWidth = (canvas.width * 1.0) / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = (v * canvas.height) / 2;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+        x += sliceWidth;
+      }
+
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+    };
+    draw();
+  };
+
+  const stopMicRecording = (shouldAnalyze = false) => {
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
     }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+      micStreamRef.current = null;
+    }
+    analyserRef.current = null;
+    setIsMicRecording(false);
 
-    setPhase('analyzing');
-    setAnalysisPayload(formData);
-    setPreviousResult(null);
-    setCurrentResult(null);
+    if (shouldAnalyze && audioChunksRef.current.length > 0) {
+      const totalLength = audioChunksRef.current.reduce((acc, chunk) => acc + chunk.length, 0);
+      const mergedSamples = new Float32Array(totalLength);
+      let offset = 0;
+      for (const chunk of audioChunksRef.current) {
+        mergedSamples.set(chunk, offset);
+        offset += chunk.length;
+      }
 
+      const wavBlob = bufferToWav(mergedSamples, 16000);
+      const file = new File([wavBlob], "voice_capture.wav", { type: "audio/wav" });
+      setVoiceFile(file);
+      setVoicePreviewUrl(URL.createObjectURL(file));
+      analyzeLiveVoice(file);
+    }
+  };
+
+  const analyzeLiveVoice = async (file) => {
+    const formData = new FormData();
+    formData.append('voice_audio', file, 'voice_live.wav');
     try {
-      const response = await fetch(`${API_BASE}/api/multimodal/analyze`, {
+      const response = await fetch(`${API_BASE}/api/analyze`, {
         method: 'POST',
         body: formData,
       });
       const data = await response.json();
-
-      if (data.status === 'error' || data.error) {
-        setError(data.message || data.error || 'Analysis failed');
-        setPhase('idle');
-        return;
-      }
-
-      setCurrentResult(data);
-
-      // Auto-trigger intervention panel for high/extreme stress
-      if (data.stress_level === 'Extreme' || data.stress_level === 'High') {
-        setPhase('result');
-        setTimeout(() => {
-          setShowInterventionPanel(true);
-        }, 1500);
+      if (response.ok) {
+        setLiveVoiceResult(data);
       } else {
-        setPhase('result');
+        setError(data.error || "Failed to analyze live audio sample.");
       }
     } catch (err) {
-      setError(err.message || 'Analysis failed');
-      setPhase('idle');
+      setError("Network error communicating with flask server.");
     }
   };
 
-  const handleRequestGame = useCallback(() => {
-    setPhase('game');
-  }, []);
-
-  const handleGameComplete = useCallback(async () => {
-    if (!analysisPayload) {
-      setPhase('idle');
-      return;
-    }
-    setPhase('reanalyzing');
-    setPreviousResult(currentResult);
-
-    try {
-      const response = await fetch(`${API_BASE}/api/multimodal/analyze`, {
-        method: 'POST',
-        body: analysisPayload,
-      });
-      const data = await response.json();
-      const respErrs = validateAnalysisResponse(data);
-      if (respErrs.length > 0) {
-        throw new Error(respErrs.join(' '));
-      }
-      setCurrentResult(data);
-      setPhase('comparison');
-    } catch (err) {
-      console.error('Re-analysis failed:', err);
-      setError('Re-analysis failed. Please try again.');
-      setPhase('result');
-    }
-  }, [analysisPayload, currentResult]);
-  const pollMuseStatus = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/muse/status?limit=280`);
-      const data = await response.json();
-      if (data.status !== 'success') return;
-
-      setMuseCollecting(Boolean(data.collecting));
-      setMuseElapsed(Number(data.elapsed_seconds || 0));
-      setMusePoints(Array.isArray(data.points) ? data.points : []);
-
-      if (data.error) {
-        setMuseSessionError(data.error);
-      }
-      if (data.prediction && data.prediction.status === 'success') {
-        setCurrentResult(data.prediction);
-      }
-    } catch (err) {
-      setMuseSessionError('Could not poll Muse status: ' + err.message);
-    }
-  };
-
+  // Muse stream capture
   const startMuseCapture = async () => {
+    setMusePoints([]);
     setMuseSessionError(null);
+    setMuseElapsed(0);
     try {
-      const response = await fetch(`${API_BASE}/api/muse/start`, {
+      const res = await fetch(`${API_BASE}/api/muse/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          duration: Number(museDuration),
-          filename: museFilename,
-        }),
+        body: JSON.stringify({ duration: museDuration, filename: museFilename }),
       });
-      const data = await response.json();
-      if (data.status === 'success') {
+      const data = await res.json();
+      if (res.ok && data.status === 'started') {
         setMuseCollecting(true);
-        setMuseElapsed(0);
-        setMusePoints([]);
+        if (museIntervalRef.current) clearInterval(museIntervalRef.current);
+        let timeCount = 0;
+        museIntervalRef.current = setInterval(async () => {
+          timeCount += 2;
+          setMuseElapsed(timeCount);
+          await pollMuseStatus();
+          if (timeCount >= museDuration) {
+            clearInterval(museIntervalRef.current);
+            setMuseCollecting(false);
+            analyzeMuseRecording();
+          }
+        }, 2000);
       } else {
-        setMuseSessionError(data.message || 'Could not start Muse recording.');
+        setMuseSessionError(data.message || 'Could not start Muse connection.');
       }
-    } catch (err) {
-      setMuseSessionError('Could not start Muse recording: ' + err.message);
+    } catch (e) {
+      setMuseSessionError('Failed to communicate with Muse receiver api.');
     }
   };
 
   const stopMuseCapture = async () => {
+    if (museIntervalRef.current) clearInterval(museIntervalRef.current);
+    setMuseCollecting(false);
     try {
       await fetch(`${API_BASE}/api/muse/stop`, { method: 'POST' });
-      setMuseCollecting(false);
-      await pollMuseStatus();
-    } catch (err) {
-      setMuseSessionError('Could not stop Muse recording: ' + err.message);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  useEffect(() => {
-    let timer = null;
-    if (museCollecting) {
-      timer = setInterval(() => {
-        pollMuseStatus();
-      }, 1000);
+  const pollMuseStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/muse/status`);
+      const data = await res.json();
+      if (res.ok) {
+        if (data.points && data.points.length > 0) {
+          setMusePoints(data.points);
+        }
+        if (data.status === 'completed' && data.prediction) {
+          if (museIntervalRef.current) clearInterval(museIntervalRef.current);
+          setMuseCollecting(false);
+          setCurrentResult(data.prediction);
+          setPhase('currentResult');
+        }
+      }
+    } catch (e) {
+      console.error(e);
     }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [museCollecting]);
+  };
+
+  const analyzeMuseRecording = async () => {
+    setPhase('analyzing');
+    try {
+      const res = await fetch(`${API_BASE}/api/muse/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: museFilename }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        setCurrentResult(data);
+        setPhase('currentResult');
+      } else {
+        setError(data.message || 'Failed to extract metrics from Muse log file.');
+        setPhase('idle');
+      }
+    } catch (e) {
+      setError('Connection dropped during Muse signal analytics.');
+      setPhase('idle');
+    }
+  };
+
+  // Multimodal analytics trigger
+  const analyzeMultimodal = async () => {
+    setError(null);
+    const validationError = validateAnalysisInputs({
+      faceImage,
+      voiceFile,
+      eegData,
+      gsrData,
+      eegFile,
+      gsrFile,
+    });
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setPhase('analyzing');
+    const formData = new FormData();
+
+    if (faceImage) formData.append('face_image', faceImage);
+    if (voiceFile) formData.append('voice_audio', voiceFile);
+    if (eegFile) formData.append('eeg_file', eegFile);
+    else if (eegData) formData.append('eeg_data', eegData);
+    if (gsrFile) formData.append('gsr_file', gsrFile);
+    else if (gsrData) formData.append('gsr_data', gsrData);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/predict/upload?user_id=default`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      
+      const responseError = validateAnalysisResponse(data, response.ok);
+      if (responseError) {
+        setError(responseError);
+        setPhase('idle');
+        return;
+      }
+
+      if (currentResult) {
+        setPreviousResult(currentResult);
+        setPhase('comparison');
+      } else {
+        setPhase('currentResult');
+      }
+      setCurrentResult(data);
+    } catch (err) {
+      setError("Failed to run stress analytics pipeline. Server might be offline.");
+      setPhase('idle');
+    }
+  };
 
   const clearAll = () => {
     setFaceImage(null);
@@ -762,827 +592,371 @@ export default function Dashboard({ theme, toggleTheme }) {
     setGsrData("");
     setEegFile(null);
     setGsrFile(null);
-    setCurrentResult(null); setPhase('idle');
-    setError(null);
-    setMusePoints([]);
-    setMuseSessionError(null);
-    setMuseElapsed(0);
     setEegPreviewData([]);
     setEegPreviewKeys([]);
     setGsrPreviewData([]);
     setGsrPreviewKeys([]);
     setLiveFaceResult(null);
     setLiveVoiceResult(null);
-    stopWebcam();
-    stopMicRecording(false);
+    setError(null);
+    setPreviousResult(null);
+    setCurrentResult(null);
+    setPhase('idle');
   };
 
+  // Audio helpers
+  function bufferToWav(buffer, sampleRate) {
+    const bufferLength = buffer.length;
+    const wavBuffer = new ArrayBuffer(44 + bufferLength * 2);
+    const view = new DataView(wavBuffer);
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + bufferLength * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, bufferLength * 2, true);
+    floatTo16BitPCM(view, 44, buffer);
+    return new Blob([view], { type: 'audio/wav' });
+  }
 
+  function floatTo16BitPCM(output, offset, input) {
+    for (let i = 0; i < input.length; i++, offset += 2) {
+      let s = Math.max(-1, Math.min(1, input[i]));
+      output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+  }
 
+  function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
+  // Handle active sub views based on dashboardMode
   return (
-    <div className="container py-5" style={{ position: 'relative' }}>
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="toast-notification">
-          {toastMessage}
-        </div>
-      )}
-
-      {/* Confirmation Dialog */}
-      {confirmDialog && (
-        <div className="modal-overlay">
-          <div className="modal-content neon-card">
-            <h4>Confirmation</h4>
-            <p>{confirmDialog.message}</p>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <button className="btn btn-primary" onClick={() => {
-                confirmDialog.onConfirm();
-                setConfirmDialog(null);
-              }}>Confirm</button>
-              <button className="btn btn-secondary" onClick={() => setConfirmDialog(null)}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* High Stress Intervention Panel */}
-      {showInterventionPanel && (
-        <div className="modal-overlay">
-          <div className="modal-content neon-card">
-            <h3 style={{ color: 'var(--accent-red)' }}>High Stress Detected</h3>
-            <p>We've noticed elevated stress levels. How would you like to proceed?</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
-              <button className="btn btn-primary" onClick={() => { setShowInterventionPanel(false); setPhase('game'); }}>Play Relaxation Game</button>
-              <button className="btn btn-secondary" onClick={() => setShowInterventionPanel(false)}>Just show me the data</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Medical Disclaimer
-      <div className="medical-disclaimer">
-        This is an experimental estimate based on facial, vocal, and signal patterns. It is not a medical diagnosis.
-      </div> */}
-
-      {/* SHUTDOWN & RESTART CONTROLS */}
-      <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 1000, display: 'flex', gap: '10px' }}>
-        <button
-          title="Restart Backend Server"
-          style={{
-            width: '45px',
-            height: '45px',
-            borderRadius: '50%',
-            backgroundColor: '#fd7e14',
-            color: 'white',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 0 10px rgba(253, 126, 20, 0.6)'
-          }}
-          onClick={() => {
-            setConfirmDialog({
-              message: "Are you sure you want to restart the backend server?",
-              onConfirm: () => {
-                fetch(`${API_BASE}/api/restart/backend`, { method: 'POST' })
-                  .then(() => showToast("Backend is restarting. Please wait a few seconds before analyzing again."))
-                  .catch(e => console.error(e));
-              }
-            });
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="1 4 1 10 7 10"></polyline>
-            <polyline points="23 20 23 14 17 14"></polyline>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-          </svg>
-        </button>
-
-      </div>
-
-      <div className="text-center mb-5">
-        <h2 className="neon-text">Multimodal Stress Detection</h2>
-        <p className="lead">Intelligent stress analysis using facial, vocal, and physiological indicators</p>
-
-        <div style={{ display: "flex", justifyContent: "center", gap: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
-          {/* Connection Status Badge */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: '0.75rem',
-            padding: '6px 14px',
-            borderRadius: 20,
-            background: 'var(--accent-light-bg)',
-            border: `1px solid ${serverOnline ? 'var(--primary-color)' : 'rgba(244, 67, 54, 0.35)'}`,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            transition: 'border-color 0.3s ease',
-            marginTop: '1rem'
-          }}>
-            <span style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: serverOnline ? 'var(--primary-color)' : '#F44336',
-              display: 'inline-block',
-              animation: serverOnline ? 'pulseGlow 1.8s infinite ease-in-out' : 'none',
-              boxShadow: `0 0 8px ${serverOnline ? 'var(--primary-color)' : '#F44336'}`
-            }} />
-            <span style={{
-              color: serverOnline ? 'var(--primary-color)' : '#F44336',
-              fontWeight: 700,
-              letterSpacing: '0.6px',
-              fontFamily: 'monospace'
-            }}>
-              {serverOnline ? 'SERVER ONLINE' : 'SERVER OFFLINE'}
-            </span>
-          </div>
-
-          <div style={{ display: "flex", gap: "12px", marginTop: "1rem" }}>
-            <button
-              className={`btn ${mode === 'upload' && phase !== 'game' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => {
-                setMode('upload');
-                setPhase(currentResult ? 'result' : 'idle');
-              }}
-            >
-              📂 Upload & Livestreams
-            </button>
-            <button
-              className={`btn ${mode === 'realtime' && phase !== 'game' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => {
-                setMode('realtime');
-                setPhase('idle');
-              }}
-            >
-              🔴 Real-Time Streaming
-            </button>
-            <button
-              className={`btn ${phase === 'game' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setPhase('game')}
-            >
-              🎮 Relaxation Game
-            </button>
-          </div>
-
-          <div style={{ display: "flex", gap: "12px", marginTop: "1rem" }}>
-            <button
-              className="btn btn-secondary"
-              onClick={toggleTheme}
-            >
-              🎨 Style: {theme.charAt(0).toUpperCase() + theme.slice(1)} Mode
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {mode === 'realtime' && phase !== 'game' ? (
+    <>
+      {dashboardMode === 'realtime' ? (
         <RealtimeMonitor />
       ) : (
-        <>
-          {/* Error Display */}
-          {error && (
-            <div className="row mb-4">
-              <div className="col-12">
-                <div style={{
-                  background: 'rgba(199, 69, 69, 0.1)',
-                  border: '2px solid #c74545',
-                  borderRadius: '8px',
-                  padding: '1rem',
-                  color: '#c74545'
-                }}>
-                  <strong>⚠️ Error:</strong> {error}
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="space-y-8">
+      {error && (
+        <div className="p-4 bg-error-container text-on-error-container text-xs rounded-xl flex items-center gap-2 border border-error/20">
+          <span className="material-symbols-outlined text-[18px]">warning</span>
+          <span><strong>Error:</strong> {error}</span>
+        </div>
+      )}
 
-          {/* Loading states */}
-          {(phase === 'analyzing' || phase === 'reanalyzing') && (
-            <div style={{ textAlign: 'center', padding: 60 }} className="fade-in-up">
-              <div className="pulse-circle mx-auto mb-4">
-                <span style={{ fontSize: '1.5rem' }}>⚡</span>
-              </div>
-              <div className="skeleton-loader mx-auto" style={{ height: '8px', width: '150px', marginBottom: '15px' }}></div>
-              <div style={{ color: 'var(--text-color)', fontSize: '1.1rem', fontWeight: 600 }}>
-                {phase === 'reanalyzing'
-                  ? 'Re-analyzing after recovery...'
-                  : 'Computing Intelligence Metrics...'}
-              </div>
-            </div>
-          )}
+      {/* Loading overlay */}
+      {(phase === 'analyzing' || phase === 'reanalyzing') && (
+        <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-3xl p-16 text-center shadow-sm max-w-lg mx-auto flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 animate-spin">
+            <span className="material-symbols-outlined text-2xl">sync</span>
+          </div>
+          <h4 className="font-headline-sm text-headline-sm text-primary mb-2">
+            {phase === 'reanalyzing' ? 'Re-analyzing Vitals...' : 'Computing Intelligence Metrics...'}
+          </h4>
+          <p className="text-xs text-on-surface-variant max-w-xs leading-relaxed">
+            Please wait while our multimodal diagnostic models combine and process the telemetry streams.
+          </p>
+        </div>
+      )}
 
-          {/* Result panel */}
-          {(phase === 'currentResult' || phase === 'comparison' || phase === 'result') && currentResult && (
-            <div className="result-view fade-in-up">
-              {/* Navigation Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <button
-                  onClick={clearAll}
-                  className="btn btn-secondary"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 16px',
-                    fontSize: '0.85rem',
-                    borderRadius: 8
-                  }}
-                >
-                  <span>←</span> Back to Data Upload
-                </button>
+      {/* Analysis Results / Comparison panels */}
+      {(phase === 'currentResult' || phase === 'comparison' || phase === 'result') && currentResult && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center bg-surface-container-low p-4 rounded-2xl border border-outline-variant/10">
+            <button
+              onClick={clearAll}
+              className="px-4 py-2 border border-outline text-on-surface-variant rounded-xl font-bold font-label-caps text-[11px] tracking-wider hover:bg-surface-container-high active:scale-[0.98] transition-all flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-xs">arrow_back</span>
+              Back to Data Upload
+            </button>
+            
+            {phase === 'comparison' ? (
+              <span className="text-xs font-bold text-primary font-label-caps tracking-widest uppercase">
+                ✨ Comparison View Active
+              </span>
+            ) : currentResult.model_used ? (
+              <span className="text-[10px] bg-primary-container/15 text-primary font-bold px-3 py-1.5 rounded-lg font-label-caps tracking-wider border border-primary/15">
+                ⚙️ {currentResult.model_used}
+              </span>
+            ) : null}
+          </div>
 
-                {phase === 'comparison' && (
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    ✨ Comparison View Active
-                  </span>
-                )}
-              </div>
+          <AnalysisPanel
+            result={currentResult}
+            previousResult={phase === 'comparison' ? previousResult : null}
+            onRequestGame={onRequestRecovery}
+          />
 
-              {/* Main Analysis Card (Full Width) */}
-              <div className="mb-4">
-                <AnalysisPanel
-                  result={currentResult}
-                  previousResult={phase === 'comparison' ? previousResult : null}
-                  onRequestGame={handleRequestGame}
-                  theme={theme}
-                />
-              </div>
-
-              {/* Sub-cards Row (AI Insights) */}
-              <div className="row">
-                <div className="col-12 mb-4">
-                  <CopilotMessage
-                    stressLevel={currentResult?.stress_level}
-                    explainability={currentResult?.explainability}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Game panel */}
-          {phase === 'game' && (
-            <GamePanel
-              stressLevel={currentResult?.stress_level}
-              onGameComplete={handleGameComplete}
-              onDismiss={() => setPhase(currentResult ? 'result' : 'idle')}
-            />
-          )}
-
-          {/* Re-analyze button after comparison */}
           {phase === 'comparison' && (
-            <div style={{ marginTop: 16, textAlign: 'center' }}>
-              <button onClick={() => {
-                setPhase('idle');
-                setCurrentResult(null); setPhase('idle');
-                setPreviousResult(null);
-                clearAll();
-              }}
-                style={{
-                  background: 'none', border: '1px solid rgba(255,255,255,0.15)',
-                  color: 'rgba(255,255,255,0.5)', borderRadius: 8,
-                  padding: '8px 20px', cursor: 'pointer', fontSize: '0.82rem'
-                }}>
+            <div className="text-center pt-4">
+              <button
+                onClick={clearAll}
+                className="px-8 py-3 border border-outline-variant/35 text-on-surface-variant hover:bg-surface-container-low font-bold text-xs tracking-wider font-label-caps rounded-xl"
+              >
                 Start New Analysis
               </button>
             </div>
           )}
+        </div>
+      )}
 
-          {/* Input Section */}
-          {phase === 'idle' && (
-            <>
-              <div className="row">
-                <div className="col-12">
-                  <div className="neon-card">
-                    <h3 className="text-center mb-4">Provide Your Data</h3>
-                    <p className="text-center" style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-                      Upload any combination of facial images, voice recordings, or physiological data for comprehensive stress analysis
-                    </p>
+      {/* Data Upload panel (Idle state) */}
+      {phase === 'idle' && (
+        <>
+          <section className="bg-surface-container-lowest rounded-3xl p-8 border border-outline-variant/10 shadow-sm space-y-8">
+            <div className="text-center space-y-2 max-w-lg mx-auto">
+              <h3 className="font-headline-sm text-headline-sm text-primary">Provide Your Diagnostics</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Upload any combination of facial images, voice recordings, or physiological CSV files for comprehensive stress diagnostics.
+              </p>
+            </div>
 
-                    <div className="row">
-                      {/* Facial Input */}
-                      <div className="col-md-6 mb-4">
-                        <div style={{
-                          border: '2px dashed rgba(120, 120, 120, 0.3)',
-                          borderRadius: '12px',
-                          padding: '1.5rem',
-                          background: 'rgba(120, 120, 120, 0.05)'
-                        }}>
-                          <div className="text-center mb-3">
-                            <span style={{ fontSize: '3rem' }}>📸</span>
-                            <h4>Facial Analysis</h4>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                              Upload a photo or use webcam
-                            </p>
-                          </div>
-
-                          {facePreview && (
-                            <div style={{ marginBottom: '1rem', position: 'relative' }}>
-                              <img
-                                src={facePreview}
-                                alt="Preview"
-                                style={{
-                                  width: '100%',
-                                  borderRadius: '8px',
-                                  maxHeight: '200px',
-                                  objectFit: 'cover'
-                                }}
-                              />
-                              <button
-                                onClick={() => {
-                                  setFaceImage(null);
-                                  setFacePreview(null);
-                                }}
-                                className="btn btn-danger"
-                                style={{
-                                  position: 'absolute',
-                                  top: '8px',
-                                  right: '8px',
-                                  padding: '0.25rem 0.5rem',
-                                  fontSize: '0.875rem'
-                                }}
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          )}
-
-                          {webcamActive && (
-                            <div style={{ marginBottom: '1rem' }}>
-                              <video
-                                ref={videoRef}
-                                autoPlay
-                                muted
-                                playsInline
-                                onLoadedMetadata={() => {
-                                  if (videoRef.current) {
-                                    videoRef.current.play().catch(() => { });
-                                  }
-                                }}
-                                style={{
-                                  width: '100%',
-                                  minHeight: '260px',
-                                  borderRadius: '8px',
-                                  background: 'rgba(0, 0, 0, 0.35)',
-                                  objectFit: 'cover'
-                                }}
-                              />
-                              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <button onClick={captureWebcam} className="btn btn-primary" style={{ flex: 1, padding: '10px 5px', fontSize: '0.9rem' }}>
-                                  📷 Capture Photo
-                                </button>
-                                <button onClick={analyzeLiveWebcam} disabled={!serverOnline} className="btn btn-secondary" style={{ flex: 1, padding: '10px 5px', fontSize: '0.9rem' }}>
-                                  ⚡ Live Frame
-                                </button>
-                                <button onClick={stopWebcam} className="btn btn-secondary" style={{ flex: 1, padding: '10px 5px', fontSize: '0.9rem' }}>
-                                  Cancel
-                                </button>
-                              </div>
-
-                              {liveFaceResult && (
-                                <div className="currentResult-panel-card" style={{ marginTop: '0.75rem' }}>
-                                  <small>Live Facial Result</small>
-                                  <div style={{ fontWeight: 700 }}>
-                                    {liveFaceResult.stress_level || liveFaceResult.predicted_class} ({Number(liveFaceResult.percentage || 0).toFixed(1)}%)
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {!webcamActive && !facePreview && (
-                            <>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFaceUpload}
-                                className="form-control"
-                              />
-                              <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem' }}>
-                                Supported: JPG, PNG, WEBP
-                              </small>
-                              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-                                <button
-                                  onClick={startWebcam}
-                                  className="btn btn-primary"
-                                >
-                                  📹 USE WEBCAM
-                                </button>
-                              </div>
-                            </>
-                          )}
-                          <canvas ref={canvasRef} style={{ display: 'none' }} />
-                        </div>
-                      </div>
-
-                      {/* Voice Input */}
-                      <div className="col-md-6 mb-4">
-                        <div style={{
-                          border: '2px dashed rgba(120, 120, 120, 0.3)',
-                          borderRadius: '12px',
-                          padding: '1.5rem',
-                          background: 'rgba(120, 120, 120, 0.05)'
-                        }}>
-                          <div className="text-center mb-3">
-                            <span style={{ fontSize: '3rem' }}>🎤</span>
-                            <h4>Voice Analysis</h4>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                              Upload an audio recording
-                            </p>
-                          </div>
-
-                          {voicePreviewUrl && (
-                            <div style={{ marginBottom: '1rem' }}>
-                              <audio
-                                controls
-                                src={voicePreviewUrl}
-                                style={{ width: '100%', marginBottom: '0.5rem' }}
-                              />
-                              <button
-                                onClick={() => {
-                                  setVoiceFile(null);
-                                  setVoicePreviewUrl(null);
-                                }}
-                                className="btn btn-danger w-100"
-                                style={{ fontSize: '0.875rem' }}
-                              >
-                                Remove Audio
-                              </button>
-                            </div>
-                          )}
-
-                          {!voicePreviewUrl && (
-                            <>
-                              <input
-                                type="file"
-                                accept="audio/*"
-                                onChange={handleVoiceUpload}
-                                className="form-control"
-                              />
-                              <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem' }}>
-                                Supported: WAV, MP3, OGG, M4A, WEBM
-                              </small>
-
-                              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-                                <button
-                                  type="button"
-                                  className="btn btn-primary"
-                                  onClick={startMicRecording}
-                                  disabled={isMicRecording}
-                                >
-                                  🎙️ Start Mic
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary"
-                                  onClick={() => stopMicRecording(true)}
-                                  disabled={!isMicRecording}
-                                >
-                                  ⏹️ Stop & Analyze
-                                </button>
-                              </div>
-
-                              <div style={{ width: '100%', height: 100, marginTop: '0.75rem' }}>
-                                <canvas
-                                  ref={micCanvasRef}
-                                  width={320}
-                                  height={100}
-                                  style={{ width: '100%', height: 100, display: 'block', background: 'var(--chat-bg)', borderRadius: 8 }}
-                                />
-                              </div>
-
-                              {liveVoiceResult && (
-                                <div className="currentResult-panel-card" style={{ marginTop: '0.75rem' }}>
-                                  <small>Live Voice Result</small>
-                                  <div style={{ fontWeight: 700 }}>
-                                    {liveVoiceResult.stress_level || liveVoiceResult.predicted_class} ({Number(liveVoiceResult.percentage || 0).toFixed(1)}%)
-                                  </div>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Physiological Input */}
-                      <div className="col-12 mb-4">
-                        <div style={{
-                          border: '2px dashed rgba(120, 120, 120, 0.3)',
-                          borderRadius: '12px',
-                          padding: '1.5rem',
-                          background: 'rgba(120, 120, 120, 0.05)'
-                        }}>
-                          <div className="text-center mb-3">
-                            <span style={{ fontSize: '3rem' }}>🧠⚡</span>
-                            <h4>Physiological Data</h4>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                              Enter EEG and GSR data as comma-separated values, or use Muse 2 live stream
-                            </p>
-                          </div>
-
-                          <div style={{
-                            marginBottom: '1.5rem',
-                            border: '1px solid rgba(120, 120, 120, 0.3)',
-                            borderRadius: '10px',
-                            padding: '1rem',
-                            background: 'var(--accent-light-bg)'
-                          }}>
-                            <h5 style={{ marginBottom: '0.75rem' }}>Muse 2 Real-Time Stream</h5>
-                            <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                              Uses muselsl command: python -m muselsl record --duration X --filename uploads/eeg_session.csv
-                            </p>
-
-                            <div className="row">
-                              <div className="col-md-4 mb-2">
-                                <label className="form-label"><strong>Duration (seconds)</strong></label>
-                                <input
-                                  type="number"
-                                  min="5"
-                                  max="1800"
-                                  className="form-control"
-                                  value={museDuration}
-                                  onChange={(e) => setMuseDuration(e.target.value)}
-                                />
-                              </div>
-                              <div className="col-md-8 mb-2">
-                                <label className="form-label"><strong>CSV output path</strong></label>
-                                <input
-                                  type="text"
-                                  className="form-control"
-                                  value={museFilename}
-                                  onChange={(e) => setMuseFilename(e.target.value)}
-                                  placeholder="uploads/eeg_session.csv"
-                                />
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                disabled={museCollecting}
-                                onClick={startMuseCapture}
-                              >
-                                {museCollecting ? 'Collecting...' : 'Start Muse Stream'}
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-secondary"
-                                disabled={!museCollecting}
-                                onClick={stopMuseCapture}
-                              >
-                                Stop Stream
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={pollMuseStatus}
-                              >
-                                Refresh Status
-                              </button>
-                            </div>
-
-                            <div style={{ marginTop: '0.75rem', color: 'var(--text-muted)' }}>
-                              <strong>Status:</strong> {museCollecting ? 'Collecting live data' : 'Idle'} | <strong>Elapsed:</strong> {museElapsed}s
-                            </div>
-
-                            {museSessionError && (
-                              <div style={{ marginTop: '0.5rem', color: '#c74545' }}>
-                                <strong>Error:</strong> {museSessionError}
-                              </div>
-                            )}
-
-                            <div style={{ width: '100%', height: 280, marginTop: '1rem' }}>
-                              <ResponsiveContainer>
-                                <LineChart data={musePoints}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
-                                  <XAxis dataKey="timestamp" tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
-                                  <YAxis tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
-                                  <Tooltip />
-                                  <Legend />
-                                  <Line type="monotone" dataKey="TP9" stroke="#4f772d" dot={false} strokeWidth={2} />
-                                  <Line type="monotone" dataKey="AF7" stroke="#8d9740" dot={false} strokeWidth={2} />
-                                  <Line type="monotone" dataKey="AF8" stroke="#bc6c25" dot={false} strokeWidth={2} />
-                                  <Line type="monotone" dataKey="TP10" stroke="#c74545" dot={false} strokeWidth={2} />
-                                  <Line type="monotone" dataKey="RightAUX" stroke="#6a4c93" dot={false} strokeWidth={2} />
-                                </LineChart>
-                              </ResponsiveContainer>
-                            </div>
-
-                            <small style={{ color: 'var(--text-muted)' }}>
-                              Expected columns: timestamps, TP9, AF7, AF8, TP10, Right AUX. Prediction is triggered automatically when recording finishes.
-                            </small>
-                          </div>
-
-                          <div className="row">
-                            <div className="col-md-6 mb-3">
-                              <label className="form-label">
-                                <strong>🧠 EEG Data</strong>
-                              </label>
-                              <textarea
-                                value={eegData}
-                                onChange={(e) => handleEegTextChange(e.target.value)}
-                                placeholder="e.g., 0.5, 0.7, 0.6, 0.8, 0.65, 0.72..."
-                                className="form-control"
-                                rows="3"
-                              />
-                              <small style={{ color: 'var(--text-muted)' }}>
-                                Enter brainwave measurement values
-                              </small>
-                              <div style={{ marginTop: '0.5rem' }}>
-                                <input
-                                  type="file"
-                                  accept=".csv,.txt"
-                                  onChange={(e) => handleEegFileUpload(e.target.files[0] || null)}
-                                  className="form-control"
-                                />
-                                <small style={{ color: 'var(--text-muted)' }}>
-                                  Optional: upload EEG machine export (CSV/TXT)
-                                </small>
-                              </div>
-                            </div>
-
-                            <div className="col-md-6 mb-3">
-                              <label className="form-label">
-                                <strong>⚡ GSR Data</strong>
-                              </label>
-                              <textarea
-                                value={gsrData}
-                                onChange={(e) => handleGsrTextChange(e.target.value)}
-                                placeholder="e.g., 2.1, 2.3, 2.5, 2.4, 2.6, 2.2..."
-                                className="form-control"
-                                rows="3"
-                              />
-                              <small style={{ color: 'var(--text-muted)' }}>
-                                Enter skin conductance values
-                              </small>
-                              <div style={{ marginTop: '0.5rem' }}>
-                                <input
-                                  type="file"
-                                  accept=".csv,.txt"
-                                  onChange={(e) => handleGsrFileUpload(e.target.files[0] || null)}
-                                  className="form-control"
-                                />
-                                <small style={{ color: 'var(--text-muted)' }}>
-                                  Optional: upload GSR export (CSV/TXT)
-                                </small>
-                              </div>
-                            </div>
-                          </div>
-
-                          {(eegPreviewData.length > 0 || gsrPreviewData.length > 0) && (
-                            <div className="row mt-2">
-                              <div className="col-md-6 mb-3">
-                                <div className="currentResult-panel-card">
-                                  <h5 className="currentResult-section-title">EEG Preview Chart</h5>
-                                  <div style={{ width: '100%', height: 220 }}>
-                                    <ResponsiveContainer>
-                                      <LineChart data={eegPreviewData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
-                                        <XAxis dataKey="index" tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                                        <YAxis tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                                        <Tooltip />
-                                        <Legend />
-                                        {eegPreviewKeys.map((key, idx) => (
-                                          <Line
-                                            key={key}
-                                            type="monotone"
-                                            dataKey={key}
-                                            dot={false}
-                                            strokeWidth={2}
-                                            stroke={["#4f772d", "#8d9740", "#bc6c25", "#c74545", "#6a4c93"][idx % 5]}
-                                          />
-                                        ))}
-                                      </LineChart>
-                                    </ResponsiveContainer>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="col-md-6 mb-3">
-                                <div className="currentResult-panel-card">
-                                  <h5 className="currentResult-section-title">GSR Preview Chart</h5>
-                                  <div style={{ width: '100%', height: 220 }}>
-                                    <ResponsiveContainer>
-                                      <LineChart data={gsrPreviewData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.2)" />
-                                        <XAxis dataKey="index" tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                                        <YAxis tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                                        <Tooltip />
-                                        <Legend />
-                                        {gsrPreviewKeys.map((key, idx) => (
-                                          <Line
-                                            key={key}
-                                            type="monotone"
-                                            dataKey={key}
-                                            dot={false}
-                                            strokeWidth={2}
-                                            stroke={["#8d9740", "#4f772d", "#bc6c25"][idx % 3]}
-                                          />
-                                        ))}
-                                      </LineChart>
-                                    </ResponsiveContainer>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="text-center mt-4" style={{ marginBottom: '1.5rem' }}>
-                      <button
-                        onClick={analyzeMultimodal}
-                        disabled={(phase === 'analyzing' || phase === 'reanalyzing') || !serverOnline}
-                        className="btn btn-primary"
-                        style={{
-                          padding: '0.75rem 3rem',
-                          fontSize: '1.1rem',
-                          marginRight: '1rem',
-                          borderRadius: '30px'
-                        }}
-                      >
-                        Analyze Stress
-                      </button>
-                      <button
-                        onClick={clearAll}
-                        className="btn btn-secondary"
-                        style={{
-                          padding: '0.75rem 2rem',
-                          fontSize: '1.1rem',
-                          borderRadius: '30px'
-                        }}
-                      >
-                        Clear All
-                      </button>
-                    </div>
-
-
-                  </div>
+            {/* Bento Grid upload panels */}
+            <div className="grid md:grid-cols-2 gap-6">
+              
+              {/* Facial input card */}
+              <div className="bg-surface-container-low/40 p-6 rounded-2xl border border-outline-variant/10 flex flex-col justify-between min-h-[300px]">
+                <div className="text-center space-y-1 mb-4">
+                  <div className="text-primary flex justify-center"><span className="material-symbols-outlined text-[40px]">photo_camera</span></div>
+                  <h4 className="font-headline-sm text-base text-primary font-bold">Facial Analysis</h4>
+                  <p className="text-[11px] text-on-surface-variant">Upload a portrait photo or capture a webcam feed.</p>
                 </div>
+
+                {facePreview ? (
+                  <div className="relative rounded-xl overflow-hidden border border-outline-variant/30 max-h-48 mb-4 flex items-center justify-center bg-black">
+                    <img src={facePreview} alt="Face preview" className="max-h-48 w-full object-cover" />
+                    <button
+                      onClick={() => { setFaceImage(null); setFacePreview(null); }}
+                      className="absolute top-2 right-2 bg-error text-white p-1.5 rounded-lg shadow-md hover:opacity-90 transition-all flex items-center justify-center"
+                    >
+                      <span className="material-symbols-outlined text-xs">delete</span>
+                    </button>
+                  </div>
+                ) : webcamActive ? (
+                  <div className="space-y-4 mb-4">
+                    <video ref={videoRef} autoPlay muted playsInline className="w-full h-40 bg-black rounded-xl object-cover border border-outline-variant/20" />
+                    <div className="flex gap-2 text-[10px] font-label-caps font-bold">
+                      <button onClick={captureWebcam} className="flex-1 bg-primary text-on-primary py-2.5 rounded-lg shadow hover:opacity-90">Capture</button>
+                      <button onClick={analyzeLiveWebcam} className="flex-1 bg-primary-container text-white py-2.5 rounded-lg shadow hover:opacity-90">Analyze Frame</button>
+                      <button onClick={stopWebcam} className="flex-1 border border-outline text-on-surface-variant py-2.5 rounded-lg hover:bg-surface-container-high">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <input type="file" accept="image/*" onChange={handleFaceUpload} className="w-full text-xs text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:border-primary/20 file:text-xs file:font-semibold file:bg-primary-container/10 file:text-primary file:cursor-pointer hover:file:bg-primary-container/20" />
+                    <button onClick={startWebcam} className="w-full border border-primary text-primary font-bold text-xs tracking-wider font-label-caps py-3 rounded-xl hover:bg-primary-container/5 transition-all flex items-center justify-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px]">videocam</span>
+                      Use Webcam
+                    </button>
+                  </div>
+                )}
+                
+                {liveFaceResult && (
+                  <div className="mt-4 p-3 bg-white border border-outline-variant/10 rounded-xl flex justify-between items-center text-xs">
+                    <span className="font-semibold text-on-surface-variant">Live Frame Result:</span>
+                    <strong className="text-primary font-bold font-data-metric uppercase text-[10px]">
+                      {liveFaceResult.stress_level} ({Number(liveFaceResult.percentage).toFixed(1)}%)
+                    </strong>
+                  </div>
+                )}
               </div>
 
-              {/* How to Use Section */}
-              <div className="row mt-5">
-                <div className="col-12">
-                  <div className="neon-card">
-                    <h3 className="text-center mb-4">How to Use the Dashboard</h3>
-                    <div className="row">
-                      <div className="col-md-4">
-                        <h4>📸 Facial Data</h4>
-                        <ul className="list-unstyled">
-                          <li>• Upload a clear photo of your face</li>
-                          <li>• Or use webcam for live capture</li>
-                          <li>• Ensure good lighting</li>
-                          <li>• Look directly at camera</li>
-                        </ul>
-                      </div>
-                      <div className="col-md-4">
-                        <h4>🎤 Voice Data</h4>
-                        <ul className="list-unstyled">
-                          <li>• Upload a voice recording</li>
-                          <li>• Speak naturally for 3-5 seconds</li>
-                          <li>• Minimize background noise</li>
-                          <li>• Use standard audio formats</li>
-                        </ul>
-                      </div>
-                      <div className="col-md-4">
-                        <h4>⚡ Physiological Data</h4>
-                        <ul className="list-unstyled">
-                          <li>• Enter comma-separated values</li>
-                          <li>• EEG: Brainwave measurements</li>
-                          <li>• GSR: Skin conductance values</li>
-                          <li>• Use sensor device outputs</li>
-                        </ul>
+              {/* Vocal input card */}
+              <div className="bg-surface-container-low/40 p-6 rounded-2xl border border-outline-variant/10 flex flex-col justify-between min-h-[300px]">
+                <div className="text-center space-y-1 mb-4">
+                  <div className="text-primary flex justify-center"><span className="material-symbols-outlined text-[40px]">mic</span></div>
+                  <h4 className="font-headline-sm text-base text-primary font-bold">Vocal Strain</h4>
+                  <p className="text-[11px] text-on-surface-variant">Upload an audio capture or speak directly into mic.</p>
+                </div>
+
+                {voicePreviewUrl ? (
+                  <div className="space-y-4 mb-4">
+                    <audio controls src={voicePreviewUrl} className="w-full mt-2" />
+                    <button
+                      onClick={() => { setVoiceFile(null); setVoicePreviewUrl(null); }}
+                      className="w-full border border-error text-error py-2.5 rounded-xl hover:bg-error-container/10 transition-colors font-bold text-xs font-label-caps tracking-wider"
+                    >
+                      Remove Audio
+                    </button>
+                  </div>
+                ) : isMicRecording ? (
+                  <div className="space-y-4 mb-4">
+                    <div className="w-full h-32 bg-white rounded-xl overflow-hidden border border-outline-variant/20 flex flex-col items-center justify-center relative">
+                      <div className="absolute inset-0 bg-primary/5 animate-pulse"></div>
+                      <canvas ref={micCanvasRef} width={280} height={100} className="w-full h-full block z-10" />
+                      <div className="absolute top-2 left-3 flex items-center gap-2 z-10">
+                         <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+                         <span className="text-[10px] font-bold text-error uppercase tracking-wider">Recording</span>
                       </div>
                     </div>
-                    <div className="alert" style={{
-                      background: 'var(--accent-light-bg)',
-                      border: '1px solid rgba(120, 120, 120, 0.3)',
-                      marginTop: '1.5rem',
-                      textAlign: 'center',
-                      color: 'var(--text-color)'
-                    }}>
-                      <strong>💡 Pro Tip:</strong> For best results, provide multiple data sources.
-                      The system uses advanced multimodal fusion to combine insights from all available inputs.
+                    <div className="flex gap-2 text-[10px] font-label-caps font-bold">
+                       <button onClick={() => stopMicRecording(true)} className="flex-1 bg-primary text-on-primary py-2.5 rounded-lg shadow hover:opacity-90 flex items-center justify-center gap-1.5"><span className="material-symbols-outlined text-[14px]">stop</span> Stop & Analyze</button>
+                       <button onClick={() => stopMicRecording(false)} className="flex-1 border border-outline text-on-surface-variant py-2.5 rounded-lg hover:bg-surface-container-high">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <input type="file" accept="audio/*" onChange={handleVoiceUpload} className="w-full text-xs text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:border-primary/20 file:text-xs file:font-semibold file:bg-primary-container/10 file:text-primary file:cursor-pointer hover:file:bg-primary-container/20" />
+                    <button
+                      onClick={startMicRecording}
+                      className="w-full border border-primary text-primary font-bold text-xs tracking-wider font-label-caps py-3 rounded-xl hover:bg-primary-container/5 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">mic</span>
+                      Use Microphone
+                    </button>
+                  </div>
+                )}
+                
+                {liveVoiceResult && (
+                  <div className="mt-4 p-3 bg-white border border-outline-variant/10 rounded-xl flex justify-between items-center text-xs">
+                    <span className="font-semibold text-on-surface-variant">Live Voice Result:</span>
+                    <strong className="text-primary font-bold font-data-metric uppercase text-[10px]">
+                      {liveVoiceResult.stress_level} ({Number(liveVoiceResult.percentage).toFixed(1)}%)
+                    </strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Physiological data card */}
+              <div className="col-span-2 bg-surface-container-low/40 p-6 rounded-2xl border border-outline-variant/10 space-y-6">
+                <div className="text-center space-y-1">
+                  <div className="text-primary flex justify-center"><span className="material-symbols-outlined text-[40px]">monitor_heart</span></div>
+                  <h4 className="font-headline-sm text-base text-primary font-bold">Physiological Data Streams</h4>
+                  <p className="text-[11px] text-on-surface-variant">Manual CSV upload or real-time Muse 2 EEG telemetry connector.</p>
+                </div>
+
+
+
+                {/* Manual csv input / text inputs */}
+                <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-outline-variant/10">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-outline px-1 block">EEG Sensor values (Text area)</label>
+                      <textarea value={eegData} onChange={(e) => handleEegTextChange(e.target.value)} placeholder="e.g. 0.5, 0.7, 0.6, 0.8, 0.65..." className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-xs font-semibold" rows="2" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-outline px-1 block">EEG CSV File Upload</label>
+                      <input type="file" accept=".csv,.txt" onChange={(e) => handleEegFileUpload(e.target.files[0] || null)} className="w-full text-xs text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:border-primary/20 file:text-xs file:font-semibold file:bg-primary-container/10 file:text-primary file:cursor-pointer" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-outline px-1 block">GSR Conductance values (Text area)</label>
+                      <textarea value={gsrData} onChange={(e) => handleGsrTextChange(e.target.value)} placeholder="e.g. 2.1, 2.3, 2.5, 2.4, 2.6..." className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-xs font-semibold" rows="2" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-outline px-1 block">GSR CSV File Upload</label>
+                      <input type="file" accept=".csv,.txt" onChange={(e) => handleGsrFileUpload(e.target.files[0] || null)} className="w-full text-xs text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:border-primary/20 file:text-xs file:font-semibold file:bg-primary-container/10 file:text-primary file:cursor-pointer" />
                     </div>
                   </div>
                 </div>
+
+                {/* Recharts graph previews for uploaded CSV */}
+                {(eegPreviewData.length > 0 || gsrPreviewData.length > 0) && (
+                  <div className="grid md:grid-cols-2 gap-4 pt-6 border-t border-outline-variant/10">
+                    {eegPreviewData.length > 0 && (
+                      <div className="bg-white p-4 rounded-xl border border-outline-variant/10 shadow-sm space-y-3">
+                        <h5 className="text-[10px] text-primary uppercase font-bold tracking-wider font-label-caps">EEG Signal preview</h5>
+                        <div className="h-44 w-full">
+                          <ResponsiveContainer>
+                            <LineChart data={eegPreviewData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.15)" />
+                              <XAxis dataKey="index" tick={{ fill: '#737780', fontSize: 9 }} />
+                              <YAxis tick={{ fill: '#737780', fontSize: 9 }} />
+                              <Tooltip />
+                              {eegPreviewKeys.map((key, idx) => (
+                                <Line key={key} type="monotone" dataKey={key} dot={false} strokeWidth={1.5} stroke={["#0e3b69", "#2c5282", "#bc6c25", "#c74545"][idx % 4]} />
+                              ))}
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+                    {gsrPreviewData.length > 0 && (
+                      <div className="bg-white p-4 rounded-xl border border-outline-variant/10 shadow-sm space-y-3">
+                        <h5 className="text-[10px] text-primary uppercase font-bold tracking-wider font-label-caps">GSR Signal preview</h5>
+                        <div className="h-44 w-full">
+                          <ResponsiveContainer>
+                            <LineChart data={gsrPreviewData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.15)" />
+                              <XAxis dataKey="index" tick={{ fill: '#737780', fontSize: 9 }} />
+                              <YAxis tick={{ fill: '#737780', fontSize: 9 }} />
+                              <Tooltip />
+                              {gsrPreviewKeys.map((key, idx) => (
+                                <Line key={key} type="monotone" dataKey={key} dot={false} strokeWidth={1.5} stroke={["#2c5282", "#0e3b69", "#bc6c25"][idx % 3]} />
+                              ))}
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            </div>
+
+            {/* Form actions */}
+            <div className="flex gap-4 items-center justify-center pt-6 border-t border-outline-variant/10">
+              <button
+                onClick={analyzeMultimodal}
+                disabled={(phase === 'analyzing' || phase === 'reanalyzing') || !serverOnline}
+                className="bg-primary text-on-primary font-bold text-xs font-label-caps tracking-wider px-10 py-4 rounded-xl shadow hover:opacity-95 active:scale-95 disabled:opacity-50 transition-all"
+              >
+                Analyze Stress Index
+              </button>
+              <button
+                onClick={clearAll}
+                className="border border-outline text-on-surface-variant font-bold text-xs font-label-caps tracking-wider px-8 py-4 rounded-xl hover:bg-surface-container active:scale-95 transition-all"
+              >
+                Clear All Fields
+              </button>
+            </div>
+          </section>
+
+          {/* Guide banner card */}
+          <section className="bg-surface-container-lowest rounded-3xl p-8 border border-outline-variant/10 shadow-sm space-y-6">
+            <h3 className="font-headline-sm text-headline-sm text-primary text-center">Bento Diagnostics Guide</h3>
+            <div className="grid md:grid-cols-3 gap-6 pt-2 text-xs leading-relaxed text-on-surface-variant font-medium">
+              <div className="space-y-2">
+                <h4 className="font-bold text-sm text-primary font-label-caps uppercase tracking-wider">📸 Facial Data</h4>
+                <p>Ensure your face is clearly lit. The system tracks 18 features including jaw clenches, brow descent, and lip compression ratios to detect involuntary sympathetic nervous indices.</p>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-bold text-sm text-primary font-label-caps uppercase tracking-wider">🎤 Voice Data</h4>
+                <p>Provide a short voice sample (3-5 seconds). We evaluate vocal tremor indicators (fundamental frequency standard deviation, jitter percent, and amplitude shimmers).</p>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-bold text-sm text-primary font-label-caps uppercase tracking-wider">⚡ Physiological Data</h4>
+                <p>Input raw text arrays or upload CSV log sheets. Supports multi-channel raw EEG brainwave amplitudes and galvanic skin response (GSR) conduction cycles.</p>
+              </div>
+            </div>
+            <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/15 text-center text-xs font-semibold text-primary">
+              💡 Pro Tip: For maximum confidence, provide multiple modalities together. Our models automatically weigh sensor reliability depending on input quality.
+            </div>
+          </section>
         </>
-      )
-      }
+      )}
+      </div>
+      )}
 
+      {/* Dynamic Chatbot Panel */}
       <StressChatbot
         stressLevel={currentResult?.stress_level || 'Moderate'}
         stressPercentage={currentResult ? currentResult.fused_score * 100 : null}
+        open={showCopilot}
+        onClose={() => setShowCopilot(false)}
       />
-    </div >
+    </>
   );
 }

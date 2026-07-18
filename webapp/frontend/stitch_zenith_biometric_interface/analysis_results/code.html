@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VitalMind | Clinical Stress Monitoring</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#a2c6fd",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed-variant": "#454749",
+                    "tertiary": "#3c3a37",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#e5eeff",
+                    "secondary": "#5d5e61",
+                    "surface-bright": "#f8f9ff",
+                    "surface": "#f8f9ff",
+                    "on-primary": "#ffffff",
+                    "inverse-surface": "#213145",
+                    "on-primary-fixed-variant": "#204877",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#d3e4fe",
+                    "outline-variant": "#c3c6d0",
+                    "on-surface": "#0b1c30",
+                    "surface-container-lowest": "#ffffff",
+                    "outline": "#737780",
+                    "primary": "#0e3b69",
+                    "on-error": "#ffffff",
+                    "secondary-fixed": "#e2e2e5",
+                    "on-secondary-container": "#636467",
+                    "tertiary-fixed": "#e6e2dd",
+                    "on-background": "#0b1c30",
+                    "on-tertiary-fixed-variant": "#484643",
+                    "background": "#f8f9ff",
+                    "on-primary-fixed": "#001c3a",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed-dim": "#cac6c1",
+                    "surface-container-low": "#eff4ff",
+                    "surface-container-highest": "#d3e4fe",
+                    "inverse-primary": "#a5c8ff",
+                    "tertiary-container": "#53514d",
+                    "surface-tint": "#3b6090",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#1d1b19",
+                    "secondary-container": "#e2e2e5",
+                    "primary-fixed-dim": "#a5c8ff",
+                    "surface-container-high": "#dce9ff",
+                    "on-secondary-fixed": "#1a1c1e",
+                    "secondary-fixed-dim": "#c6c6c9",
+                    "primary-container": "#2c5282",
+                    "primary-fixed": "#d4e3ff",
+                    "on-tertiary-container": "#c8c4bf",
+                    "surface-dim": "#cbdbf5",
+                    "on-surface-variant": "#43474f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "container-max": "1280px",
+                    "margin-desktop": "48px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "section-gap": "80px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["\"Source Serif 4\""],
+                    "body-md": ["Inter"],
+                    "display-lg": ["\"Source Serif 4\""],
+                    "body-lg": ["Inter"],
+                    "display-lg-mobile": ["\"Source Serif 4\""],
+                    "headline-md": ["\"Source Serif 4\""],
+                    "data-metric": ["JetBrains Mono"],
+                    "label-caps": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-sm": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-md": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "data-metric": ["20px", {"lineHeight": "24px", "letterSpacing": "-0.03em", "fontWeight": "500"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f8f9ff;
+            color: #0b1c30;
+            overflow-x: hidden;
+        }
+
+        .clinical-shadow {
+            box-shadow: 0 4px 20px rgba(26, 28, 30, 0.04);
+        }
+
+        .interactive-shadow:hover {
+            box-shadow: 0 8px 30px rgba(26, 28, 30, 0.08);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+
+        .stress-moderate-gradient {
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff4e5 100%);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .count-up-reveal {
+            animation: countUpFade 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes countUpFade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md">
+<!-- SideNavBar (from JSON) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low shadow-sm flex flex-col py-margin-desktop px-gutter z-50">
+<div class="mb-12">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">VitalMind</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant opacity-70">Clinical Stress Monitoring</p>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Dashboard Active -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold border-r-4 border-primary bg-surface-container transition-transform active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="font-label-caps text-label-caps">History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-label-caps text-label-caps">Insights</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+<div class="mt-auto">
+<button class="w-full py-4 px-6 bg-primary text-on-primary rounded-xl font-label-caps text-label-caps shadow-sm hover:opacity-90 transition-all">
+                Calibrate Sensors
+            </button>
+</div>
+</aside>
+<!-- TopAppBar (from JSON) -->
+<header class="docked full-width top-0 sticky z-40 bg-surface/80 backdrop-blur-md flex justify-between items-center w-full px-margin-desktop py-4 ml-64">
+<div class="flex items-center gap-8">
+<span class="font-headline-sm text-headline-sm font-bold text-primary">Dashboard</span>
+<nav class="hidden md:flex gap-6">
+<a class="text-primary border-b-2 border-primary pb-1 font-label-caps text-label-caps" href="#">Realtime</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-caps text-label-caps" href="#">Upload</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" data-icon="notifications_active">notifications_active</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" data-icon="tune">tune</button>
+</div>
+<button class="px-4 py-2 bg-primary-container text-white rounded-full font-label-caps text-label-caps hover:opacity-80 transition-all">
+                AI Copilot
+            </button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a clinician wearing minimalist eyewear and a clean white tech-fabric blazer. The lighting is soft and high-key, with a blurred clinical background in shades of soft blue and white, maintaining a clean medical-wellness aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC07Rh7--KA1D_fIWEXNBTuQWEtXYwvlE8arl0iAkCIaThcJ7ZbxZcALtSeHEa9xD289uiORWi4MWdCKDl4VHfJ-wH5_y_ICkvIPzZlfXLhIVOtzWouqkjn2k06OtaUfDWQZ8__E5pPkeOF0MWOJ-OFozxauxHXUZFkH3q8cKwuPfe1q-djAD2It45koLBHxwGyQgvVhNtkLMdTTYgnOGiL_VBJTxTB_fxFcot4KgnOOpAZ4_LNfKIr"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 p-margin-desktop min-h-screen stress-moderate-gradient">
+<div class="max-w-container-max mx-auto">
+<!-- Bento Layout Header -->
+<div class="grid grid-cols-12 gap-gutter mb-section-gap items-stretch">
+<!-- Primary Stress Score Display -->
+<section class="col-span-12 lg:col-span-7 bg-white rounded-xl clinical-shadow p-8 flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-surface-container-high/30 rounded-full blur-3xl"></div>
+<div class="flex justify-between items-start mb-12">
+<div>
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-1">AGGREGATE STRESS INDEX</h2>
+<p class="font-body-md text-on-surface opacity-60">Calculated from 14 biometric sensors</p>
+</div>
+<span class="px-4 py-1.5 bg-[#FFF0E0] text-[#854D0E] rounded-full font-label-caps text-label-caps">
+                            MODERATE
+                        </span>
+</div>
+<div class="flex items-baseline gap-4 mb-8">
+<span class="font-display-lg text-display-lg count-up-reveal text-primary" id="stress-score" style="font-size: 112px; line-height: 1;">0.0</span>
+<span class="font-headline-sm text-headline-sm text-outline">%</span>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between font-label-caps text-label-caps text-on-surface-variant">
+<span>RELAXED</span>
+<span>PEAK LOAD</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-[2s] ease-out" style="width: 91.3%;"></div>
+</div>
+<p class="font-body-md text-on-surface-variant italic">
+                            "Elevated cortisol markers detected via vocal jitter. Consider tactical breathing."
+                        </p>
+</div>
+</section>
+<!-- SHAP Explainability Section -->
+<section class="col-span-12 lg:col-span-5 bg-white rounded-xl clinical-shadow p-8">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="troubleshoot">troubleshoot</span>
+                        CONTRIBUTING FACTORS (SHAP)
+                    </h2>
+<div class="space-y-8">
+<!-- Contributor 1 -->
+<div class="group">
+<div class="flex justify-between items-center mb-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="face">face</span>
+</div>
+<span class="font-body-md font-semibold text-on-surface">Jaw Tension</span>
+</div>
+<span class="font-data-metric text-data-metric text-primary">34%</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full group-hover:opacity-80 transition-all" style="width: 34%;"></div>
+</div>
+</div>
+<!-- Contributor 2 -->
+<div class="group">
+<div class="flex justify-between items-center mb-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="keyboard_voice">keyboard_voice</span>
+</div>
+<span class="font-body-md font-semibold text-on-surface">Vocal Jitter</span>
+</div>
+<span class="font-data-metric text-data-metric text-primary">22%</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full group-hover:opacity-80 transition-all" style="width: 22%;"></div>
+</div>
+</div>
+<!-- Contributor 3 -->
+<div class="group">
+<div class="flex justify-between items-center mb-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="monitor_heart">monitor_heart</span>
+</div>
+<span class="font-body-md font-semibold text-on-surface">HRV Inconsistency</span>
+</div>
+<span class="font-data-metric text-data-metric text-primary">18%</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full group-hover:opacity-80 transition-all" style="width: 18%;"></div>
+</div>
+</div>
+<!-- Contributor 4 -->
+<div class="group">
+<div class="flex justify-between items-center mb-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="speed">speed</span>
+</div>
+<span class="font-body-md font-semibold text-on-surface">Cognitive Load</span>
+</div>
+<span class="font-data-metric text-data-metric text-primary">15%</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full group-hover:opacity-80 transition-all" style="width: 15%;"></div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Insight Cards Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Recovery Score -->
+<div class="bg-white rounded-xl clinical-shadow p-6 interactive-shadow border-l-4 border-[#4ADE80]">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">RECOVERY SCORE</span>
+<span class="material-symbols-outlined text-[#4ADE80]" data-icon="autorenew">autorenew</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg text-on-surface" style="font-size: 32px;">68</span>
+<span class="text-outline-variant font-label-caps text-label-caps">%</span>
+</div>
+<p class="mt-4 text-[14px] text-on-surface-variant">Current state trending towards stabilization.</p>
+</div>
+<!-- Confidence Score -->
+<div class="bg-white rounded-xl clinical-shadow p-6 interactive-shadow border-l-4 border-primary">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">CONFIDENCE SCORE</span>
+<span class="material-symbols-outlined text-primary" data-icon="verified">verified</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg text-on-surface" style="font-size: 32px;">98.4</span>
+<span class="text-outline-variant font-label-caps text-label-caps">%</span>
+</div>
+<p class="mt-4 text-[14px] text-on-surface-variant">High sensor fidelity from all active channels.</p>
+</div>
+<!-- Detected Trigger -->
+<div class="bg-white rounded-xl clinical-shadow p-6 interactive-shadow border-l-4 border-[#FBBF24]">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">DETECTED TRIGGER</span>
+<span class="material-symbols-outlined text-[#FBBF24]" data-icon="warning">warning</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg text-on-surface" style="font-size: 32px;">Speech Pattern</span>
+</div>
+<p class="mt-4 text-[14px] text-on-surface-variant">Detected during 14:00 virtual conference call.</p>
+</div>
+</div>
+<!-- Visual Atmosphere Detail -->
+<div class="mt-section-gap grid grid-cols-1 lg:grid-cols-2 gap-gutter items-center">
+<div class="space-y-6">
+<h3 class="font-headline-sm text-headline-sm text-primary">Biometric Correlation Visualization</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg">
+                        The neural overlay shows the direct relationship between sympathetic nervous system arousal and localized muscular tension. 
+                        We recommend a 2-minute "Box Breathing" session to reduce the aggregate score to the baseline Green Zone.
+                    </p>
+<div class="flex gap-4">
+<button class="px-6 py-3 bg-primary text-on-primary rounded-xl font-label-caps text-label-caps hover:opacity-90 transition-all">Start Session</button>
+<button class="px-6 py-3 border border-outline text-on-surface-variant rounded-xl font-label-caps text-label-caps hover:bg-surface-container transition-all">Export Report</button>
+</div>
+</div>
+<div class="relative h-[320px] rounded-2xl overflow-hidden glass-card clinical-shadow">
+
+<div class="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent flex items-end p-8">
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+<span class="font-label-caps text-label-caps text-primary">Real-time Biometric Stream Active</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button - Supressed on Detailed Analysis screens usually, but here as a quick "Calibrate" if user feels off -->
+<!-- Not rendered per "Contextual FAB Suppression" rule for Details/Dashboard screens -->
+<script>
+        // Count up animation for Stress Score
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = (progress * (end - start) + start).toFixed(1);
+                obj.innerHTML = value;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const scoreDisplay = document.getElementById('stress-score');
+            setTimeout(() => {
+                animateValue(scoreDisplay, 0, 91.3, 2000);
+            }, 500);
+        });
+
+        // Simple interactive micro-effect for cards
+        const cards = document.querySelectorAll('.interactive-shadow');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'scale(1.02) translateY(-4px)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'scale(1) translateY(0)';
+            });
+        });
+    </script>
+</body></html>

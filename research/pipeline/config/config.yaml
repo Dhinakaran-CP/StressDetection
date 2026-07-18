@@ -14,6 +14,11 @@ datasets:
     video_fps: 30
     label_granularity: interval_2min
     nasa_tlx_stress_threshold: 50
+  wesad:
+    raw_path: "data/wesad"
+    modalities: [physio]
+    physio_signals: [ecg, eda, emg, respiration, temp, acc, bvp]
+    label_granularity: signal
 windowing:
   window_sec: 10
   stride_sec: 5

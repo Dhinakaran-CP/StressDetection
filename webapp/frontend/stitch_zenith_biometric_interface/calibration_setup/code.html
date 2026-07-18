@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VitalMind Calibration Wizard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .step-active {
+      @apply text-primary font-bold;
+    }
+    .timer-ring {
+      transition: stroke-dashoffset 1s linear;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+    .pulse-zen {
+      animation: pulse-zen 4s ease-in-out infinite;
+    }
+    @keyframes pulse-zen {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+    .floating-particles {
+      position: absolute;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased overflow-hidden">
+<!-- Side Navigation Bar (Shared Component Anchor) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low shadow-sm flex flex-col py-8 px-6 z-50">
+<div class="mb-12">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">VitalMind</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Clinical Stress Monitoring</p>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Dashboard - Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-on-surface-variant hover:bg-surface-container-high group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<!-- History - Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-on-surface-variant hover:bg-surface-container-high group" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-body-md">History</span>
+</a>
+<!-- Insights - Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-on-surface-variant hover:bg-surface-container-high group" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-body-md">Insights</span>
+</a>
+<!-- Settings - Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-on-surface-variant hover:bg-surface-container-high group" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<!-- Profile - Active (Context: User is doing a personal calibration) -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-transform active:scale-[0.98] text-primary font-bold border-r-4 border-primary bg-surface-container" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-body-md">Profile</span>
+</a>
+</nav>
+<div class="mt-auto">
+<button class="w-full py-4 px-4 rounded-2xl bg-primary text-on-primary font-bold text-label-caps tracking-wider transition-all hover:opacity-90 active:scale-95 shadow-lg">
+        Calibrate Sensors
+      </button>
+<div class="mt-6 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a calm healthcare practitioner in high-end medical clinical environment. Soft lighting, warm sand background tones, and a serene, professional demeanor. High-end editorial style photography with focus on clinical precision and empathy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXaChEotg8nWOvqwBBMeMF0uyB_eNuw5JjVCXkIVCbHJ0ou29ErHSP__ZS6m-jeMVKUhELa3JVQL6OWzA7EPv9ObPKO396aXLPrgLmbjWo3L_mvVpxksaGNXHnmJ1f-ecsMHkOwL-vpjRxNS7m2xM0hCmDg-bMwd49peX1z35UOLiozcMrhsjPaSFYqj4jw2mzFv9Cv-SPPcB8DMY344tj-L2Kk2cOMz1MqT4K4RqRMcMHzOJ3Y_tt"/>
+</div>
+<div>
+<p class="font-label-caps text-on-surface font-bold">Dr. Aris Thorne</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-tighter">Clinical Lead</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-64 min-h-screen relative overflow-hidden flex flex-col items-center justify-center p-margin-desktop bg-surface">
+<!-- Background Atmospheric Elements -->
+<div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+<div class="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-surface-variant/30 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[-5%] left-[5%] w-[400px] h-[400px] bg-secondary-container/40 rounded-full blur-[100px]"></div>
+</div>
+<!-- Top Navigation Placeholder (Exit/Back) -->
+<div class="absolute top-8 left-8 right-8 flex justify-between items-center z-20">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">close</span>
+<span class="font-label-caps">Exit Calibration</span>
+</button>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">verified_user</span>
+<span class="font-label-caps text-outline">Clinical Data Encrypted</span>
+</div>
+</div>
+<!-- Calibration Content Container -->
+<div class="w-full max-w-[800px] z-10 flex flex-col items-center" id="calibration-wizard">
+<!-- Step Indicators -->
+<div class="flex items-center justify-center gap-gutter mb-section-gap w-full">
+<div class="flex flex-col items-center gap-2 transition-all duration-500 opacity-100" id="step-1">
+<div class="w-12 h-12 rounded-full border-2 border-primary flex items-center justify-center bg-primary text-on-primary">
+<span class="material-symbols-outlined text-[20px]">noise_control_off</span>
+</div>
+<span class="font-label-caps text-primary">1. Silence</span>
+</div>
+<div class="w-24 h-[1px] bg-outline-variant mb-6"></div>
+<div class="flex flex-col items-center gap-2 transition-all duration-500 opacity-40" id="step-2">
+<div class="w-12 h-12 rounded-full border-2 border-outline flex items-center justify-center bg-transparent text-outline">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</div>
+<span class="font-label-caps text-outline">2. Voice</span>
+</div>
+<div class="w-24 h-[1px] bg-outline-variant mb-6"></div>
+<div class="flex flex-col items-center gap-2 transition-all duration-500 opacity-40" id="step-3">
+<div class="w-12 h-12 rounded-full border-2 border-outline flex items-center justify-center bg-transparent text-outline">
+<span class="material-symbols-outlined text-[20px]">face</span>
+</div>
+<span class="font-label-caps text-outline">3. Face</span>
+</div>
+</div>
+<!-- Main Interaction Area -->
+<div class="relative w-[320px] h-[320px] flex items-center justify-center mb-12">
+<!-- SVG Timer Ring -->
+<svg class="absolute inset-0 w-full h-full" viewbox="0 0 100 100">
+<circle class="text-surface-container" cx="50" cy="50" fill="transparent" r="48" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary timer-ring" cx="50" cy="50" fill="transparent" id="timer-progress" r="48" stroke="currentColor" stroke-dasharray="301.59" stroke-dashoffset="301.59" stroke-linecap="round" stroke-width="2.5"></circle>
+</svg>
+<!-- Inner Circle (Pulse) -->
+<div class="w-[260px] h-[260px] rounded-full bg-surface-container-lowest shadow-lg flex flex-col items-center justify-center text-center p-8 pulse-zen">
+<span class="font-data-metric text-[64px] text-primary leading-none" id="timer-display">15</span>
+<span class="font-label-caps text-on-surface-variant tracking-widest mt-1" id="timer-unit">SECONDS</span>
+</div>
+<!-- Ambient Noise Visualization (Silent Mode) -->
+<div class="absolute bottom-[-40px] flex gap-1 h-8 items-end opacity-0 transition-opacity duration-700" id="waveform-container">
+<div class="w-1 bg-primary rounded-full h-4 animate-bounce" style="animation-delay: 0.1s"></div>
+<div class="w-1 bg-primary rounded-full h-6 animate-bounce" style="animation-delay: 0.3s"></div>
+<div class="w-1 bg-primary rounded-full h-3 animate-bounce" style="animation-delay: 0.2s"></div>
+<div class="w-1 bg-primary rounded-full h-8 animate-bounce" style="animation-delay: 0.5s"></div>
+<div class="w-1 bg-primary rounded-full h-5 animate-bounce" style="animation-delay: 0.4s"></div>
+<div class="w-1 bg-primary rounded-full h-2 animate-bounce" style="animation-delay: 0.6s"></div>
+</div>
+</div>
+<!-- Instructional Text -->
+<div class="text-center max-w-md">
+<h2 class="font-headline-sm text-headline-sm text-primary mb-4" id="instruction-title">Baseline Calibration</h2>
+<p class="font-body-md text-on-surface-variant leading-relaxed" id="instruction-desc">
+          Please remain silent while we capture your ambient noise baseline. This ensures high-fidelity analysis of your emotional vocal cues later.
+        </p>
+</div>
+<!-- Control Button -->
+<div class="mt-section-gap">
+<button class="group relative px-12 py-5 bg-primary text-on-primary rounded-full font-bold transition-all hover:shadow-xl active:scale-95 flex items-center gap-4 overflow-hidden" id="cta-button" onclick="startCalibration()">
+<div class="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+<span class="relative z-10 font-label-caps text-body-md">Start Calibration</span>
+<span class="material-symbols-outlined relative z-10 transition-transform group-hover:translate-x-1">play_arrow</span>
+</button>
+</div>
+</div>
+<!-- Success Feedback (Hidden by default) -->
+<div class="hidden fixed inset-0 z-40 bg-surface flex flex-col items-center justify-center text-center p-8 animate-fade-in" id="success-screen">
+<div class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center text-primary mb-8 shadow-sm">
+<span class="material-symbols-outlined text-5xl">task_alt</span>
+</div>
+<h2 class="font-display-lg text-display-lg text-primary mb-4">Calibration Complete</h2>
+<p class="font-body-lg text-on-surface-variant max-w-lg mx-auto mb-12">
+          Your sensors are now synchronized with your environment. We've established a clinical-grade baseline for your voice and facial stressors.
+       </p>
+<button class="px-12 py-5 bg-primary text-on-primary rounded-full font-bold font-label-caps tracking-wider shadow-lg hover:shadow-2xl transition-all active:scale-95">
+          Return to Dashboard
+       </button>
+</div>
+</main>
+<script id="calibration-logic">
+    let currentStep = 1;
+    let timer;
+    let timeLeft;
+    const steps = [
+      { id: 1, duration: 15, title: 'Silence Phase', desc: 'Please remain silent while we capture your ambient noise baseline.', icon: 'noise_control_off' },
+      { id: 2, duration: 40, title: 'Voice Signature', desc: 'Read the text that appears on screen in a normal speaking tone.', icon: 'mic' },
+      { id: 3, duration: 45, title: 'Facial Mapping', desc: 'Look directly into the camera and follow the target with your eyes.', icon: 'face' }
+    ];
+
+    const progressBar = document.getElementById('timer-progress');
+    const timerDisplay = document.getElementById('timer-display');
+    const ctaButton = document.getElementById('cta-button');
+    const instructionTitle = document.getElementById('instruction-title');
+    const instructionDesc = document.getElementById('instruction-desc');
+    const waveform = document.getElementById('waveform-container');
+
+    function startCalibration() {
+      ctaButton.style.display = 'none';
+      runStep(0);
+    }
+
+    function runStep(index) {
+      if (index >= steps.length) {
+        finishCalibration();
+        return;
+      }
+
+      currentStep = index + 1;
+      const config = steps[index];
+      timeLeft = config.duration;
+      
+      // Update UI for step
+      updateStepIndicators();
+      instructionTitle.innerText = config.title;
+      instructionDesc.innerText = config.desc;
+      timerDisplay.innerText = timeLeft;
+      
+      // Reset circle
+      const circumference = 2 * Math.PI * 48;
+      progressBar.style.strokeDasharray = circumference;
+      progressBar.style.strokeDashoffset = 0;
+
+      // Pulse and waveform logic
+      if(config.id === 1) waveform.classList.remove('opacity-0');
+      else waveform.classList.add('opacity-0');
+
+      timer = setInterval(() => {
+        timeLeft--;
+        timerDisplay.innerText = timeLeft;
+        
+        // Update circle progress
+        const offset = circumference - (timeLeft / config.duration) * circumference;
+        progressBar.style.strokeDashoffset = offset;
+
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          runStep(index + 1);
+        }
+      }, 1000);
+    }
+
+    function updateStepIndicators() {
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById(`step-${i}`);
+        const circle = el.querySelector('div');
+        const icon = el.querySelector('span:first-child');
+        const label = el.querySelector('span:last-child');
+
+        if (i === currentStep) {
+          el.style.opacity = '1';
+          circle.className = 'w-12 h-12 rounded-full border-2 border-primary flex items-center justify-center bg-primary text-on-primary shadow-md';
+          label.className = 'font-label-caps text-primary font-bold';
+        } else if (i < currentStep) {
+          el.style.opacity = '1';
+          circle.className = 'w-12 h-12 rounded-full border-2 border-primary flex items-center justify-center bg-surface-container text-primary';
+          icon.innerText = 'check';
+          label.className = 'font-label-caps text-primary';
+        } else {
+          el.style.opacity = '0.4';
+          circle.className = 'w-12 h-12 rounded-full border-2 border-outline flex items-center justify-center bg-transparent text-outline';
+          label.className = 'font-label-caps text-outline';
+        }
+      }
+    }
+
+    function finishCalibration() {
+      document.getElementById('calibration-wizard').classList.add('animate-fade-out');
+      setTimeout(() => {
+        document.getElementById('calibration-wizard').style.display = 'none';
+        document.getElementById('success-screen').classList.remove('hidden');
+        document.getElementById('success-screen').classList.add('flex');
+      }, 500);
+    }
+  </script>
+<style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-out {
+      from { opacity: 1; transform: scale(1); }
+      to { opacity: 0; transform: scale(0.95); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .animate-fade-out {
+      animation: fade-out 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</body></html>

@@ -51,6 +51,7 @@ def main():
     base_dir = Path(__file__).resolve().parents[3]
     sid_pq = base_dir / "pipeline" / "data" / "stressid" / "normalized_windows.parquet"
     es_pq = base_dir / "pipeline" / "data" / "empathicschool" / "normalized_windows.parquet"
+    wesad_pq = base_dir / "pipeline" / "data" / "wesad" / "normalized_windows.parquet"
     combined_pq = base_dir / "pipeline" / "data" / "combined" / "normalized_windows.parquet"
     
     log_file = base_dir / "pipeline" / "logs" / "loso_split.log"
@@ -60,6 +61,7 @@ def main():
     # Generate splits
     sid_folds = generate_loso_splits("StressID", sid_pq)
     es_folds = generate_loso_splits("EmpathicSchool", es_pq)
+    wesad_folds = generate_loso_splits("WESAD", wesad_pq)
     combined_folds = generate_loso_splits("Combined", combined_pq)
     
     # Save splits registry
@@ -72,6 +74,10 @@ def main():
             "empathicschool": {
                 "folds": es_folds,
                 "total_folds": len(es_folds)
+            },
+            "wesad": {
+                "folds": wesad_folds,
+                "total_folds": len(wesad_folds)
             },
             "combined": {
                 "folds": combined_folds,
@@ -86,10 +92,12 @@ def main():
     # Calculate stats for logging
     sid_test_sizes = [f["test_size"] for f in sid_folds]
     es_test_sizes = [f["test_size"] for f in es_folds]
+    wesad_test_sizes = [f["test_size"] for f in wesad_folds]
     combined_test_sizes = [f["test_size"] for f in combined_folds]
     
     sid_avg_test = np.mean(sid_test_sizes)
     es_avg_test = np.mean(es_test_sizes)
+    wesad_avg_test = np.mean(wesad_test_sizes)
     combined_avg_test = np.mean(combined_test_sizes)
     
     with open(log_file, "w", encoding="utf-8") as f_log:
@@ -97,6 +105,8 @@ def main():
         f_log.write(f"StressID average test fold size (windows): {sid_avg_test:.2f}\n")
         f_log.write(f"EmpathicSchool LOSO folds count: {len(es_folds)}\n")
         f_log.write(f"EmpathicSchool average test fold size (windows): {es_avg_test:.2f}\n")
+        f_log.write(f"WESAD LOSO folds count: {len(wesad_folds)}\n")
+        f_log.write(f"WESAD average test fold size (windows): {wesad_avg_test:.2f}\n")
         f_log.write(f"Combined LOSO folds count: {len(combined_folds)}\n")
         f_log.write(f"Combined average test fold size (windows): {combined_avg_test:.2f}\n")
         
@@ -106,6 +116,8 @@ def main():
         issues.append("StressID folds count is 0")
     if len(es_folds) == 0:
         issues.append("EmpathicSchool folds count is 0")
+    if len(wesad_folds) == 0:
+        issues.append("WESAD folds count is 0")
     if len(combined_folds) == 0:
         issues.append("Combined folds count is 0")
         

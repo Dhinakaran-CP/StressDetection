@@ -1,78 +1,63 @@
 import React, { useMemo } from 'react';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
   RadarChart,
   Radar,
   PolarGrid,
   PolarAngleAxis,
-  PolarRadiusAxis
+  PolarRadiusAxis,
+  ResponsiveContainer
 } from 'recharts';
 
-
-const MODALITY_CONFIG = {
-  facial:   { icon: '👁',  label: 'Facial Expression', color: '#3182ce' },
-  face:     { icon: '👁',  label: 'Facial Expression', color: '#3182ce' },
-  voice:    { icon: '🎙',  label: 'Vocal Strain',      color: '#805ad5' },
-  physiological: { icon: '📈',  label: 'Physiological',     color: '#319795' },
-  physio:   { icon: '📈',  label: 'Physiological',     color: '#319795' },
+const FEATURE_ICONS = {
+  facial: 'face',
+  face: 'face',
+  voice: 'keyboard_voice',
+  physiological: 'monitor_heart',
+  physio: 'monitor_heart',
+  overall: 'analytics'
 };
 
 const FEATURE_LABELS = {
-  avg_ear:           'Eye Openness',
+  avg_ear: 'Eye Openness',
   brow_descent_left: 'Brow Tension',
-  lip_compression:   'Lip Compression',
-  jaw_displacement:  'Jaw Tension',
-  jitter_percent:    'Vocal Jitter',
-  f0_mean:           'Pitch Level',
-  hnr:               'Voice Clarity',
-  shimmer_db:        'Amplitude Stability',
-  alpha_power:       'Alpha Brainwave',
-  beta_power:        'Beta Brainwave',
-  scr_rate:          'Skin Conductance',
+  lip_compression: 'Lip Compression',
+  jaw_displacement: 'Jaw Tension',
+  jitter_percent: 'Vocal Jitter',
+  f0_mean: 'Pitch Level',
+  hnr: 'Voice Clarity',
+  shimmer_db: 'Amplitude Stability',
+  alpha_power: 'Alpha Brainwave',
+  beta_power: 'Beta Brainwave',
+  scr_rate: 'Skin Conductance',
 };
 
 const FACIAL_FEATURE_NAMES = [
-  "Left Eye Openness",          // 0
-  "Right Eye Openness",         // 1
-  "Average Eye Openness",       // 2
-  "Blink Velocity",             // 3
-  "Brow Tension (Left)",        // 4
-  "Brow Tension (Right)",       // 5
-  "Brow Asymmetry",             // 6
-  "Lip Compression",            // 7
-  "Jaw Tension",                // 8
-  "Mouth Corner Pull",          // 9
-  "Forehead Tension",           // 10
-  "Normalized Face Height",     // 11
-  "Head Tilt",                  // 12
-  "Temporal X Variation",       // 13
-  "Temporal Y Variation",       // 14
-  "Eye Openness Ratio",         // 15
-  "Landmark Confidence",        // 16
-  "Nose Wrinkle"                // 17
+  "Left Eye Openness", "Right Eye Openness", "Average Eye Openness",
+  "Blink Velocity", "Brow Tension (Left)", "Brow Tension (Right)",
+  "Brow Asymmetry", "Lip Compression", "Jaw Tension", "Mouth Corner Pull",
+  "Forehead Tension", "Normalized Face Height", "Head Tilt", "Temporal X Variation",
+  "Temporal Y Variation", "Eye Openness Ratio", "Landmark Confidence", "Nose Wrinkle"
 ];
 
 const VOICE_FEATURE_NAMES = [
-  "Mean Pitch",                 // 0
-  "Pitch Standard Deviation",   // 1
-  "Pitch Range",                // 2
-  "Vocal Jitter",               // 3
-  "Amplitude Shimmer",          // 4
-  "Voice Harmonics-to-Noise Ratio", // 5
-  "Speaking Rate",              // 6
-  "Voice Intensity",            // 7
-  "High Frequency Energy Ratio", // 8
-  "Spectral Flux",              // 9
-  "Pause Ratio",                // 10
-  "Voiced Fraction"             // 11
+  "Mean Pitch", "Pitch Standard Deviation", "Pitch Range", "Vocal Jitter",
+  "Amplitude Shimmer", "Voice Harmonics-to-Noise Ratio", "Speaking Rate",
+  "Voice Intensity", "High Frequency Energy Ratio", "Spectral Flux",
+  "Pause Ratio", "Voiced Fraction"
 ];
+
+function getFeatureIconName(feature, modality) {
+  if (feature?.toLowerCase()?.includes('jaw') || feature?.toLowerCase()?.includes('brow') || feature?.toLowerCase()?.includes('eye')) {
+    return 'face';
+  }
+  if (feature?.toLowerCase()?.includes('pitch') || feature?.toLowerCase()?.includes('voice') || feature?.toLowerCase()?.includes('vocal') || feature?.toLowerCase()?.includes('jitter')) {
+    return 'keyboard_voice';
+  }
+  if (modality === 'physio' || modality === 'physiological') {
+    return 'monitor_heart';
+  }
+  return FEATURE_ICONS[modality] || 'speed';
+}
 
 function featureLabel(key) {
   if (!key) return "Unknown Feature";
@@ -96,9 +81,9 @@ function featureLabel(key) {
     const parts = normalizedKey.split("_");
     const idx = parseInt(parts[parts.length - 1]);
     if (idx >= 42) {
-      return `Skin Conductance / GSR Response (Feature ${idx - 41})`;
+      return `GSR Response (Feature ${idx - 41})`;
     }
-    return `EEG Brainwave Band Power (Feature ${idx})`;
+    return `EEG Band Power (Feature ${idx})`;
   }
 
   return FEATURE_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -115,69 +100,8 @@ const toPercent = (value, fallback = 0) => {
   return clamp(numeric, 0, 100);
 };
 
-const toStressBand = (percentage) => {
-  if (percentage >= 67) return "High";
-  if (percentage >= 34) return "Medium";
-  return "Low";
-};
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function SHAPDrivers({ explainability }) {
-  if (!explainability?.available || !explainability.top_drivers?.length) return null;
-
-  // Calculate total absolute SHAP value for normalization
-  const totalShap = explainability.top_drivers.reduce((sum, d) => sum + Math.abs(d.shap_value), 0) || 1.0;
-
-  return (
-    <div style={{
-      background: 'var(--card-inner-bg)',
-      border: 'var(--glass-border)',
-      borderRadius: 10, padding: '14px 16px', marginTop: 16,
-    }}>
-      <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem',
-                    letterSpacing: '0.1em', marginBottom: 12, fontWeight: 700 }}>
-        🧠 WHY THIS PREDICTION (TOP DRIVERS - RELATIVE IMPACT)
-      </div>
-      {explainability.top_drivers.slice(0, 3).map((d, i) => {
-        const modCfg = MODALITY_CONFIG[d.modality] || { icon: '🧠', color: 'var(--primary-color)' };
-        const isIncrease = d.direction === 'increases_stress';
-        
-        // Calculate relative contribution percentage
-        const displayValue = (Math.abs(d.shap_value) / totalShap) * 100;
-
-        return (
-          <div key={i} style={{ display: 'flex', alignItems: 'center',
-                                 gap: 10, marginBottom: 10 }}>
-            <span style={{ fontSize: '0.8rem', color: modCfg.color || 'var(--text-color)',
-                            minWidth: 20 }}>
-              {modCfg.icon}
-            </span>
-            <span style={{ flex: 1, color: 'var(--text-color)',
-                            fontSize: '0.82rem', fontWeight: 500 }}>
-              {featureLabel(d.feature)}
-            </span>
-            <span style={{
-              color:      isIncrease ? '#F44336' : '#4CAF50',
-              fontSize:   '0.78rem',
-              fontWeight: 700,
-              background: isIncrease ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)',
-              borderRadius: 4, padding: '2px 8px',
-            }}>
-              {isIncrease ? '▲' : '▼'} {displayValue.toFixed(1)}%
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
-
-export default function AnalysisPanel({ result, onRequestGame, previousResult, theme }) {
-  const stress_level = result?.stress_level || "Low";
-  // Clamp fused score to [0, 1] bounds
+export default function AnalysisPanel({ result, onRequestGame, previousResult }) {
+  const stress_level = result?.stress_level?.toUpperCase() || "LOW";
   const fused_score = clamp(result?.stress_probability || (result?.percentage ? result.percentage / 100 : 0), 0, 1);
   const confidence_score = clamp(result?.confidence || 0.9, 0, 1);
   const explainability = result?.explainability;
@@ -186,18 +110,6 @@ export default function AnalysisPanel({ result, onRequestGame, previousResult, t
   const voice_score = individual.voice;
   const physio_score = individual.physiological ?? individual.physio;
 
-
-  // Before vs After comparison
-  const hasPrevious = previousResult != null;
-  const delta       = hasPrevious
-    ? ((previousResult.fused_score - fused_score) * 100).toFixed(1)
-    : null;
-  const improved    = hasPrevious && fused_score < previousResult.fused_score;
-
-  // Resolve primary color dynamically based on theme to prevent SVG CSS var caching issues
-  const themePrimaryColor = theme === 'earthy' ? '#8d9740' : '#00f2ff';
-
-  // Modality percentages & levels calculations for the bars and charts
   const analysis = useMemo(() => {
     const points = [];
     if (face_score != null) {
@@ -217,7 +129,6 @@ export default function AnalysisPanel({ result, onRequestGame, previousResult, t
     const sorted = [...points].sort((a, b) => b.value - a.value);
     const total = points.reduce((sum, item) => sum + item.value, 0) || 1;
 
-    // Formulate a specific, meaningful main cause description using specific features if possible
     const drivers = explainability?.top_drivers || [];
     const topFeatureLabels = drivers.slice(0, 2).map(d => featureLabel(d.feature));
 
@@ -238,24 +149,10 @@ export default function AnalysisPanel({ result, onRequestGame, previousResult, t
       contributions: points.map((item) => ({
         ...item,
         contribution: Math.round((item.value / total) * 100),
-        band: toStressBand(item.value),
       })),
     };
   }, [face_score, voice_score, physio_score, fused_score, explainability]);
 
-  // Construct chart data to show both Stress and Non-Stress percentages side-by-side
-  const chartData = useMemo(() => {
-    return analysis.points.map(p => {
-      const val = p.value;
-      return {
-        label: p.label,
-        Stress: val,
-        "Non-Stress": clamp(100 - val, 0, 100),
-      };
-    });
-  }, [analysis.points]);
-
-  // Agreement, Coverage, Risk, Resilience calculation
   const activeValues = useMemo(() => {
     return analysis.points.map(p => p.value);
   }, [analysis.points]);
@@ -275,7 +172,7 @@ export default function AnalysisPanel({ result, onRequestGame, previousResult, t
   const stdDev = useMemo(() => Math.sqrt(variance), [variance]);
 
   const maxPossibleStdDev = useMemo(() => {
-    if (activeValues.length <= 1) return 1; // Avoid division by zero, though stdDev will be 0 anyway
+    if (activeValues.length <= 1) return 1;
     return activeValues.length === 3 ? 47.14045 : 50.0;
   }, [activeValues]);
 
@@ -287,317 +184,216 @@ export default function AnalysisPanel({ result, onRequestGame, previousResult, t
   const completeness = useMemo(() => (activeValues.length / 3) * 100, [activeValues]);
   const riskIndex = useMemo(() => clamp(fused_score * 100, 0, 100), [fused_score]);
   const resilienceIndex = useMemo(() => clamp((100 - riskIndex) * 0.8 + (agreement * 0.2), 0, 100), [riskIndex, agreement]);
-
   const confidenceTarget = clamp(confidence_score * 100, 0, 100);
 
   const radarData = useMemo(() => {
     return [
-      { subject: 'Risk', A: riskIndex },
-      { subject: 'Agreement', A: agreement },
-      { subject: 'Coverage', A: completeness },
-      { subject: 'Resilience', A: resilienceIndex },
+      { subject: 'Risk Index', value: riskIndex },
+      { subject: 'Agreement', value: agreement },
+      { subject: 'Coverage', value: completeness },
+      { subject: 'Resilience', value: resilienceIndex },
     ];
   }, [riskIndex, agreement, completeness, resilienceIndex]);
 
-  const assessmentText = useMemo(() => {
-    const isStress = riskIndex >= 50;
-    const levelText = stress_level + " Stress";
-    const dominantState = isStress ? "Stress Detected" : "No Stress";
-    return `${levelText} - ${dominantState}`;
-  }, [stress_level, riskIndex]);
-
-  const getRecommendation = (level) => {
-    switch(level) {
-      case "Low":
-        return "You're doing well! Maintain your current stress management practices.";
-      case "Moderate":
-        return "Consider taking short breaks and practicing deep breathing exercises.";
-      case "High":
-      case "Extreme":
-        return "High stress detected. Consider speaking with a wellness professional and taking immediate breaks.";
-      default:
-        return "Continue monitoring your stress levels regularly.";
+  // Derived Trigger for display
+  const detectedTrigger = useMemo(() => {
+    if (explainability?.top_drivers?.length > 0) {
+      const topFeature = explainability.top_drivers[0].feature;
+      const label = featureLabel(topFeature);
+      if (label.toLowerCase().includes('speaking') || label.toLowerCase().includes('pitch') || label.toLowerCase().includes('jitter')) {
+        return 'Speech Pattern';
+      }
+      if (label.toLowerCase().includes('eye') || label.toLowerCase().includes('blink')) {
+        return 'Ocular Flutter';
+      }
+      if (label.toLowerCase().includes('jaw') || label.toLowerCase().includes('forehead') || label.toLowerCase().includes('brow')) {
+        return 'Facial Tension';
+      }
+      return label;
     }
-  };
-
-  if (!result) return null;
+    return 'Sympathetic Activation';
+  }, [explainability]);
 
   return (
-    <div style={{
-      background: 'var(--card-bg)',
-      border:     'var(--glass-border)',
-      borderRadius: 16,
-      padding:    24,
-      boxShadow:  'var(--glass-shadow)',
-      backdropFilter: 'blur(12px)',
-      color:      'var(--text-color)',
-    }}>
-
-      {/* ── Before/After Banner ── */}
-      {hasPrevious && (
-        <div style={{
-          background: improved ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
-          border:     `1px solid ${improved ? '#4CAF50' : '#F44336'}`,
-          borderRadius: 10, padding: '10px 16px',
-          marginBottom: 24,
-          display: 'flex', alignItems: 'center', gap: 12,
-        }}>
-          <span style={{ fontSize: '1.2rem' }}>{improved ? '📉' : '📈'}</span>
-          <div>
-            <div style={{
-              color:      improved ? '#4CAF50' : '#F44336',
-              fontWeight: 700, fontSize: '0.9rem',
-            }}>
-              {improved
-                ? `Stress reduced by ${delta}% after recovery`
-                : `Stress increased by ${Math.abs(delta)}% — try another activity`}
+    <div className="space-y-8 select-none">
+      {/* Bento Layout Header */}
+      <div className="grid grid-cols-12 gap-gutter items-stretch">
+        
+        {/* Primary Stress Score Card */}
+        <section className="col-span-12 lg:col-span-7 bg-surface-container-lowest rounded-2xl shadow-[0_4px_20px_rgba(26,28,30,0.04)] p-8 flex flex-col justify-between relative overflow-hidden border border-outline-variant/10">
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-surface-container-high/30 rounded-full blur-3xl"></div>
+          
+          <div className="flex justify-between items-start mb-6 z-10">
+            <div>
+              <h2 className="font-label-caps text-[11px] text-on-surface-variant font-semibold tracking-wider mb-1">AGGREGATE STRESS INDEX</h2>
+              <p className="text-xs text-on-surface opacity-60 font-medium">Calculated from multimodal telemetry streams</p>
             </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 600 }}>
-              Before: {Math.round(previousResult.fused_score * 100)}% →
-              After: {Math.round(fused_score * 100)}%
+            <span className={`px-4 py-1 rounded-full font-label-caps text-xs font-bold ${
+              stress_level === 'HIGH' || stress_level === 'EXTREME'
+                ? 'bg-error-container text-on-error-container'
+                : stress_level === 'MODERATE'
+                ? 'bg-[#FFF0E0] text-[#854D0E]'
+                : 'bg-primary-container/10 text-primary'
+            }`}>
+              {stress_level}
+            </span>
+          </div>
+
+          <div className="flex items-baseline gap-2 mb-6 z-10">
+            <span className="font-display-lg text-[96px] leading-none text-primary font-bold">
+              {Math.round(fused_score * 100)}
+            </span>
+            <span className="font-headline-sm text-headline-sm text-outline">%</span>
+          </div>
+
+          <div className="space-y-4 z-10">
+            <div className="flex justify-between font-label-caps text-[10px] text-on-surface-variant font-bold tracking-wider">
+              <span>RELAXED</span>
+              <span>PEAK LOAD</span>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Section 1: Title & Main Percentage ── */}
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <h3 style={{ fontFamily: 'var(--font-headings)', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-color)', fontSize: '1.45rem', textTransform: 'uppercase' }}>
-          Overall Stress Assessment
-        </h3>
-        <div style={{ fontSize: '3.75rem', fontWeight: 800, color: 'var(--primary-color)', marginTop: 10, fontFamily: 'monospace' }}>
-          {riskIndex.toFixed(1)}%
-        </div>
-        <div style={{ fontSize: '1.15rem', color: 'var(--primary-color)', fontWeight: 700, marginTop: 8, letterSpacing: '0.04em' }}>
-          {assessmentText}
-        </div>
-      </div>
-
-      {/* ── Key Metrics & Indicators Cohesive Panel ── */}
-      <div style={{
-        background: 'var(--accent-light-bg)',
-        border: 'var(--glass-border)',
-        borderRadius: 12,
-        padding: 20,
-        marginBottom: 32
-      }}>
-        <div style={{
-          color: 'var(--text-muted)',
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          marginBottom: 16,
-          textAlign: 'center'
-        }}>
-          📊 KEY METRICS & INDICATORS
-        </div>
-
-        {/* ── Section 2: Three Status Cards ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
-          <div style={{
-            background: 'var(--card-inner-bg)',
-            border: 'var(--glass-border)',
-            borderRadius: 10,
-            padding: '12px 24px',
-            textAlign: 'center',
-            boxShadow: 'var(--glass-shadow)'
-          }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Confidence</div>
-            <div style={{ color: 'var(--text-color)', fontSize: '1.5rem', fontWeight: 700, marginTop: 4 }}>{confidenceTarget.toFixed(1)}%</div>
-          </div>
-          <div style={{
-            background: 'var(--card-inner-bg)',
-            border: 'var(--glass-border)',
-            borderRadius: 10,
-            padding: '12px 24px',
-            textAlign: 'center',
-            boxShadow: 'var(--glass-shadow)'
-          }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Stress Probability</div>
-            <div style={{ color: 'var(--text-color)', fontSize: '1.5rem', fontWeight: 700, marginTop: 4 }}>{riskIndex.toFixed(1)}%</div>
-          </div>
-          <div style={{
-            background: 'var(--card-inner-bg)',
-            border: 'var(--glass-border)',
-            borderRadius: 10,
-            padding: '12px 24px',
-            textAlign: 'center',
-            boxShadow: 'var(--glass-shadow)'
-          }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>No Stress Probability</div>
-            <div style={{ color: 'var(--text-color)', fontSize: '1.5rem', fontWeight: 700, marginTop: 4 }}>{(100 - riskIndex).toFixed(1)}%</div>
-          </div>
-        </div>
-
-        {/* ── Section 3: Four Metric Cards ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
-          <div style={{ background: 'var(--card-inner-bg)', border: 'var(--glass-border)', borderRadius: 10, padding: 16, textAlign: 'center', boxShadow: 'var(--glass-shadow)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>Agreement Score</div>
-            <div style={{ color: 'var(--text-color)', fontSize: '1.45rem', fontWeight: 700, marginTop: 6 }}>{agreement.toFixed(1)}%</div>
-          </div>
-          <div style={{ background: 'var(--card-inner-bg)', border: 'var(--glass-border)', borderRadius: 10, padding: 16, textAlign: 'center', boxShadow: 'var(--glass-shadow)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>Modality Coverage</div>
-            <div style={{ color: 'var(--text-color)', fontSize: '1.45rem', fontWeight: 700, marginTop: 6 }}>{completeness.toFixed(1)}%</div>
-          </div>
-          <div style={{ background: 'var(--card-inner-bg)', border: 'var(--glass-border)', borderRadius: 10, padding: 16, textAlign: 'center', boxShadow: 'var(--glass-shadow)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>Risk Index</div>
-            <div style={{ color: 'var(--text-color)', fontSize: '1.45rem', fontWeight: 700, marginTop: 6 }}>{riskIndex.toFixed(1)}%</div>
-          </div>
-          <div style={{ background: 'var(--card-inner-bg)', border: 'var(--glass-border)', borderRadius: 10, padding: 16, textAlign: 'center', boxShadow: 'var(--glass-shadow)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>Resilience Index</div>
-            <div style={{ color: 'var(--text-color)', fontSize: '1.45rem', fontWeight: 700, marginTop: 6 }}>{resilienceIndex.toFixed(1)}%</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Section 4: Two Side-by-Side Plots ── */}
-      <div className="row" style={{ marginBottom: 32 }}>
-        {/* Left Column: Modality Stress Graph */}
-        <div className="col-md-6">
-          <div style={{ background: 'var(--accent-light-bg)', border: 'var(--glass-border)', borderRadius: 12, padding: 20, height: '100%' }}>
-            <h4 style={{ color: themePrimaryColor, fontSize: '1.15rem', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
-              Modality Stress Graph
-            </h4>
-            <div style={{ width: '100%', height: 240 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 120, 120, 0.15)" />
-                  <XAxis dataKey="label" tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                  <YAxis domain={[0, 100]} tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'var(--card-bg)',
-                      border: 'var(--glass-border)',
-                      borderRadius: 8,
-                      color: 'var(--text-color)',
-                      fontSize: 12
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-color)' }} />
-                  <Bar dataKey="Stress" fill="#c74545" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Non-Stress" fill={themePrimaryColor} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="h-2.5 w-full bg-surface-container rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all duration-[1.5s] ease-out" style={{ width: `${fused_score * 100}%` }}></div>
             </div>
+            <p className="font-body-md text-sm text-on-surface-variant italic leading-relaxed">
+              "{analysis.cause}"
+            </p>
           </div>
-        </div>
+        </section>
 
-        {/* Right Column: Health Radar */}
-        <div className="col-md-6">
-          <div style={{ background: 'var(--accent-light-bg)', border: 'var(--glass-border)', borderRadius: 12, padding: 20, height: '100%' }}>
-            <h4 style={{ color: themePrimaryColor, fontSize: '1.15rem', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
-              Health Radar
-            </h4>
-            <div style={{ width: '100%', height: 240 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" radius="70%" data={radarData}>
-                  <PolarGrid stroke="rgba(120, 120, 120, 0.2)" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'var(--text-color)', fontSize: 9 }} />
-                  <Radar name="Metrics" dataKey="A" stroke={themePrimaryColor} fill={themePrimaryColor} fillOpacity={0.3} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* SHAP Contributors list */}
+        <section className="col-span-12 lg:col-span-5 bg-surface-container-lowest rounded-2xl shadow-[0_4px_20px_rgba(26,28,30,0.04)] p-8 border border-outline-variant/10">
+          <h2 className="font-label-caps text-[11px] text-on-surface-variant font-bold tracking-wider mb-6 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">troubleshoot</span>
+            CONTRIBUTING FACTORS (SHAP)
+          </h2>
 
-      {/* ── Section 5: Specific Drivers & Breakdown (SHAP Details) ── */}
-      <div style={{ background: 'var(--accent-light-bg)', border: 'var(--glass-border)', borderRadius: 12, padding: 20, marginBottom: 32 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', letterSpacing: '0.1em', marginBottom: 12, fontWeight: 700 }}>
-          MODALITY CONTRIBUTION BREAKDOWN
-        </div>
-        {analysis.contributions.map((entry) => {
-          const mCfg = MODALITY_CONFIG[entry.key] || { color: 'var(--primary-color)' };
-          return (
-            <div key={entry.key} style={{ marginBottom: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 500, marginBottom: 4 }}>
-                <span>{entry.label}</span>
-                <span>{entry.contribution}%</span>
+          <div className="space-y-6">
+            {explainability?.top_drivers?.length > 0 ? (
+              explainability.top_drivers.slice(0, 4).map((d, index) => {
+                const iconName = getFeatureIconName(d.feature, d.modality);
+                const absVal = Math.abs(d.shap_value);
+                const totalShap = explainability.top_drivers.reduce((s, dr) => s + Math.abs(dr.shap_value), 0) || 1;
+                const pctVal = Math.round((absVal / totalShap) * 100);
+
+                return (
+                  <div key={index} className="group">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/10 text-primary">
+                          <span className="material-symbols-outlined text-[18px]">{iconName}</span>
+                        </div>
+                        <span className="text-sm font-semibold text-on-surface">{featureLabel(d.feature)}</span>
+                      </div>
+                      <span className="font-data-metric text-sm font-bold text-primary">{pctVal}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full group-hover:opacity-80 transition-all" style={{ width: `${pctVal}%` }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="h-full flex items-center justify-center py-10 text-center text-xs text-outline italic">
+                No feature attribution diagnostics available for this prediction.
               </div>
-              <div className="contrib-track" style={{ height: 8, background: 'var(--bar-bg)', borderRadius: 4, overflow: 'hidden' }}>
-                <div className="contrib-fill" style={{
-                  height: '100%',
-                  width: `${entry.contribution}%`,
-                  background: `linear-gradient(90deg, ${mCfg.color}aa, ${mCfg.color})`,
-                  borderRadius: 4,
-                  transition: 'width 1s ease'
-                }} />
-              </div>
-            </div>
-          );
-        })}
+            )}
+          </div>
+        </section>
+      </div>
 
-        <div className="analysis-cause" style={{
-          marginTop: '1.25rem',
-          background: 'var(--card-inner-bg)',
-          border: 'var(--glass-border)',
-          borderRadius: 10,
-          padding: '12px 16px',
-          boxShadow: 'var(--glass-shadow)'
-        }}>
-          <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', letterSpacing: '0.1em', fontWeight: 700 }}>MAIN CONTRIBUTING DRIVER</small>
-          <p style={{ margin: '4px 0 0', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-color)' }}>
-            {analysis.cause}
+      {/* Insight Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+        {/* Recovery Score */}
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_4px_20px_rgba(26,28,30,0.04)] p-6 hover:-translate-y-0.5 transition-all duration-300 border-l-4 border-[#4ADE80] border-t border-r border-b border-outline-variant/10 flex flex-col justify-between min-h-[110px]">
+          <div className="flex justify-between items-center">
+            <span className="font-label-caps text-[10px] text-on-surface-variant font-bold tracking-wider">RECOVERY SCORE</span>
+            <span className="material-symbols-outlined text-[#4ADE80] text-sm">autorenew</span>
+          </div>
+          <div className="flex items-baseline gap-1 mt-2">
+            <span className="font-display-lg text-2xl font-bold text-on-surface">{Math.round(resilienceIndex)}</span>
+            <span className="text-outline-variant font-label-caps text-xs">%</span>
+          </div>
+          <p className="text-[11px] text-on-surface-variant font-medium mt-2">
+            {resilienceIndex > 60 ? 'Current baseline trending towards stabilization.' : 'System recommends tactical recovery breathing.'}
           </p>
         </div>
 
-        <SHAPDrivers explainability={explainability} />
+        {/* Confidence Score */}
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_4px_20px_rgba(26,28,30,0.04)] p-6 hover:-translate-y-0.5 transition-all duration-300 border-l-4 border-primary border-t border-r border-b border-outline-variant/10 flex flex-col justify-between min-h-[110px]">
+          <div className="flex justify-between items-center">
+            <span className="font-label-caps text-[10px] text-on-surface-variant font-bold tracking-wider">CONFIDENCE SCORE</span>
+            <span className="material-symbols-outlined text-primary text-sm">verified</span>
+          </div>
+          <div className="flex items-baseline gap-1 mt-2">
+            <span className="font-display-lg text-2xl font-bold text-on-surface">{Math.round(confidenceTarget)}</span>
+            <span className="text-outline-variant font-label-caps text-xs">%</span>
+          </div>
+          <p className="text-[11px] text-on-surface-variant font-medium mt-2">
+            {confidenceTarget > 85 ? 'High sensor fidelity from all active channels.' : 'Medium fidelity, check camera positioning.'}
+          </p>
+        </div>
+
+        {/* Detected Trigger */}
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_4px_20px_rgba(26,28,30,0.04)] p-6 hover:-translate-y-0.5 transition-all duration-300 border-l-4 border-[#FBBF24] border-t border-r border-b border-outline-variant/10 flex flex-col justify-between min-h-[110px]">
+          <div className="flex justify-between items-center">
+            <span className="font-label-caps text-[10px] text-on-surface-variant font-bold tracking-wider">DETECTED TRIGGER</span>
+            <span className="material-symbols-outlined text-[#FBBF24] text-sm">warning</span>
+          </div>
+          <div className="flex items-baseline gap-1 mt-2">
+            <span className="font-display-lg text-2xl font-bold text-on-surface truncate max-w-[200px]">{detectedTrigger}</span>
+          </div>
+          <p className="text-[11px] text-on-surface-variant font-medium mt-2">
+            Primary stress biomarker trigger mapping output.
+          </p>
+        </div>
       </div>
 
-      {/* ── Section 6: Action Buttons & Recommendation ── */}
-      <div style={{
-        textAlign: 'center',
-        padding: '14px 16px',
-        background: 'var(--accent-light-bg)',
-        border: 'var(--glass-border)',
-        borderRadius: 8,
-        fontWeight: 600,
-        fontSize: '0.95rem',
-        color: 'var(--text-color)',
-        marginBottom: 20
-      }}>
-        Recommendation: {getRecommendation(stress_level)}
-      </div>
+      {/* Advanced Research: Radar correlation charts */}
+      <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-gutter items-center">
+        <div className="space-y-6">
+          <h3 className="font-headline-sm text-headline-sm text-primary">Biometric Correlation Visualization</h3>
+          <p className="font-body-lg text-sm text-on-surface-variant leading-relaxed max-w-lg">
+            The neural overlay shows the direct relationship between sympathetic nervous system arousal and localized muscular/acoustic tension. We recommend launching a 2-minute Guided Box Breathing session to stabilize the autonomic baseline.
+          </p>
+          <div className="flex gap-4">
+            <button
+              onClick={onRequestGame}
+              className="px-6 py-3 bg-primary text-on-primary rounded-xl font-label-caps text-xs font-bold tracking-wider hover:opacity-90 active:scale-95 transition-all shadow-md"
+            >
+              Start Session
+            </button>
+            <button 
+              onClick={() => {
+                const btn = document.getElementById('export-btn');
+                if (btn) {
+                  const original = btn.innerText;
+                  btn.innerText = 'Exported \u2713';
+                  btn.classList.add('bg-[#4ADE80]/20', 'text-[#4ADE80]', 'border-[#4ADE80]');
+                  setTimeout(() => {
+                    btn.innerText = original;
+                    btn.classList.remove('bg-[#4ADE80]/20', 'text-[#4ADE80]', 'border-[#4ADE80]');
+                  }, 2000);
+                }
+              }}
+              id="export-btn"
+              className="px-6 py-3 border border-outline text-on-surface-variant rounded-xl font-label-caps text-xs font-bold tracking-wider hover:bg-surface-container transition-all active:scale-95"
+            >
+              Export Report
+            </button>
+          </div>
+        </div>
 
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button
-          onClick={onRequestGame}
-          className="btn btn-primary"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '10px 24px',
-            fontSize: '0.95rem',
-            borderRadius: '30px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 700
-          }}
-        >
-          🎮 Play Relaxation Game
-        </button>
-
-        <button
-          onClick={() => {
-            window.location.reload();
-          }}
-          className="btn btn-secondary"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '10px 24px',
-            fontSize: '0.95rem',
-            borderRadius: '30px',
-            cursor: 'pointer',
-            fontWeight: 700
-          }}
-        >
-          📂 New Analysis
-        </button>
+        {/* Recharts Radar Representation */}
+        <div className="relative h-[320px] rounded-2xl bg-white border border-outline-variant/10 shadow-sm flex items-center justify-center p-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+              <PolarGrid stroke="var(--outline-variant)" strokeOpacity="0.2" />
+              <PolarAngleAxis dataKey="subject" stroke="#737780" fontSize={11} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#737780" fontSize={9} />
+              <Radar name="Vitals Index" dataKey="value" stroke="#0e3b69" fill="#0e3b69" fillOpacity={0.2} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

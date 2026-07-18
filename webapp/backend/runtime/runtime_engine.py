@@ -25,6 +25,9 @@ except ImportError:
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+research_path = os.path.join(ROOT, "research")
+if research_path not in sys.path:
+    sys.path.insert(0, research_path)
 
 from backend.core.feature_runtime_lock import FeatureRuntimeLock
 from backend.core.version_registry      import VersionRegistry
@@ -69,9 +72,9 @@ FUSION_WEIGHTS = {"face": 0.30, "voice": 0.40, "physio": 0.30}
 # Model filename map — registry keys → pkl filenames (fallback when registry
 # doesn't carry the file path directly)
 _MODEL_FILES = {
-    "face_expert":   ("face_expert_lightweight.pkl",  "face_scaler_lightweight.pkl"),
-    "voice_expert":  ("voice_expert_lightweight.pkl", "voice_scaler_lightweight.pkl"),
-    "physio_expert": ("physio_expert_lightweight.pkl","physio_scaler_lightweight.pkl"),
+    "face_expert":   (os.path.join("fallback_models", "face_expert_lightweight.pkl"),  os.path.join("fallback_models", "face_scaler_lightweight.pkl")),
+    "voice_expert":  (os.path.join("fallback_models", "voice_expert_lightweight.pkl"), os.path.join("fallback_models", "voice_scaler_lightweight.pkl")),
+    "physio_expert": (os.path.join("fallback_models", "physio_expert_lightweight.pkl"),os.path.join("fallback_models", "physio_scaler_lightweight.pkl")),
 }
 
 EXPERT_MODELS_DIR = os.path.join(ROOT, "models")
@@ -191,7 +194,7 @@ class RuntimeEngine:
 
     def _load_artifacts(self):
         """Load model+scaler pairs for all registered experts (supporting both deep learning and classical)."""
-        config_path = os.path.join(EXPERT_MODELS_DIR, "deep_fusion_config.json")
+        config_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", "deep_fusion_config.json")
         self.strategy_used = "standard"
         self.use_deep = False
         
@@ -207,10 +210,10 @@ class RuntimeEngine:
                     if primary_strategy == "adversarial":
                         # Check if all adversarial files are present
                         adv_files = [
-                            os.path.join(EXPERT_MODELS_DIR, "adv_face_expert.pt"),
-                            os.path.join(EXPERT_MODELS_DIR, "adv_voice_expert.pt"),
-                            os.path.join(EXPERT_MODELS_DIR, "adv_physio_expert.pt"),
-                            os.path.join(EXPERT_MODELS_DIR, "adv_fusion_router.pt")
+                            os.path.join(EXPERT_MODELS_DIR, "research_champion", "adv_face_expert.pt"),
+                            os.path.join(EXPERT_MODELS_DIR, "research_champion", "adv_voice_expert.pt"),
+                            os.path.join(EXPERT_MODELS_DIR, "research_champion", "adv_physio_expert.pt"),
+                            os.path.join(EXPERT_MODELS_DIR, "research_champion", "adv_fusion_router.pt")
                         ]
                         if all(os.path.exists(f) for f in adv_files):
                             self.strategy_used = "adversarial"
@@ -232,7 +235,7 @@ class RuntimeEngine:
             if self.use_deep and modality in ["face", "voice", "physio"]:
                 prefix = "adv_" if self.strategy_used == "adversarial" else "deep_"
                 deep_scaler_file = f"{prefix}{modality}_scaler.pkl"
-                scaler_path = os.path.join(EXPERT_MODELS_DIR, deep_scaler_file)
+                scaler_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", deep_scaler_file)
                 if os.path.exists(scaler_path):
                     try:
                         self._scalers[modality] = _safe_load(scaler_path)
@@ -295,7 +298,7 @@ class RuntimeEngine:
         """Loads Phase 8 PyTorch sequence models and dynamic router."""
         prefix = "adv_" if self.strategy_used == "adversarial" else "deep_"
         try:
-            face_path = os.path.join(EXPERT_MODELS_DIR, f"{prefix}face_expert.pt")
+            face_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", f"{prefix}face_expert.pt")
             self.deep_models["face"] = ModalityEncoder(18, 16)
             self.deep_models["face"].load_state_dict(torch.load(face_path, map_location="cpu"))
             self.deep_models["face"].eval()
@@ -304,7 +307,7 @@ class RuntimeEngine:
             if reg_f:
                 self._verify_hash(face_path, reg_f.get("hash"), f"{prefix}face_expert")
 
-            voice_path = os.path.join(EXPERT_MODELS_DIR, f"{prefix}voice_expert.pt")
+            voice_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", f"{prefix}voice_expert.pt")
             self.deep_models["voice"] = ModalityEncoder(12, 16)
             self.deep_models["voice"].load_state_dict(torch.load(voice_path, map_location="cpu"))
             self.deep_models["voice"].eval()
@@ -313,7 +316,7 @@ class RuntimeEngine:
             if reg_v:
                 self._verify_hash(voice_path, reg_v.get("hash"), f"{prefix}voice_expert")
 
-            physio_path = os.path.join(EXPERT_MODELS_DIR, f"{prefix}physio_expert.pt")
+            physio_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", f"{prefix}physio_expert.pt")
             self.deep_models["physio"] = ModalityEncoder(5, 16)
             self.deep_models["physio"].load_state_dict(torch.load(physio_path, map_location="cpu"))
             self.deep_models["physio"].eval()
@@ -322,7 +325,7 @@ class RuntimeEngine:
             if reg_p:
                 self._verify_hash(physio_path, reg_p.get("hash"), f"{prefix}physio_expert")
 
-            router_path = os.path.join(EXPERT_MODELS_DIR, f"{prefix}fusion_router.pt")
+            router_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", f"{prefix}fusion_router.pt")
             self.deep_models["router"] = DynamicRouter(num_modalities=3)
             self.deep_models["router"].load_state_dict(torch.load(router_path, map_location="cpu"))
             self.deep_models["router"].eval()

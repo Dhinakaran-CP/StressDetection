@@ -2,6 +2,8 @@ import os
 import json
 import zipfile
 import glob
+import pickle
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from pipeline.common.io_utils import read_csv_or_xls, write_json, read_json
@@ -211,6 +213,69 @@ def audit_empathicschool(raw_path):
         "total_labels": total_labels
     }
 
+def audit_wesad(raw_path):
+    print("Auditing WESAD dataset...")
+    raw_path = Path(raw_path)
+    
+    # WESAD has subjects S2 to S17, skipping S12
+    subjects = [f"S{i}" for i in range(2, 18) if i != 12]
+    
+    subject_reports = {}
+    total_labels = 0
+    stressed_count = 0
+    non_stressed_count = 0
+    
+    for sub in subjects:
+        sub_dir = raw_path / sub
+        pkl_path = sub_dir / f"{sub}.pkl"
+        
+        report = {
+            "has_physio": pkl_path.exists(),
+            "has_video": False,
+            "has_audio": False,
+            "duration_sec": 0,
+            "usable": pkl_path.exists(),
+            "class_balance": {
+                "stressed": 0,
+                "non_stressed": 0
+            }
+        }
+        
+        if pkl_path.exists():
+            try:
+                with open(pkl_path, 'rb') as f:
+                    data = pickle.load(f, encoding='latin1')
+                
+                labels = data['label']
+                unique, counts = np.unique(labels, return_counts=True)
+                counts_dict = dict(zip(unique, counts))
+                
+                # In WESAD:
+                # 1 = baseline (neutral) -> non_stressed
+                # 2 = stress -> stressed
+                neutral_samples = int(counts_dict.get(1, 0))
+                stress_samples = int(counts_dict.get(2, 0))
+                
+                report["duration_sec"] = len(labels) / 700.0  # WESAD chest is 700Hz
+                report["class_balance"]["stressed"] = stress_samples
+                report["class_balance"]["non_stressed"] = neutral_samples
+                
+                stressed_count += stress_samples
+                non_stressed_count += neutral_samples
+                total_labels += (neutral_samples + stress_samples)
+                
+            except Exception as e:
+                print(f"Error auditing subject {sub}: {e}")
+                report["usable"] = False
+                
+        subject_reports[sub] = report
+        
+    return subject_reports, {
+        "stressed": stressed_count,
+        "non_stressed": non_stressed_count,
+        "total_labels": total_labels
+    }
+
 def main():
     base_dir = Path(__file__).resolve().parents[3]
     config_path = base_dir / "pipeline" / "config" / "config.yaml"
@@ -221,9 +286,11 @@ def main():
         
     stressid_raw = base_dir / config["datasets"]["stressid"]["raw_path"]
     empathic_raw = base_dir / config["datasets"]["empathicschool"]["raw_path"]
+    wesad_raw = base_dir / config["datasets"]["wesad"]["raw_path"]
     
     stressid_report, stressid_balance = audit_stressid(stressid_raw)
     empathic_report, empathic_balance = audit_empathicschool(empathic_raw)
+    wesad_report, wesad_balance = audit_wesad(wesad_raw)
     
     sid_total = len(stressid_report)
     sid_face = sum(1 for s in stressid_report.values() if s["has_video"])
@@ -234,12 +301,17 @@ def main():
     es_face = sum(1 for s in empathic_report.values() if s["has_video"])
     es_physio = sum(1 for s in empathic_report.values() if s["has_physio"])
     
+    wesad_total = len(wesad_report)
+    wesad_physio = sum(1 for s in wesad_report.values() if s["has_physio"])
+    
     sid_face_pct = sid_face / sid_total
     sid_voice_pct = sid_voice / sid_total
     sid_physio_pct = sid_physio / sid_total
     
     es_face_pct = es_face / es_total if es_total > 0 else 0
     es_physio_pct = es_physio / es_total if es_total > 0 else 0
+    
+    wesad_physio_pct = wesad_physio / wesad_total if wesad_total > 0 else 0
     
     print(f"StressID Modality Completeness:")
     print(f" - Face (Video): {sid_face}/{sid_total} ({sid_face_pct:.1%})")
@@ -250,13 +322,17 @@ def main():
     print(f" - Face (Video/Landmarks): {es_face}/{es_total} ({es_face_pct:.1%})")
     print(f" - Physio: {es_physio}/{es_total} ({es_physio_pct:.1%})")
     
+    print(f"WESAD Modality Completeness:")
+    print(f" - Physio: {wesad_physio}/{wesad_total} ({wesad_physio_pct:.1%})")
+    
     # Gate G1 condition: pct >= 80% for all required modalities
     gate_g1_passed = (
         sid_face_pct >= 0.80 and
         sid_voice_pct >= 0.80 and
         sid_physio_pct >= 0.80 and
         es_face_pct >= 0.80 and
-        es_physio_pct >= 0.80
+        es_physio_pct >= 0.80 and
+        wesad_physio_pct >= 0.80
     )
     
     status = "PASS" if gate_g1_passed else "FAIL"
@@ -281,6 +357,14 @@ def main():
                     "physio": {"present": es_physio, "percent": es_physio_pct}
                 },
                 "subjects": empathic_report
+            },
+            "wesad": {
+                "subjects_count": wesad_total,
+                "class_balance": wesad_balance,
+                "modalities": {
+                    "physio": {"present": wesad_physio, "percent": wesad_physio_pct}
+                },
+                "subjects": wesad_report
             }
         },
         "gate_g1": {
@@ -320,7 +404,16 @@ def main():
   - Face (Video/Landmarks): {es_face}/{es_total} ({es_face_pct:.2%})
   - Physiology: {es_physio}/{es_total} ({es_physio_pct:.2%})
 
-## 3. Gate G1 Evaluation
+## 3. WESAD Dataset (Supplementary)
+- **Total Subjects:** {wesad_total} (verified 15 subjects)
+- **Class Balance (Sample-level at 700Hz):**
+  - Stressed: {wesad_balance['stressed']}
+  - Non-stressed: {wesad_balance['non_stressed']}
+  - Ratio (Stressed/Total): {wesad_balance['stressed'] / max(1, wesad_balance['total_labels']):.2%}
+- **Modality Completeness:**
+  - Physiology: {wesad_physio}/{wesad_total} ({wesad_physio_pct:.2%})
+
+## 4. Gate G1 Evaluation
 - **Condition:** Every required modality must be present for at least 80% of each dataset's subjects.
 - **Evaluation Result:**
   - StressID Face: {"PASS" if sid_face_pct >= 0.8 else "FAIL"} ({sid_face_pct:.2%})
@@ -328,6 +421,7 @@ def main():
   - StressID Physio: {"PASS" if sid_physio_pct >= 0.8 else "FAIL"} ({sid_physio_pct:.2%})
   - EmpathicSchool Face: {"PASS" if es_face_pct >= 0.8 else "FAIL"} ({es_face_pct:.2%})
   - EmpathicSchool Physio: {"PASS" if es_physio_pct >= 0.8 else "FAIL"} ({es_physio_pct:.2%})
+  - WESAD Physio: {"PASS" if wesad_physio_pct >= 0.8 else "FAIL"} ({wesad_physio_pct:.2%})
 - **Verdict:** **{"PASSED" if gate_g1_passed else "FAILED"}**
 """)
         
@@ -343,6 +437,7 @@ def main():
             "sid_physio_pct": sid_physio_pct,
             "es_face_pct": es_face_pct,
             "es_physio_pct": es_physio_pct,
+            "wesad_physio_pct": wesad_physio_pct,
             "gate_g1_passed": gate_g1_passed
         }
     }

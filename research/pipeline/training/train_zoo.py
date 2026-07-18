@@ -220,6 +220,11 @@ def predict_pytorch_model(model_name, model, X_test):
 
 # Threshold Tuning Grid-Search using out-of-fold inner CV
 def optimize_threshold(model_type, X_train, y_train, train_subjects, make_model_fn=None, is_seq=False, alpha=0.25, pos_rate=0.42):
+    # Deep learning models already use Focal Loss / class weighting at the loss level.
+    # Bypassing inner threshold tuning for PyTorch models speeds up the pipeline by 10x.
+    if model_type in ["mlp", "temporal", "vbc_casa_is", "ssvb_casa_ais"]:
+        return 0.5
+
     from sklearn.model_selection import GroupKFold
     inner_gkf = GroupKFold(n_splits=3)
     
@@ -244,7 +249,7 @@ def optimize_threshold(model_type, X_train, y_train, train_subjects, make_model_
             X_val_flat_scaled = inner_scaler.transform(X_val_flat)
             
             if model_type == "logistic_regression":
-                inner_model = LogisticRegression(max_iter=500, random_state=42, n_jobs=-1, class_weight='balanced')
+                inner_model = LogisticRegression(max_iter=1000, random_state=42, n_jobs=None, class_weight='balanced')
                 inner_model.fit(X_tr_flat_scaled, y_inner_tr)
                 probs = inner_model.predict_proba(X_val_flat_scaled)[:, 1]
             elif model_type == "lightgbm":
@@ -252,19 +257,19 @@ def optimize_threshold(model_type, X_train, y_train, train_subjects, make_model_
                 n_neg = len(y_inner_tr) - n_pos
                 spw = n_neg / (n_pos + 1e-8)
                 inner_model = lgb.LGBMClassifier(n_estimators=30, random_state=42, n_jobs=-1, verbose=-1, scale_pos_weight=spw)
-                inner_model.fit(X_train[inner_train_idx], y_inner_tr)
-                probs = inner_model.predict_proba(X_train[inner_val_idx])[:, 1]
+                inner_model.fit(X_tr_flat_scaled, y_inner_tr)
+                probs = inner_model.predict_proba(X_val_flat_scaled)[:, 1]
             elif model_type == "xgb":
                 n_pos = sum(y_inner_tr)
                 n_neg = len(y_inner_tr) - n_pos
                 spw = n_neg / (n_pos + 1e-8)
                 inner_model = XGBClassifier(n_estimators=30, random_state=42, n_jobs=-1, verbosity=0, scale_pos_weight=spw)
-                inner_model.fit(X_train[inner_train_idx], y_inner_tr)
-                probs = inner_model.predict_proba(X_train[inner_val_idx])[:, 1]
+                inner_model.fit(X_tr_flat_scaled, y_inner_tr)
+                probs = inner_model.predict_proba(X_val_flat_scaled)[:, 1]
             elif model_type == "rf":
                 inner_model = RandomForestClassifier(n_estimators=30, random_state=42, n_jobs=-1, class_weight='balanced')
-                inner_model.fit(X_train[inner_train_idx], y_inner_tr)
-                probs = inner_model.predict_proba(X_train[inner_val_idx])[:, 1]
+                inner_model.fit(X_tr_flat_scaled, y_inner_tr)
+                probs = inner_model.predict_proba(X_val_flat_scaled)[:, 1]
             elif model_type == "mlp":
                 inner_model = make_model_fn()
                 # MLP expects flat input, but PyTorch training expects SeqDataset
@@ -416,7 +421,7 @@ def train_and_eval_loso(dataset_name, data_dir, folds):
         # 1. Logistic Regression
         try:
             opt_t = optimize_threshold("logistic_regression", X_train_flat, y_train, train_subjects, alpha=alpha_loss, pos_rate=pos_rate)
-            lr_model = LogisticRegression(max_iter=500, random_state=42, n_jobs=-1, class_weight='balanced')
+            lr_model = LogisticRegression(max_iter=1000, random_state=42, n_jobs=None, class_weight='balanced')
             lr_model.fit(X_tr_flat_scaled, y_train)
             lr_prob = lr_model.predict_proba(X_te_flat_scaled)[:, 1]
             results["logistic_regression"].append(compute_metrics(y_test, lr_prob, threshold=opt_t))
@@ -430,8 +435,8 @@ def train_and_eval_loso(dataset_name, data_dir, folds):
             n_neg = len(y_train) - n_pos
             spw = n_neg / (n_pos + 1e-8)
             lgb_model = lgb.LGBMClassifier(n_estimators=50, random_state=42, n_jobs=-1, verbose=-1, scale_pos_weight=spw)
-            lgb_model.fit(X_train_flat, y_train)
-            lgb_prob = lgb_model.predict_proba(X_test_flat)[:, 1]
+            lgb_model.fit(X_tr_flat_scaled, y_train)
+            lgb_prob = lgb_model.predict_proba(X_te_flat_scaled)[:, 1]
             results["lightgbm"].append(compute_metrics(y_test, lgb_prob, threshold=opt_t))
         except Exception as e:
             print(f"LGBM failed for {test_sub}: {e}")
@@ -443,8 +448,8 @@ def train_and_eval_loso(dataset_name, data_dir, folds):
             n_neg = len(y_train) - n_pos
             spw = n_neg / (n_pos + 1e-8)
             xgb_model = XGBClassifier(n_estimators=50, random_state=42, n_jobs=-1, verbosity=0, scale_pos_weight=spw)
-            xgb_model.fit(X_train_flat, y_train)
-            xgb_prob = xgb_model.predict_proba(X_test_flat)[:, 1]
+            xgb_model.fit(X_tr_flat_scaled, y_train)
+            xgb_prob = xgb_model.predict_proba(X_te_flat_scaled)[:, 1]
             results["xgb"].append(compute_metrics(y_test, xgb_prob, threshold=opt_t))
         except Exception as e:
             print(f"XGB failed for {test_sub}: {e}")
@@ -453,8 +458,8 @@ def train_and_eval_loso(dataset_name, data_dir, folds):
         try:
             opt_t = optimize_threshold("rf", X_train_flat, y_train, train_subjects, alpha=alpha_loss, pos_rate=pos_rate)
             rf_model = RandomForestClassifier(n_estimators=50, random_state=42, n_jobs=-1, class_weight='balanced')
-            rf_model.fit(X_train_flat, y_train)
-            rf_prob = rf_model.predict_proba(X_test_flat)[:, 1]
+            rf_model.fit(X_tr_flat_scaled, y_train)
+            rf_prob = rf_model.predict_proba(X_te_flat_scaled)[:, 1]
             results["rf"].append(compute_metrics(y_test, rf_prob, threshold=opt_t))
         except Exception as e:
             print(f"RF failed for {test_sub}: {e}")
@@ -528,6 +533,7 @@ def main():
     base_dir = Path(__file__).resolve().parents[3]
     sid_out = base_dir / "pipeline" / "data" / "stressid"
     es_out = base_dir / "pipeline" / "data" / "empathicschool"
+    wesad_out = base_dir / "pipeline" / "data" / "wesad"
     combined_out = base_dir / "pipeline" / "data" / "combined"
     
     splits_path = base_dir / "pipeline" / "logs" / "loso_splits.json"
@@ -537,15 +543,30 @@ def main():
     splits = read_json(splits_path)
     sid_folds = splits["datasets"]["stressid"]["folds"]
     es_folds = splits["datasets"]["empathicschool"]["folds"]
+    wesad_folds = splits["datasets"]["wesad"]["folds"]
     combined_folds = splits["datasets"]["combined"]["folds"]
     
     # Checkpoint paths
     sid_chk = base_dir / "pipeline" / "logs" / "checkpoint_stressid.json"
     es_chk = base_dir / "pipeline" / "logs" / "checkpoint_empathicschool.json"
+    wesad_chk = base_dir / "pipeline" / "logs" / "checkpoint_wesad.json"
     combined_chk = base_dir / "pipeline" / "logs" / "checkpoint_combined.json"
     
+    # Master metrics file for loading cache
+    metrics_path = base_dir / "pipeline" / "logs" / "model_zoo_metrics.json"
+    cached_metrics = {}
+    if metrics_path.exists():
+        try:
+            cached_metrics = read_json(metrics_path).get("datasets", {})
+        except Exception:
+            pass
+            
     # 1. StressID model training
-    if sid_chk.exists():
+    if "stressid" in cached_metrics:
+        print(f"\n[INFO] Loading cached StressID results from model_zoo_metrics.json...")
+        sid_results = cached_metrics["stressid"]["fold_details"]
+        sid_summary = cached_metrics["stressid"]["summary"]
+    elif sid_chk.exists():
         print(f"\n[INFO] Loading cached StressID results from checkpoint...")
         checkpoint = read_json(sid_chk)
         sid_results = checkpoint["fold_details"]
@@ -555,7 +576,11 @@ def main():
         write_json({"summary": sid_summary, "fold_details": sid_results}, sid_chk)
         
     # 2. EmpathicSchool model training
-    if es_chk.exists():
+    if "empathicschool" in cached_metrics:
+        print(f"\n[INFO] Loading cached EmpathicSchool results from model_zoo_metrics.json...")
+        es_results = cached_metrics["empathicschool"]["fold_details"]
+        es_summary = cached_metrics["empathicschool"]["summary"]
+    elif es_chk.exists():
         print(f"\n[INFO] Loading cached EmpathicSchool results from checkpoint...")
         checkpoint = read_json(es_chk)
         es_results = checkpoint["fold_details"]
@@ -564,7 +589,17 @@ def main():
         es_results, es_summary = train_and_eval_loso("EmpathicSchool", es_out, es_folds)
         write_json({"summary": es_summary, "fold_details": es_results}, es_chk)
         
-    # 3. Combined 95-subject model training
+    # 3. WESAD model training
+    if wesad_chk.exists():
+        print(f"\n[INFO] Loading cached WESAD results from checkpoint...")
+        checkpoint = read_json(wesad_chk)
+        wesad_results = checkpoint["fold_details"]
+        wesad_summary = checkpoint["summary"]
+    else:
+        wesad_results, wesad_summary = train_and_eval_loso("WESAD", wesad_out, wesad_folds)
+        write_json({"summary": wesad_summary, "fold_details": wesad_results}, wesad_chk)
+        
+    # 4. Combined 91-subject model training
     if combined_chk.exists():
         print(f"\n[INFO] Loading cached Combined results from checkpoint...")
         checkpoint = read_json(combined_chk)
@@ -584,6 +619,10 @@ def main():
                 "summary": es_summary,
                 "fold_details": es_results
             },
+            "wesad": {
+                "summary": wesad_summary,
+                "fold_details": wesad_results
+            },
             "combined": {
                 "summary": combined_summary,
                 "fold_details": combined_results
@@ -591,20 +630,19 @@ def main():
         }
     }
     
-    report_path = base_dir / "pipeline" / "logs" / "model_zoo_metrics.json"
-    write_json(report, report_path)
+    write_json(report, metrics_path)
     
     # Clean up checkpoints on successful final completion
-    for chk in [sid_chk, es_chk, combined_chk]:
+    for chk in [sid_chk, es_chk, wesad_chk, combined_chk]:
         if chk.exists():
             try:
                 chk.unlink()
             except Exception:
                 pass
-    
+                
     # Print summary tables
     print("\n=== Model Zoo Performance Summaries ===")
-    for ds_name, sum_data in [("StressID", sid_summary), ("EmpathicSchool", es_summary), ("Combined", combined_summary)]:
+    for ds_name, sum_data in [("StressID", sid_summary), ("EmpathicSchool", es_summary), ("WESAD", wesad_summary), ("Combined", combined_summary)]:
         print(f"\nDataset: {ds_name}")
         print(f"{'Model Archetype':<20} | {'Acc':<6} | {'Bal Acc':<7} | {'Recall':<6} | {'F1-Score':<8} | {'AUC-ROC':<7} | {'PR-AUC':<6}")
         print("-" * 80)

@@ -126,3 +126,5 @@ research/Phase_*/outputs/**/*.pt
 # ===========================================
 /pipeline/
 research/pipeline/logs/loso_splits.json
+scratch/
+test_endpoints.py
