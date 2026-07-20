@@ -1,53 +1,92 @@
-# API Contract for Backend Runtime -> Frontend Communcation
-# Version: 1.0.0
+# API Contract for Backend Runtime -> Frontend Communication
+# Version: 1.1.0
 
 event_stream:
-  endpoint: "/stream_results"
+  endpoint: "/api/stream/fused"
   protocol: "Server-Sent Events (SSE)"
-  
+
   payload_schema:
     type: "object"
-    required:
-      - "timestamp"
-      - "isStressed"
-      - "fusedScore"
-      - "confidence"
-      - "activeModalities"
-      - "explanations"
-      
+    description: "Fused prediction emitted every 1 second over SSE"
+
     properties:
-      timestamp:
+      status:
         type: "string"
-        format: "iso-8601"
-      
-      isStressed:
-        type: "boolean"
-        description: "Final thresholded binary stress prediction."
-      
-      fusedScore:
-        type: "float"
+        enum: ["active", "waiting"]
+        description: "Stream state — 'active' when at least one modality reporting."
+
+      fused_score:
+        type: "number"
         minimum: 0.0
         maximum: 1.0
-        description: "Continuous stress score from the temporal fusion engine."
-      
-      confidence:
-        type: "float"
-        minimum: 0.0
-        maximum: 1.0
-        description: "System confidence in the current prediction."
-        
-      activeModalities:
-        type: "array"
-        items:
-          type: "string"
-          enum: ["face", "voice", "physio"]
-        description: "Which modalities contributed to this score window."
-        
-      explanations:
+        description: "Continuous stress score from weighted fusion."
+
+      stress_level:
+        type: "string"
+        enum: ["Low", "Moderate", "High"]
+        description: "Categorical stress level derived from fused_score thresholds."
+
+      modalities_active:
+        type: "integer"
+        minimum: 0
+        maximum: 3
+        description: "Number of modalities contributing to the current window."
+
+      weights:
         type: "object"
+        description: "Re-normalised fusion weights keyed by modality."
+        additionalProperties:
+          type: "number"
+
+      per_modality:
+        type: "object"
+        description: "Individual EMA scores per modality."
+        additionalProperties:
+          type: "object"
+          properties:
+            score:
+              type: "number"
+              minimum: 0.0
+              maximum: 1.0
+
+      explainability:
+        type: "object"
+        description: "Feature attribution from the explainability engine (bundle or live SHAP)."
         properties:
-          top_features:
+          engine:
+            type: "string"
+            enum: ["bundle", "live_shap"]
+          bundle_version:
+            type: "string"
+          available:
+            type: "boolean"
+          modalities:
             type: "array"
             items:
-              type: "string"
-            description: "Human-readable labels of top contributing features."
+              type: "object"
+              properties:
+                modality:
+                  type: "string"
+                  enum: ["face", "voice", "physio"]
+                status:
+                  type: "string"
+                top_features:
+                  type: "array"
+                  items:
+                    type: "object"
+                    properties:
+                      feature:
+                        type: "string"
+                      feature_index:
+                        type: "integer"
+                      feature_group:
+                        type: "string"
+                      shap_value:
+                        type: "number"
+                      feature_value:
+                        type: "number"
+                      direction:
+                        type: "string"
+                        enum: ["increase", "decrease"]
+          top_drivers:
+            type: "array"

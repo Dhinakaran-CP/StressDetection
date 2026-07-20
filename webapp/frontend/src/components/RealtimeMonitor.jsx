@@ -7,19 +7,14 @@ import CalibrationWizard from './CalibrationWizard';
 export default function RealtimeMonitor() {
   const [active, setActive] = useState(false);
   const [result, setResult] = useState(null);
-  const [history, setHistory] = useState([]);
   const [faceScore, setFaceScore] = useState(null);
   const [voiceScore, setVoiceScore] = useState(null);
   const [faceIndicators, setFaceIndicators] = useState(null);
   const [voiceIndicators, setVoiceIndicators] = useState(null);
   const esRef = useRef(null);
   const voicePostPendingRef = useRef(false);
-  const [modelMetadata, setModelMetadata] = useState(null);
+  const [, setModelMetadata] = useState(null);
   const [fallbackStatus, setFallbackStatus] = useState(null);
-
-  // Parameter guide states
-  const [selectedFaceParam, setSelectedFaceParam] = useState('');
-  const [selectedVoiceParam, setSelectedVoiceParam] = useState('');
 
   // Server Connection Status
   const [serverStatus, setServerStatus] = useState('disconnected'); // 'connected', 'connecting', 'disconnected'
@@ -32,7 +27,6 @@ export default function RealtimeMonitor() {
 
   // Smooth UI display values
   const [smoothFusedScore, setSmoothFusedScore] = useState(0);
-  const [smoothFaceScore, setSmoothFaceScore] = useState(null);
   const [smoothVoiceScore, setSmoothVoiceScore] = useState(null);
 
   // Automatic Background Health Ping
@@ -53,6 +47,23 @@ export default function RealtimeMonitor() {
     checkHealth();
     const interval = setInterval(checkHealth, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const checkCalibration = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/calibrate/status?user_id=default`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.is_complete) {
+            setIsCalibrated(true);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch calibration status:", err);
+      }
+    };
+    checkCalibration();
   }, []);
 
   useEffect(() => {
@@ -97,23 +108,6 @@ export default function RealtimeMonitor() {
   }, [result, active]);
 
   // Smooth face score easing
-  useEffect(() => {
-    if (!active || faceScore === null) {
-      setSmoothFaceScore(null);
-      return;
-    }
-    const target = faceScore;
-    const interval = setInterval(() => {
-      setSmoothFaceScore(prev => {
-        if (prev === null) return target;
-        const diff = target - prev;
-        if (Math.abs(diff) < 0.01) return target;
-        return prev + diff * 0.15;
-      });
-    }, 50);
-    return () => clearInterval(interval);
-  }, [faceScore, active]);
-
   // Smooth voice score easing
   useEffect(() => {
     if (!active || voiceScore === null) {
@@ -146,13 +140,6 @@ export default function RealtimeMonitor() {
         const data = JSON.parse(e.data);
         if (data.status === 'active') {
           setResult(data);
-          setHistory(h => [
-            ...h.slice(-29), 
-            {
-              t: new Date().toLocaleTimeString(),
-              score: Math.round(data.fused_score * 100),
-            }
-          ]);
           if (data.per_modality) {
             if (data.per_modality.face !== undefined && data.per_modality.face !== null) {
               setFaceScore(data.per_modality.face.score);
@@ -184,13 +171,11 @@ export default function RealtimeMonitor() {
   const startMonitoring = () => {
     setActive(true);
     setResult(null);
-    setHistory([]);
     setFaceScore(null);
     setVoiceScore(null);
     setFaceIndicators(null);
     setVoiceIndicators(null);
     setSmoothFusedScore(0);
-    setSmoothFaceScore(null);
     setSmoothVoiceScore(null);
 
     if (!isCalibrated) {
@@ -222,7 +207,6 @@ export default function RealtimeMonitor() {
     setFaceIndicators(null);
     setVoiceIndicators(null);
     setSmoothFusedScore(0);
-    setSmoothFaceScore(null);
     setSmoothVoiceScore(null);
     if (esRef.current) {
       esRef.current.close();
@@ -274,7 +258,6 @@ export default function RealtimeMonitor() {
   }, []);
 
   const displayLevel = smoothFusedScore > 70 ? 'High' : smoothFusedScore > 40 ? 'Moderate' : 'Low';
-  const scoreColor = smoothFusedScore > 70 ? '#ba1a1a' : smoothFusedScore > 40 ? '#dce9ff' : '#0e3b69';
 
   return (
     <div className="space-y-8 select-none">
@@ -445,16 +428,16 @@ export default function RealtimeMonitor() {
             </span>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-surface-container p-3 rounded-xl border border-outline-variant/5">
-                <div className="text-[10px] font-bold text-outline font-label-caps tracking-wide">HR (BPM)</div>
-                <div className="text-sm font-bold text-on-surface mt-1">{active && !calibrating ? (faceIndicators?.heart_rate || 74) : '--'}</div>
+                <div className="text-[10px] font-bold text-outline font-label-caps tracking-wide">HEAD TILT</div>
+                <div className="text-sm font-bold text-on-surface mt-1">{active && faceIndicators?.head_tilt !== undefined ? `${Math.round(faceIndicators.head_tilt)}°` : '--'}</div>
               </div>
               <div className="bg-surface-container p-3 rounded-xl border border-outline-variant/5">
-                <div className="text-[10px] font-bold text-outline font-label-caps tracking-wide">BLINK/MIN</div>
-                <div className="text-sm font-bold text-on-surface mt-1">{active && faceIndicators ? Math.round(faceIndicators.blink_velocity * 10) : '--'}</div>
+                <div className="text-[10px] font-bold text-outline font-label-caps tracking-wide">BLINK/SEC</div>
+                <div className="text-sm font-bold text-on-surface mt-1">{active && faceIndicators?.blink_velocity !== undefined ? faceIndicators.blink_velocity.toFixed(2) : '--'}</div>
               </div>
               <div className="bg-surface-container p-3 rounded-xl border border-outline-variant/5">
                 <div className="text-[10px] font-bold text-outline font-label-caps tracking-wide">JITTER</div>
-                <div className="text-sm font-bold text-on-surface mt-1">{active && voiceIndicators ? `${voiceIndicators.jitter_percent.toFixed(2)}%` : '--'}</div>
+                <div className="text-sm font-bold text-on-surface mt-1">{active && voiceIndicators?.jitter_percent !== undefined ? `${voiceIndicators.jitter_percent.toFixed(2)}%` : '--'}</div>
               </div>
             </div>
           </div>
@@ -507,6 +490,85 @@ export default function RealtimeMonitor() {
           </div>
         )}
       </div>
+
+      {/* Feature Bank for Modalities */}
+      {!calibrating && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {/* Face Feature Bank */}
+          <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <span className="font-label-caps text-[12px] text-primary font-bold tracking-wider flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">face</span>
+                FACE EXPERT FEATURES
+              </span>
+              <span className="text-sm font-bold bg-primary/10 text-primary px-3 py-1 rounded-full">
+                Score: {faceScore !== null ? `${Math.round(faceScore * 100)}%` : '--'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-xs text-on-surface">
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Blink Velocity</span>
+                <span className="font-mono font-bold">{faceIndicators?.blink_velocity?.toFixed(3) || '--'}</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Eye Aspect (EAR)</span>
+                <span className="font-mono font-bold">{faceIndicators?.avg_ear?.toFixed(3) || '--'}</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Jaw Displacement</span>
+                <span className="font-mono font-bold">{faceIndicators?.jaw_displacement?.toFixed(3) || '--'}</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Head Tilt</span>
+                <span className="font-mono font-bold">{faceIndicators?.head_tilt?.toFixed(1) || '--'}°</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Brow Descent</span>
+                <span className="font-mono font-bold">{faceIndicators?.brow_descent_left?.toFixed(3) || '--'}</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Lip Compress</span>
+                <span className="font-mono font-bold">{faceIndicators?.lip_compression?.toFixed(3) || '--'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Voice Feature Bank */}
+          <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <span className="font-label-caps text-[12px] text-primary font-bold tracking-wider flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">mic</span>
+                VOICE EXPERT FEATURES
+              </span>
+              <span className="text-sm font-bold bg-primary/10 text-primary px-3 py-1 rounded-full">
+                Score: {voiceScore !== null ? `${Math.round(voiceScore * 100)}%` : '--'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-xs text-on-surface">
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Pitch (F0)</span>
+                <span className="font-mono font-bold">{voiceIndicators?.f0_mean?.toFixed(1) || '--'} Hz</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Jitter</span>
+                <span className="font-mono font-bold">{voiceIndicators?.jitter_percent?.toFixed(2) || '--'}%</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Shimmer</span>
+                <span className="font-mono font-bold">{voiceIndicators?.shimmer_db?.toFixed(2) || '--'} dB</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Voice Intensity</span>
+                <span className="font-mono font-bold">{voiceIndicators?.voice_intensity?.toFixed(3) || '--'}</span>
+              </div>
+              <div className="flex justify-between border-b border-outline-variant/5 pb-1">
+                <span className="text-on-surface-variant font-medium">Zero-Cross Rate</span>
+                <span className="font-mono font-bold">{voiceIndicators?.speaking_rate_proxy?.toFixed(3) || '--'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

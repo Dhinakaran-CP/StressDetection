@@ -107,6 +107,7 @@ let globalMesh = null;
 
 export default function FaceStream({ onResult, onIndicatorsUpdate, active, calibrationMode = false, userId = 'default' }) {
   const videoRef  = useRef(null);
+  const canvasRef = useRef(null);
   const camRef    = useRef(null);
   const histRef   = useRef([]);
   const lastSend  = useRef(0);
@@ -170,7 +171,17 @@ export default function FaceStream({ onResult, onIndicatorsUpdate, active, calib
   }, [libsReady]);
 
   const handleResults = useCallback((results) => {
-    frameCount.current++;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    const iw = videoRef.current?.videoWidth  || 320;
+    const ih = videoRef.current?.videoHeight || 240;
+
+    if (canvas && iw && ih) {
+      canvas.width = iw;
+      canvas.height = ih;
+      ctx.clearRect(0, 0, iw, ih);
+    }
+
     if (!results.multiFaceLandmarks?.length) {
       const now = Date.now();
       if (onIndicatorsUpdateRef.current && (now - lastIndicatorsSend.current > 500)) {
@@ -181,8 +192,35 @@ export default function FaceStream({ onResult, onIndicatorsUpdate, active, calib
     }
 
     const lm = results.multiFaceLandmarks[0];
-    const iw = videoRef.current?.videoWidth  || 320;
-    const ih = videoRef.current?.videoHeight || 240;
+    
+    if (ctx && iw && ih) {
+      let minX = iw, minY = ih, maxX = 0, maxY = 0;
+      for (const p of lm) {
+        const x = p.x * iw;
+        const y = p.y * ih;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+      // Add a slight margin
+      const padding = 15;
+      minX = Math.max(0, minX - padding);
+      minY = Math.max(0, minY - padding);
+      maxX = Math.min(iw, maxX + padding);
+      maxY = Math.min(ih, maxY + padding);
+      
+      ctx.strokeStyle = 'rgba(165, 200, 255, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+      // Draw corner accents
+      ctx.beginPath();
+      ctx.moveTo(minX, minY + 10); ctx.lineTo(minX, minY); ctx.lineTo(minX + 10, minY);
+      ctx.moveTo(maxX, minY + 10); ctx.lineTo(maxX, minY); ctx.lineTo(maxX - 10, minY);
+      ctx.moveTo(minX, maxY - 10); ctx.lineTo(minX, maxY); ctx.lineTo(minX + 10, maxY);
+      ctx.moveTo(maxX, maxY - 10); ctx.lineTo(maxX, maxY); ctx.lineTo(maxX - 10, maxY);
+      ctx.stroke();
+    }
 
     const indicators = computeStressIndicators(lm, iw, ih, histRef.current);
 
@@ -289,8 +327,9 @@ export default function FaceStream({ onResult, onIndicatorsUpdate, active, calib
   }, [active, libsReady, handleResults]);
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block', border: 'var(--glass-border)', borderRadius: 12, overflow: 'hidden', boxShadow: 'var(--glass-shadow)' }}>
-      <video ref={videoRef} style={{ width: 320, height: 240, background: 'var(--chat-bg)', display: 'block', transform: 'scaleX(-1)' }} playsInline />
+    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, overflow: 'hidden' }}>
+      <video ref={videoRef} style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'var(--chat-bg)', display: 'block', transform: 'scaleX(-1)' }} playsInline />
+      <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', pointerEvents: 'none' }} />
       {active && (
         <div style={{ position: 'absolute', top: 8, right: 8, background: 'var(--card-bg)',
                        color: 'var(--primary-color)', borderRadius: 6, padding: '3px 10px',
@@ -299,7 +338,7 @@ export default function FaceStream({ onResult, onIndicatorsUpdate, active, calib
         </div>
       )}
       {!active && (
-        <div style={{ position: 'absolute', top: 0, left: 0, width: 320, height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card-bg)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card-bg)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           <span>Camera Standby</span>
         </div>
       )}

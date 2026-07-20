@@ -99,9 +99,9 @@ class FaceExtractor:
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 faces = self.face_cascade.detectMultiScale(gray, 1.3, 5)
                 if len(faces) == 0:
-                    return np.zeros(18), None
+                    return None, None
                 x, y, w, h = faces[0]
-                return np.zeros(18), (int(x), int(y), int(w), int(h))
+                return None, (int(x), int(y), int(w), int(h))
 
             landmarks = results.multi_face_landmarks[0].landmark
             pts = np.array([[l.x * w_img, l.y * h_img] for l in landmarks])
@@ -117,36 +117,45 @@ class FaceExtractor:
             earR = (dist(386, 374) + dist(385, 380)) / (2 * dist(362, 263) + 1e-6)
             avgEAR = (earL + earR) / 2
 
+            # Head tilt (roll): angle of eye line relative to horizontal
+            eye_dx = pts[263][0] - pts[33][0]
+            eye_dy = pts[263][1] - pts[33][1]
+            head_tilt = float(np.degrees(np.arctan2(eye_dy, eye_dx + 1e-6)))
+
+            # Landmark confidence proxy: spread of landmarks (higher spread = more reliable detection)
+            landmark_spread = float(np.std(pts[:, 0]) * np.std(pts[:, 1]))
+            confidence = float(np.clip(landmark_spread * 10.0, 0.3, 0.99))
+
             geom_features = [
                 earL,
                 earR,
                 avgEAR,
-                0.0,                                                    
-                dist(55, 159) / faceH,                             
-                dist(285, 386) / faceH,                            
-                abs(dist(55, 159) - dist(285, 386)) / faceH,    
-                dist(13, 14) / (dist(61, 291) + 1e-6),        
-                dist(4, 152) / iod,                                
-                (dist(61, 4) + dist(291, 4)) / (2 * faceH),   
-                dist(10, 151) / faceH,                             
-                faceH / iod,                                            
-                0.0,                                                    
-                0.0,                                                    
-                0.0,                                                    
-                avgEAR,                                                 
-                0.9,                                                    
-                dist(4, 50) / faceH,                               
+                0.0,
+                dist(55, 159) / faceH,
+                dist(285, 386) / faceH,
+                abs(dist(55, 159) - dist(285, 386)) / faceH,
+                dist(13, 14) / (dist(61, 291) + 1e-6),
+                dist(4, 152) / iod,
+                (dist(61, 4) + dist(291, 4)) / (2 * faceH),
+                dist(10, 151) / faceH,
+                faceH / iod,
+                head_tilt,
+                0.0,
+                0.0,
+                avgEAR,
+                confidence,
+                dist(4, 50) / faceH,
             ]
 
             features = np.array(geom_features)
-            
+
             x_coords = [p.x for p in landmarks]
             y_coords = [p.y for p in landmarks]
             x, y = int(min(x_coords) * w_img), int(min(y_coords) * h_img)
             w, h = int((max(x_coords) - min(x_coords)) * w_img), int((max(y_coords) - min(y_coords)) * h_img)
 
             return features, (x, y, w, h)
-            
+
         except Exception as e:
             print(f"FaceExtractor Error: {e}")
-            return np.zeros(18), None
+            return None, None

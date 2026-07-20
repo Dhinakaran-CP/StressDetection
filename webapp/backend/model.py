@@ -53,7 +53,9 @@ class MultimodalStressDetector:
         self.voice_extractor = VoiceExtractor()
         
         # Ensures all runtime vectors match the exact training transformations
-        self.feature_lock = FeatureRuntimeLock("configs/feature_contract.yaml")
+        import os
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'configs', 'feature_contract.yaml')
+        self.feature_lock = FeatureRuntimeLock(config_path)
 
     def load_model(self, base_path='.'):
         """Loads models (Note: Phase 7 will replace this with VersionRegistry)"""
@@ -116,8 +118,41 @@ class MultimodalStressDetector:
         return self.voice_extractor.extract_features(audio_path)
 
     def extract_physiological_features(self, eeg_data=None, gsr_data=None):
-        """Legacy stub — real-time physio handled externally via PhysioExtractor."""
-        return np.zeros(5)
+        """Extract 5 physiological features from raw EEG and/or GSR signals.
+        Returns [hr_mean, hrv_rmssd, hrv_sdnn, eda_scl, resp_rate]."""
+        features = np.zeros(5, dtype=np.float64)
+
+        if eeg_data is not None and len(eeg_data) > 0:
+            eeg = np.asarray(eeg_data, dtype=np.float64).flatten()
+            eeg = eeg[np.isfinite(eeg)]
+            if len(eeg) > 10:
+                # Approximate heart rate from EEG signal peaks
+                peaks = np.where(np.diff(np.sign(np.diff(eeg))) < 0)[0] + 1
+                if len(peaks) > 1:
+                    intervals = np.diff(peaks)
+                    mean_interval = np.mean(intervals)
+                    if mean_interval > 0:
+                        features[0] = 60.0 / mean_interval  # hr proxy
+                        features[2] = float(np.std(intervals))  # hrv_sdnn
+                        features[1] = float(np.sqrt(np.mean(np.diff(intervals) ** 2)))  # hrv_rmssd
+                features[0] = np.clip(features[0], 40.0, 180.0)
+
+        if gsr_data is not None and len(gsr_data) > 0:
+            gsr = np.asarray(gsr_data, dtype=np.float64).flatten()
+            gsr = gsr[np.isfinite(gsr)]
+            if len(gsr) > 5:
+                features[3] = float(np.mean(gsr))  # eda_scl
+                # Respiration rate proxy from low-frequency GSR modulation
+                detrended = np.diff(gsr)
+                zero_crossings = np.where(np.diff(np.sign(detrended)))[0]
+                if len(zero_crossings) > 2:
+                    resp_cycles = len(zero_crossings) / 2.0
+                    duration_s = len(gsr) / 10.0  # assume ~10 Hz default
+                    if duration_s > 0:
+                        features[4] = float(resp_cycles / duration_s * 60.0)  # breaths/min
+                features[4] = np.clip(features[4], 6.0, 40.0)
+
+        return features
 
     def predict(self, facial_features=None, voice_features=None, phys_features=None, temp_image_path=None, sensitivity=0.5):
         if not self.is_trained: return {'error': 'Models not loaded'}

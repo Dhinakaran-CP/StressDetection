@@ -63,7 +63,7 @@ The final leaderboards after incorporating the chest/wrist signals of the 15 WES
 ---
 
 ## 3. Analysis: WESAD vs. Combined Performance Gap
-* **The Phenomeon**: WESAD metrics are exceptionally high (Accuries up to **97.27%**, F1-scores up to **97.05%**), whereas Combined metrics hover in the **70%–77%** range.
+* **The Phenomenon**: WESAD metrics are exceptionally high (Accuracies up to **97.27%**, F1-scores up to **97.05%**), whereas Combined metrics hover in the **70%–77%** range.
 * **Why this occurs**:
   1. **Controlled Lab Conditions**: WESAD is a highly controlled laboratory dataset where participants wore clinical chest-straps (RespiBAN) and medical wrist bands (Empatica E4) while being guided through stress/relaxation tasks. The signal-to-noise ratio is extremely high.
   2. **Multi-Modal Noise**: The Combined dataset includes face and voice features captured in diverse, noisy domestic environments (StressID, EmpathicSchool). Vocal pitch and micro-expressions vary widely due to ambient lighting, microphones, and speech content, introducing substantial variance.

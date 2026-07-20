@@ -147,8 +147,8 @@ class RuntimeEngine:
         self.feature_history = {"face": [], "voice": [], "physio": []}
         self.calibration_baselines = {"face": None, "voice": None, "physio": None}
         self.calibrating = {"face": True, "voice": True, "physio": True}
-        self.calibration_frames = 2
-        self.window_size = 2
+        self.calibration_frames = 30
+        self.window_size = 10
 
         self._load_artifacts()
 
@@ -300,7 +300,7 @@ class RuntimeEngine:
         try:
             face_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", f"{prefix}face_expert.pt")
             self.deep_models["face"] = ModalityEncoder(18, 16)
-            self.deep_models["face"].load_state_dict(torch.load(face_path, map_location="cpu"))
+            self.deep_models["face"].load_state_dict(torch.load(face_path, map_location="cpu", weights_only=True))
             self.deep_models["face"].eval()
             reg_key_f = "adv_face_expert" if self.strategy_used == "adversarial" else "face_expert"
             reg_f = self.registry.get_active_model(reg_key_f)
@@ -309,7 +309,7 @@ class RuntimeEngine:
 
             voice_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", f"{prefix}voice_expert.pt")
             self.deep_models["voice"] = ModalityEncoder(12, 16)
-            self.deep_models["voice"].load_state_dict(torch.load(voice_path, map_location="cpu"))
+            self.deep_models["voice"].load_state_dict(torch.load(voice_path, map_location="cpu", weights_only=True))
             self.deep_models["voice"].eval()
             reg_key_v = "adv_voice_expert" if self.strategy_used == "adversarial" else "voice_expert"
             reg_v = self.registry.get_active_model(reg_key_v)
@@ -318,7 +318,7 @@ class RuntimeEngine:
 
             physio_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", f"{prefix}physio_expert.pt")
             self.deep_models["physio"] = ModalityEncoder(5, 16)
-            self.deep_models["physio"].load_state_dict(torch.load(physio_path, map_location="cpu"))
+            self.deep_models["physio"].load_state_dict(torch.load(physio_path, map_location="cpu", weights_only=True))
             self.deep_models["physio"].eval()
             reg_key_p = "adv_physio_expert" if self.strategy_used == "adversarial" else "physio_expert"
             reg_p = self.registry.get_active_model(reg_key_p)
@@ -327,7 +327,7 @@ class RuntimeEngine:
 
             router_path = os.path.join(EXPERT_MODELS_DIR, "research_champion", f"{prefix}fusion_router.pt")
             self.deep_models["router"] = DynamicRouter(num_modalities=3)
-            self.deep_models["router"].load_state_dict(torch.load(router_path, map_location="cpu"))
+            self.deep_models["router"].load_state_dict(torch.load(router_path, map_location="cpu", weights_only=True))
             self.deep_models["router"].eval()
             reg_key_r = "adv_fusion_router" if self.strategy_used == "adversarial" else "deep_fusion_router"
             reg_r = self.registry.get_active_model(reg_key_r)
@@ -341,6 +341,7 @@ class RuntimeEngine:
     def _verify_hash(self, path: str, expected: str, label: str):
         import hashlib
         if not os.path.exists(path):
+            print(f"[RuntimeEngine] WARNING: Cannot verify hash for {label} — file not found: {path}")
             return
         sha256 = hashlib.sha256()
         with open(path, "rb") as f:
@@ -348,8 +349,9 @@ class RuntimeEngine:
                 sha256.update(block)
         actual = sha256.hexdigest()
         if actual != expected:
-            # Hash mismatch logged or ignored
-            pass
+            print(f"[RuntimeEngine] WARNING: Hash mismatch for {label}. Expected {expected[:16]}..., got {actual[:16]}...")
+        else:
+            print(f"[RuntimeEngine] Hash verified for {label}: {actual[:16]}...")
     # ── Public: status ────────────────────────────────────────────────────────
 
     @property
@@ -631,15 +633,11 @@ class RuntimeEngine:
             for row in feature_rows
         ]
 
-    # ── Private: feature locking ──────────────────────────────────────────────
+    # ── Private: feature locking & calibration ────────────────────────────────
 
-    def _lock_features(self, modality: str, raw_features, user_id='default') -> np.ndarray:
-        """
-        Pass raw features through FeatureRuntimeLock, apply Phase 4 
-        methodology transformations (Calibration & Temporal Windowing), 
-        and return the scaled array.
-        """
-        # 1. Lock features and handle missing values
+    def _apply_calibration(self, modality: str, raw_features, user_id='default'):
+        """Lock features, flatten, apply Phase 4 subject-aware calibration baseline subtraction.
+        Returns (locked_feats_1d, norm_feats_1d)."""
         if modality == "face":
             feats = self.feature_lock.process_face_features(raw_features, scaler=None)
         elif modality == "voice":
@@ -651,7 +649,6 @@ class RuntimeEngine:
 
         feats = feats.flatten()
 
-        # 2. Phase 4: Subject-Aware Calibration
         from backend.calibration import get_or_create
         cal = get_or_create(user_id)
         if cal.is_complete:
@@ -670,19 +667,26 @@ class RuntimeEngine:
             if len(self.feature_history[modality]) >= self.calibration_frames:
                 self.calibration_baselines[modality] = np.mean(self.feature_history[modality], axis=0)
                 self.calibrating[modality] = False
-                baseline = self.calibration_baselines[modality]
-                self.feature_history[modality] = [] # Reset for rolling window
-            else:
-                # Use current mean as a temporary baseline while calibrating
-                baseline = np.mean(self.feature_history[modality], axis=0)
+                self.feature_history[modality] = []
+            baseline = self.calibration_baselines[modality] if not self.calibrating[modality] else np.mean(self.feature_history[modality], axis=0)
         else:
             baseline = self.calibration_baselines[modality]
 
         if baseline is None:
             baseline = np.zeros_like(feats)
-        norm_feats = feats - baseline
 
-        # 3. Phase 4: Temporal Windowing (Rolling Average)
+        norm_feats = feats - baseline
+        return feats, norm_feats
+
+    def _lock_features(self, modality: str, raw_features, user_id='default') -> np.ndarray:
+        """
+        Pass raw features through FeatureRuntimeLock, apply Phase 4
+        methodology transformations (Calibration & Temporal Windowing),
+        and return the scaled array.
+        """
+        _, norm_feats = self._apply_calibration(modality, raw_features, user_id)
+
+        # Temporal Windowing (Rolling Average)
         if not self.calibrating[modality]:
             self.feature_history[modality].append(norm_feats)
             if len(self.feature_history[modality]) > self.window_size:
@@ -693,11 +697,11 @@ class RuntimeEngine:
 
         windowed_feats = windowed_feats.reshape(1, -1)
 
-        # 4. Scale with the trained scaler
+        # Scale with the trained scaler
         scaler = self._scalers.get(modality)
         if scaler is not None:
             windowed_feats = scaler.transform(windowed_feats)
-            
+
         return windowed_feats
 
     def _lock_features_deep(self, modality: str, raw_features, user_id='default') -> np.ndarray:
@@ -705,61 +709,21 @@ class RuntimeEngine:
         Pass raw features through FeatureRuntimeLock, apply subject-aware calibration baseline
         subtraction, scale frame-wise, and maintain a sequence history of length 5.
         """
-        # 1. Lock features and handle missing values
-        if modality == "face":
-            feats = self.feature_lock.process_face_features(raw_features, scaler=None)
-        elif modality == "voice":
-            feats = self.feature_lock.process_voice_features(raw_features, scaler=None)
-        elif modality == "physio":
-            feats = self.feature_lock.process_physio_features(raw_features, scaler=None)
-        else:
-            raise ValueError(f"Deep learning only supports face, voice, and physio, got: {modality}")
+        _, norm_feats = self._apply_calibration(modality, raw_features, user_id)
 
-        feats = feats.flatten()
-
-        # 2. Phase 4: Subject-Aware Calibration (Calm baseline subtraction)
-        from backend.calibration import get_or_create
-        cal = get_or_create(user_id)
-        if cal.is_complete:
-            if modality == "face" and len(cal._face_baseline_matrix) > 0:
-                self.calibration_baselines[modality] = np.mean(cal._face_baseline_matrix, axis=0)
-                self.calibrating[modality] = False
-            elif modality == "voice" and len(cal._voice_baseline_matrix) > 0:
-                self.calibration_baselines[modality] = np.mean(cal._voice_baseline_matrix, axis=0)
-                self.calibrating[modality] = False
-            elif modality == "physio" and len(cal._physio_baseline_matrix) > 0:
-                self.calibration_baselines[modality] = np.mean(cal._physio_baseline_matrix, axis=0)
-                self.calibrating[modality] = False
-
-        if self.calibrating[modality]:
-            self.feature_history[modality].append(feats)
-            if len(self.feature_history[modality]) >= self.calibration_frames:
-                self.calibration_baselines[modality] = np.mean(self.feature_history[modality], axis=0)
-                self.calibrating[modality] = False
-                baseline = self.calibration_baselines[modality]
-                self.feature_history[modality] = [] # Reset for rolling window
-            else:
-                baseline = np.mean(self.feature_history[modality], axis=0)
-        else:
-            baseline = self.calibration_baselines[modality]
-
-        if baseline is None:
-            baseline = np.zeros_like(feats)
-        norm_feats = feats - baseline
-
-        # 3. Scale frame-wise using deep scaler
+        # Scale frame-wise using deep scaler
         scaler = self._scalers.get(modality)
         if scaler is not None:
             norm_feats_scaled = scaler.transform(norm_feats.reshape(1, -1))[0]
         else:
             norm_feats_scaled = norm_feats
 
-        # 4. Append to sequence history of size 5
+        # Append to sequence history of size 5
         self.deep_sequence_history[modality].append(norm_feats_scaled)
         if len(self.deep_sequence_history[modality]) > 5:
             self.deep_sequence_history[modality].pop(0)
 
-        # 5. Build sequence of length 5 (pad with oldest frame if less than 5 frames)
+        # Build sequence of length 5 (pad with oldest frame if less than 5 frames)
         history_len = len(self.deep_sequence_history[modality])
         if history_len < 5:
             pad_size = 5 - history_len
@@ -767,6 +731,5 @@ class RuntimeEngine:
         else:
             seq = self.deep_sequence_history[modality]
 
-        # Shape (1, 5, FeatDim)
         return np.array(seq).reshape(1, 5, -1)
 

@@ -5,7 +5,12 @@ class BaselineStore:
     """
     Manages persistence of user-specific calm baselines in a JSON database schema.
     """
-    def __init__(self, store_path="configs/calibrated_baselines.json"):
+    def __init__(self, store_path=None):
+        if store_path is None:
+            store_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                "configs", "calibrated_baselines.json"
+            )
         self.store_path = store_path
         os.makedirs(os.path.dirname(self.store_path), exist_ok=True)
         self.baselines = self._load_all_baselines()

@@ -4,6 +4,9 @@ import sys
 import builtins
 import os
 
+# Suppress MediaPipe/TensorFlow Lite C++ warnings (INFO and WARNING levels)
+os.environ['GLOG_minloglevel'] = '2'
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
@@ -19,6 +22,7 @@ def print(*args, **kwargs):
     kwargs.setdefault('flush', True)
     builtins.print(*args, **kwargs)
 
+import eventlet
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -62,7 +66,7 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Initialize the Phase 7 RuntimeEngine
-from backend.runtime.runtime_engine import RuntimeEngine
+from backend.runtime.runtime_engine import RuntimeEngine, TORCH_AVAILABLE, EXPERT_MODELS_DIR
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 runtime_engine = RuntimeEngine.from_registry()
@@ -569,6 +573,26 @@ def predict_upload():
             gsr_file = request.files['gsr_file']
             if gsr_file and allowed_file(gsr_file.filename, ALLOWED_SIGNAL_EXTENSIONS):
                 gsr_array = parse_numeric_csv_file(gsr_file, 'gsr')
+                
+        import json
+        if eeg_array is None and 'eeg_data' in request.form and request.form['eeg_data']:
+            try:
+                # The frontend sends a string like "0.5, 0.4, 0.6" or "[0.5, 0.4]"
+                val = request.form['eeg_data']
+                if val.startswith('['):
+                    eeg_array = json.loads(val)
+                else:
+                    eeg_array = [float(x.strip()) for x in val.split(',') if x.strip()]
+            except: pass
+            
+        if gsr_array is None and 'gsr_data' in request.form and request.form['gsr_data']:
+            try:
+                val = request.form['gsr_data']
+                if val.startswith('['):
+                    gsr_array = json.loads(val)
+                else:
+                    gsr_array = [float(x.strip()) for x in val.split(',') if x.strip()]
+            except: pass
         
         if eeg_array is not None or gsr_array is not None:
             phys_features = model.extract_physiological_features(eeg_data=eeg_array, gsr_data=gsr_array)
@@ -1020,7 +1044,11 @@ def fuse_predictions(probs, confs, certainties=None, fusion_mode='reliability'):
     if len(active_modes) == 1:
         score = probs[active_modes[0]]
         level = "High" if score > 0.7 else "Moderate" if score > 0.4 else "Low"
-        return {'fused_score': score, 'stress_level': level}
+        return {
+            'fused_score': score, 
+            'stress_level': level,
+            'weights': {active_modes[0]: 1.0}
+        }
         
     # Re-normalise the active subset
     raw_w = {m: OPTIMAL_WEIGHTS[m] for m in active_modes}
@@ -1101,10 +1129,6 @@ def stream_face():
                 'confidence': landmark_conf
             })
 
-        # Apply personal baseline normalization if complete and session scaler not used
-        # We construct the raw feature vector first
-        raw_vec = build_face_feature_vector(indicators)
-        
         session_scaled = None
         if cal.is_complete:
             session_scaled = cal.scale_face_features(raw_vec)
@@ -1636,9 +1660,9 @@ def stream_fused():
                 
                 if runtime_engine.expl_engine and runtime_engine.expl_engine.is_loaded:
                     fused['explainability'] = runtime_engine.expl_engine.build_full_payload(
-                        face_features=[] if 'face' in probs else None,
-                        voice_features=[] if 'voice' in probs else None,
-                        physio_features=[] if 'physio' in probs else None,
+                        face_features=None,
+                        voice_features=None,
+                        physio_features=None,
                     )
                 
                 data = json.dumps(fused)
@@ -1893,7 +1917,7 @@ def muse_stream_status():
 
 @app.route('/api/restart/backend', methods=['POST'])
 def restart_backend():
-    if request.remote_addr != '127.0.0.1':
+    if request.access_route[-1] != '127.0.0.1':
         return jsonify({'status': 'error', 'message': 'Forbidden'}), 403
     print("[Shutdown] Restarting backend server...")
     def restart_self():
@@ -1913,7 +1937,7 @@ def restart_backend():
 
 @app.route('/api/shutdown/backend', methods=['POST'])
 def shutdown_backend():
-    if request.remote_addr != '127.0.0.1':
+    if request.access_route[-1] != '127.0.0.1':
         return jsonify({'status': 'error', 'message': 'Forbidden'}), 403
     print("[Shutdown] Shutting down backend server...")
     def kill_self():
@@ -1923,13 +1947,6 @@ def shutdown_backend():
     import threading
     threading.Thread(target=kill_self).start()
     return jsonify({'status': 'success', 'message': 'Backend is shutting down...'})
-
-if __name__ == '__main__':
-    print("Starting Multimodal Stress Detection API...")
-    
-    # Waitress does not support WebSockets/Socket.IO, so we use eventlet via socketio.run
-    print("Starting SocketIO server on http://localhost:5000...")
-    socketio.run(app, debug=False, host='127.0.0.1', port=5000, use_reloader=False, minimum_chunk_size=1)
 
 
 # --- Phase 8: Admin & Monitoring Endpoints ---
@@ -1969,3 +1986,10 @@ def run_golden_replay():
     
     res = golden_replay.run_replay(rows)
     return jsonify(res)
+
+if __name__ == '__main__':
+    print("Starting Multimodal Stress Detection API...")
+    
+    # Waitress does not support WebSockets/Socket.IO, so we use eventlet via socketio.run
+    print("Starting SocketIO server on http://localhost:5000...")
+    socketio.run(app, debug=False, host='127.0.0.1', port=5000, use_reloader=False, minimum_chunk_size=1)

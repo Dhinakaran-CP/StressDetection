@@ -1,0 +1,139 @@
+%%{init: {"theme": "dark", "flowchart": {"defaultRenderer": "elk"}} }%%
+flowchart TD
+    %% Inputs
+    subgraph Stage1 ["Stage 1: Raw Data Streams"]
+        direction LR
+        Eye(["Eye Data"])
+        Mouth(["Mouth Data"])
+        GFace(["Global Face"])
+        Pros(["Prosody"])
+        Spec(["Spectral"])
+        Qual(["Voice Quality"])
+        Card(["Cardiovascular"])
+        Mot(["Motion"])
+    end
+
+    %% Experts
+    subgraph Stage2 ["Stage 2: Sub-Modality Sequence Experts"]
+        direction LR
+        e_eye["Eye Expert"]
+        e_mouth["Mouth Expert"]
+        e_gface["Global Face Expert"]
+        e_pros["Prosody Expert"]
+        e_spec["Spectral Expert"]
+        e_qual["Voice Qual Expert"]
+        e_card["Cardio Expert"]
+        e_mot["Motion Expert"]
+    end
+    
+    Eye --> e_eye
+    Mouth --> e_mouth
+    GFace --> e_gface
+    Pros --> e_pros
+    Spec --> e_spec
+    Qual --> e_qual
+    Card --> e_card
+    Mot --> e_mot
+
+    %% Intra-modality Fusion
+    subgraph Stage3 ["Stage 3: Intra-Modality Gated Routing"]
+        direction TB
+        gate_face{"Face Gate"}
+        gate_voice{"Voice Gate"}
+        gate_physio{"Physio Gate"}
+    end
+
+    e_eye --> gate_face
+    e_mouth --> gate_face
+    e_gface --> gate_face
+
+    e_pros --> gate_voice
+    e_spec --> gate_voice
+    e_qual --> gate_voice
+
+    e_card --> gate_physio
+    e_mot --> gate_physio
+
+    %% Inter-modality Cross-Attention
+    subgraph Stage4 ["Stage 4: Inter-Modality Cross-Attention"]
+        direction TB
+        subgraph FaceReinforcement ["Face Reinforcement"]
+            attn_fv["Face-Voice Attn"]
+            attn_fp["Face-Physio Attn"]
+        end
+        subgraph VoiceReinforcement ["Voice Reinforcement"]
+            attn_vf["Voice-Face Attn"]
+            attn_vp["Voice-Physio Attn"]
+        end
+        subgraph PhysioReinforcement ["Physio Reinforcement"]
+            attn_pf["Physio-Face Attn"]
+            attn_pv["Physio-Voice Attn"]
+        end
+    end
+
+    %% Linking Gates to Attn
+    gate_face -->|Face Queries| attn_fv
+    gate_voice -->|Voice Keys/Values| attn_fv
+    
+    gate_face -->|Face Queries| attn_fp
+    gate_physio -->|Physio Keys/Values| attn_fp
+    
+    gate_voice -->|Voice Queries| attn_vf
+    gate_face -->|Face Keys/Values| attn_vf
+    
+    gate_voice -->|Voice Queries| attn_vp
+    gate_physio -->|Physio Keys/Values| attn_vp
+    
+    gate_physio -->|Physio Queries| attn_pf
+    gate_face -->|Face Keys/Values| attn_pf
+    
+    gate_physio -->|Physio Queries| attn_pv
+    gate_voice -->|Voice Keys/Values| attn_pv
+
+    %% Quality Masking Note
+    QualityMasks[("Realtime Quality Masks")] -. "Inhibits bad signals" .-> attn_fv
+    QualityMasks -. "Inhibits bad signals" .-> attn_fp
+    QualityMasks -. "Inhibits bad signals" .-> attn_vp
+    QualityMasks -. "Inhibits bad signals" .-> attn_vf
+    QualityMasks -. "Inhibits bad signals" .-> attn_pf
+    QualityMasks -. "Inhibits bad signals" .-> attn_pv
+
+    %% Fusion & Global MoE
+    subgraph Stage5 ["Stage 5: Global MoE and Pooling"]
+        f_re["Projected Face Feats"]
+        v_re["Projected Voice Feats"]
+        p_re["Projected Physio Feats"]
+        global_gate{"Global MoE Router"}
+        pooling(("Sequence Mean Pooling"))
+    end
+    
+    attn_fv --> f_re
+    attn_fp --> f_re
+    attn_vf --> v_re
+    attn_vp --> v_re
+    attn_pf --> p_re
+    attn_pv --> p_re
+
+    f_re --> global_gate
+    v_re --> global_gate
+    p_re --> global_gate
+    
+    global_gate --> pooling
+
+    %% Output Heads
+    subgraph Stage6 ["Stage 6: Output Heads (GRL & Classification)"]
+        stress["Stress Output Head (Binary)"]
+        conf["Confidence Score Head"]
+        grl(("Gradient Reversal Layer"))
+        subj["Adversarial Subject Identity Head"]
+    end
+
+    pooling --> stress
+    pooling --> conf
+    pooling --> grl
+    grl -->|Identifies Subject| subj
+    
+    grl -.-> |Unlearns Identity| pooling
+    
+    classDef outputHead fill:#2b2d42,stroke:#ef233c,stroke-width:2px,color:#fff;
+    class stress,conf,subj outputHead;

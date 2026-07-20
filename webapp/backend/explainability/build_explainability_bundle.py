@@ -158,6 +158,9 @@ def _build_modality_bundle(modality, cfg, shap_available):
             mean_abs    = np.mean(np.abs(sv_class1), axis=0)  # (n_features,)
             shap_means  = mean_abs.tolist()
 
+            mean_signed = np.mean(sv_class1, axis=0)  # signed means for direction
+            shap_means  = mean_abs.tolist()
+
             top_idx = np.argsort(mean_abs)[::-1][:TOP_K_PER_MODALITY]
             for idx in top_idx:
                 idx_int = int(idx)
@@ -166,6 +169,7 @@ def _build_modality_bundle(modality, cfg, shap_available):
                     "feature_label": labels[idx_int] if idx_int < len(labels) else f"{modality}_{idx_int}",
                     "feature_group": groups[idx_int] if idx_int < len(groups) else "unknown",
                     "mean_abs_shap": float(mean_abs[idx_int]),
+                    "mean_shap":     float(mean_signed[idx_int]),
                 })
             print(f"  SHAP OK -- top feature: {top_features[0]['feature_label']}")
         except Exception as exc:

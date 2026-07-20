@@ -391,10 +391,16 @@ class UserCalibration:
 # Session-level store — one calibration object per user_id
 _calibrations = {}
 _cal_lock = threading.Lock()
+_MAX_CALIBRATIONS = 1000
 
 def get_or_create(user_id='default') -> UserCalibration:
     with _cal_lock:
         if user_id not in _calibrations:
+            # Evict oldest entry if at capacity to prevent memory leak
+            if len(_calibrations) >= _MAX_CALIBRATIONS:
+                oldest = next(iter(_calibrations))
+                removed = _calibrations.pop(oldest)
+                print(f"[Calibration] Evicted oldest calibration for '{oldest}' to maintain max cache size ({_MAX_CALIBRATIONS})")
             _calibrations[user_id] = UserCalibration()
             # Try to load persistent calibration if it exists
             _calibrations[user_id].load_from_file(user_id)

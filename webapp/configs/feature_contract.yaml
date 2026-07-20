@@ -13,7 +13,7 @@ modalities:
       - "brow_descent_right"
       - "brow_asymmetry"
       - "lip_compression"
-      - "jaw_tension"
+      - "jaw_displacement"
       - "mouth_corner_pull"
       - "forehead_tension"
       - "face_height_norm"

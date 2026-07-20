@@ -19,7 +19,7 @@ def test_api():
             "brow_descent_right": 0.11,
             "brow_asymmetry": 0.01,
             "lip_compression": 0.22,
-            "jaw_tension": 0.68,
+            "jaw_displacement": 1.85,
             "mouth_corner_pull": 0.28,
             "forehead_tension": 0.12,
             "face_height_norm": 1.48,

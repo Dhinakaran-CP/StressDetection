@@ -120,7 +120,8 @@ class ExplainabilityEngine:
                 entry["feature_value"] = 0.0 if (np.isnan(val) or np.isinf(val)) else val
             else:
                 entry["feature_value"] = None
-            entry["direction"] = "increase" if feat.get("mean_abs_shap", 0) >= 0 else "decrease"
+            signed = feat.get("mean_shap", feat.get("mean_abs_shap", 0))
+            entry["direction"] = "increase" if signed >= 0 else "decrease"
             enriched.append(entry)
 
         return {

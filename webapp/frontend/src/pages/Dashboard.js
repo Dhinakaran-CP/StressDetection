@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import RealtimeMonitor from "../components/RealtimeMonitor";
 import AnalysisPanel from "../components/AnalysisPanel";
-import CopilotMessage from "../components/CopilotMessage";
 import StressChatbot from "../components/StressChatbot";
 import { validateAnalysisInputs, validateAnalysisResponse } from "../utils/validateInputs";
 import {
@@ -12,7 +11,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 
 import { API_BASE } from "../config";
@@ -69,14 +67,6 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
   const [error, setError] = useState(null);
   const [webcamActive, setWebcamActive] = useState(false);
 
-  // Muse stream states
-  const [museDuration, setMuseDuration] = useState(20);
-  const [museFilename, setMuseFilename] = useState("uploads/eeg_session.csv");
-  const [museCollecting, setMuseCollecting] = useState(false);
-  const [musePoints, setMusePoints] = useState([]);
-  const [museSessionError, setMuseSessionError] = useState(null);
-  const [museElapsed, setMuseElapsed] = useState(0);
-
   // Refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -87,7 +77,6 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
   const analyserRef = useRef(null);
   const micCanvasRef = useRef(null);
   const processorRef = useRef(null);
-  const museIntervalRef = useRef(null);
 
   // Scroll to top on navigation/redirect (e.g. mode or phase change)
   useEffect(() => {
@@ -101,7 +90,6 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
       if (facePreview) URL.revokeObjectURL(facePreview);
       stopWebcam();
       stopMicRecording();
-      if (museIntervalRef.current) clearInterval(museIntervalRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voicePreviewUrl, facePreview]);
@@ -292,25 +280,23 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-      const formData = new FormData();
-      formData.append('face_image', blob, 'live_frame.png');
-      try {
-        const response = await fetch(`${API_BASE}/api/analyze`, {
-          method: 'POST',
-          body: formData,
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setLiveFaceResult(data);
-        } else {
-          setError(data.error || "Failed to analyze live webcam frame.");
-        }
-      } catch (err) {
-        setError("Network error communicating with flask server.");
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/webcam/capture`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setLiveFaceResult(data);
+      } else {
+        setError(data.error || data.message || "Failed to analyze live webcam frame.");
       }
-    }, 'image/png');
+    } catch (err) {
+      setError("Network error communicating with flask server.");
+    }
   };
 
   // Audio Recorder helpers
@@ -324,6 +310,9 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
 
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const audioContext = new AudioContext({ sampleRate: 16000 });
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
       audioContextRef.current = audioContext;
 
       const source = audioContext.createMediaStreamSource(stream);
@@ -427,9 +416,9 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
 
   const analyzeLiveVoice = async (file) => {
     const formData = new FormData();
-    formData.append('voice_audio', file, 'voice_live.wav');
+    formData.append('file', file, 'voice_live.wav');
     try {
-      const response = await fetch(`${API_BASE}/api/analyze`, {
+      const response = await fetch(`${API_BASE}/api/voice/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -437,98 +426,13 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
       if (response.ok) {
         setLiveVoiceResult(data);
       } else {
-        setError(data.error || "Failed to analyze live audio sample.");
+        setError(data.error || data.message || "Failed to analyze live audio sample.");
       }
     } catch (err) {
       setError("Network error communicating with flask server.");
     }
   };
 
-  // Muse stream capture
-  const startMuseCapture = async () => {
-    setMusePoints([]);
-    setMuseSessionError(null);
-    setMuseElapsed(0);
-    try {
-      const res = await fetch(`${API_BASE}/api/muse/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ duration: museDuration, filename: museFilename }),
-      });
-      const data = await res.json();
-      if (res.ok && data.status === 'started') {
-        setMuseCollecting(true);
-        if (museIntervalRef.current) clearInterval(museIntervalRef.current);
-        let timeCount = 0;
-        museIntervalRef.current = setInterval(async () => {
-          timeCount += 2;
-          setMuseElapsed(timeCount);
-          await pollMuseStatus();
-          if (timeCount >= museDuration) {
-            clearInterval(museIntervalRef.current);
-            setMuseCollecting(false);
-            analyzeMuseRecording();
-          }
-        }, 2000);
-      } else {
-        setMuseSessionError(data.message || 'Could not start Muse connection.');
-      }
-    } catch (e) {
-      setMuseSessionError('Failed to communicate with Muse receiver api.');
-    }
-  };
-
-  const stopMuseCapture = async () => {
-    if (museIntervalRef.current) clearInterval(museIntervalRef.current);
-    setMuseCollecting(false);
-    try {
-      await fetch(`${API_BASE}/api/muse/stop`, { method: 'POST' });
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const pollMuseStatus = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/muse/status`);
-      const data = await res.json();
-      if (res.ok) {
-        if (data.points && data.points.length > 0) {
-          setMusePoints(data.points);
-        }
-        if (data.status === 'completed' && data.prediction) {
-          if (museIntervalRef.current) clearInterval(museIntervalRef.current);
-          setMuseCollecting(false);
-          setCurrentResult(data.prediction);
-          setPhase('currentResult');
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const analyzeMuseRecording = async () => {
-    setPhase('analyzing');
-    try {
-      const res = await fetch(`${API_BASE}/api/muse/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: museFilename }),
-      });
-      const data = await res.json();
-      if (res.ok && data.status === 'success') {
-        setCurrentResult(data);
-        setPhase('currentResult');
-      } else {
-        setError(data.message || 'Failed to extract metrics from Muse log file.');
-        setPhase('idle');
-      }
-    } catch (e) {
-      setError('Connection dropped during Muse signal analytics.');
-      setPhase('idle');
-    }
-  };
 
   // Multimodal analytics trigger
   const analyzeMultimodal = async () => {
@@ -541,8 +445,8 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
       eegFile,
       gsrFile,
     });
-    if (validationError) {
-      setError(validationError);
+    if (validationError.length > 0) {
+      setError(validationError.join('; '));
       return;
     }
 
@@ -563,9 +467,9 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
       });
       const data = await response.json();
       
-      const responseError = validateAnalysisResponse(data, response.ok);
-      if (responseError) {
-        setError(responseError);
+      const responseErrors = validateAnalysisResponse(data);
+      if (responseErrors.length > 0) {
+        setError(responseErrors.join('; '));
         setPhase('idle');
         return;
       }
@@ -734,7 +638,7 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
 
                 {facePreview ? (
                   <div className="relative rounded-xl overflow-hidden border border-outline-variant/30 max-h-48 mb-4 flex items-center justify-center bg-black">
-                    <img src={facePreview} alt="Face preview" className="max-h-48 w-full object-cover" />
+                    <img src={facePreview} alt="Face preview" className="max-h-48 w-full object-contain" />
                     <button
                       onClick={() => { setFaceImage(null); setFacePreview(null); }}
                       className="absolute top-2 right-2 bg-error text-white p-1.5 rounded-lg shadow-md hover:opacity-90 transition-all flex items-center justify-center"
@@ -744,7 +648,7 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
                   </div>
                 ) : webcamActive ? (
                   <div className="space-y-4 mb-4">
-                    <video ref={videoRef} autoPlay muted playsInline className="w-full h-40 bg-black rounded-xl object-cover border border-outline-variant/20" />
+                    <video ref={videoRef} autoPlay muted playsInline className="w-full h-40 bg-black rounded-xl object-contain border border-outline-variant/20" />
                     <div className="flex gap-2 text-[10px] font-label-caps font-bold">
                       <button onClick={captureWebcam} className="flex-1 bg-primary text-on-primary py-2.5 rounded-lg shadow hover:opacity-90">Capture</button>
                       <button onClick={analyzeLiveWebcam} className="flex-1 bg-primary-container text-white py-2.5 rounded-lg shadow hover:opacity-90">Analyze Frame</button>
@@ -832,7 +736,7 @@ export default function Dashboard({ dashboardMode, showCopilot, setShowCopilot, 
                 <div className="text-center space-y-1">
                   <div className="text-primary flex justify-center"><span className="material-symbols-outlined text-[40px]">monitor_heart</span></div>
                   <h4 className="font-headline-sm text-base text-primary font-bold">Physiological Data Streams</h4>
-                  <p className="text-[11px] text-on-surface-variant">Manual CSV upload or real-time Muse 2 EEG telemetry connector.</p>
+                  <p className="text-[11px] text-on-surface-variant">Manual CSV upload for physiological telemetry data.</p>
                 </div>
 
 
