@@ -1,0 +1,73 @@
+Cross-Dataset Modality Alignment Strategy
+=========================================
+
+1. THE PROBLEM
+   - StressID: Has Face (video) + Voice (audio) + Physio (ECG/EDA/RR)
+   - WESAD:    Has Physio ONLY (chest + wrist) - NO face/voice
+   - EmpathicSchool: Has Face (video) + Physio (E4 wristband) - NO voice
+   
+   The model expects all 10 sub-modality inputs. Missing modalities
+   must be handled gracefully.
+
+2. THE SOLUTION: Zero-Padding + Gated Attention
+
+   Stage 2 (Sub-Experts):
+   - For missing modalities, input is a zero tensor [T, feat_dim]
+   - The Conv1D->GRU expert processes zeros → near-zero output
+   - This is a "null" embedding
+
+   Stage 3 (Intra-Modality Gates):
+   - For WESAD (no face): face_eye, face_mouth, face_global_face
+     all produce near-zero embeddings
+   - gate_face sees 3 near-zero inputs → learned to weight them ~0
+   - gate_physio sees real physio inputs → weight ~1.0
+   - The gate learns which sub-experts carry signal
+
+   Stage 4 (Cross-Attention):
+   - A zero-modality latent produces near-zero attention keys/values
+   - Cross-attention with a zero source: target updates minimally
+   - Quality masks can explicitly zero out missing modalities
+     (optional, not required since zeros flow through naturally)
+
+   Stage 5 (Global MoE):
+   - f_rep, v_rep, p_rep: zero for missing modalities
+   - GlobalMoERouter weights: learned to ignore zero-modalities
+   - Final representation is from available modalities only
+
+3. DATASET-SPECIFIC FEATURE COVERAGE
+
+                    StressID    WESAD    EmpathicSchool
+   Face eye         9 feats      zeros       9 feats
+   Face mouth       6 feats      zeros       6 feats
+   Face global     18 feats      zeros      18 feats
+   Voice spectral   8 feats      zeros       zeros
+   Voice MFCC      13 feats      zeros       zeros
+   Voice quality    2 feats      zeros       zeros
+   Physio cardio    2 feats      2 feats     2 feats
+   Physio eda       3 feats      3 feats     3 feats
+   Physio somatic   8 feats      8 feats     8 feats
+
+   Key insight: Physio features across datasets use different sensors:
+   - StressID: 500Hz ECG/EDA chest sensors (professional grade)
+   - WESAD: 700Hz chest + 32Hz wrist (research grade)  
+   - EmpathicSchool: 4Hz E4 wristband (consumer grade)
+   
+   The model learns to extract stress-relevant patterns from whatever
+   sensor data is available.
+
+4. WHY THIS WORKS
+   - The gating mechanisms (IntraModalityGate, GlobalMoERouter) are
+     learned weighted averages. They naturally learn to weight
+     informative inputs higher and zero/null inputs lower.
+   - Cross-attention with a zero source produces a zero delta,
+     making it a no-op.
+   - During LOSO training, a fold leaving out StressID subjects
+     still sees WESAD+EmpathicSchool physio patterns, and vice versa.
+
+5. VERIFICATION
+   - Enriched data: 91 total unique subjects (53+15+23)
+     StressID: 53 subjects, all 10 groups non-zero
+     WESAD: 15 subjects, only physio groups non-zero (face/voice=0)  
+     EmpathicSchool: 23 subjects, face+physio non-zero (voice=0)
+   - The combined dataset concatenates all, and the model learns
+     per-sample gating during training.

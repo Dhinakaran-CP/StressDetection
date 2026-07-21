@@ -33,6 +33,8 @@ from backend.core.feature_runtime_lock import FeatureRuntimeLock
 from backend.core.version_registry      import VersionRegistry
 
 if TORCH_AVAILABLE:
+    from backend.runtime.ssvb_casa_ais import SSVBCASA_AIS
+
     class ModalityEncoder(nn.Module):
         def __init__(self, input_dim, hidden_dim=16):
             super().__init__()
@@ -43,15 +45,19 @@ if TORCH_AVAILABLE:
             self.classifier = nn.Linear(hidden_dim, 2)
             
         def forward(self, x):
+            logits, _ = self.forward_with_latent(x)
+            return logits
+
+        def forward_with_latent(self, x):
             x = x.permute(0, 2, 1)
             x = self.conv(x)
             x = self.bn(x)
             x = self.relu(x)
             x = x.permute(0, 2, 1)
             gru_out, hidden = self.gru(x)
-            latent = gru_out[:, -1, :] 
-            logits = self.classifier(latent) 
-            return logits
+            latent = gru_out[:, -1, :]
+            logits = self.classifier(latent)
+            return logits, latent
 
     class DynamicRouter(nn.Module):
         def __init__(self, num_modalities=3):
@@ -141,6 +147,7 @@ class RuntimeEngine:
         # Phase 8 Deep Learning variables
         self.use_deep = False
         self.deep_models = {}
+        self.ssvb_model = None
         self.deep_sequence_history = {"face": [], "voice": [], "physio": []}
 
         # Phase 4 Methodology: Subject-Aware Normalization & Temporal Windowing
@@ -333,8 +340,14 @@ class RuntimeEngine:
             reg_r = self.registry.get_active_model(reg_key_r)
             if reg_r:
                 self._verify_hash(router_path, reg_r.get("hash"), f"{prefix}fusion_router")
+
+            # Load SSVB-CASA-AIS full architecture
+            self.ssvb_model = SSVBCASA_AIS(hidden_dim=16, num_subjects=65)
+            self.ssvb_model.eval()
+            print(f"[RuntimeEngine] SSVB-CASA-AIS cross-attention model initialised")
         except Exception as exc:
             self.use_deep = False
+            self.ssvb_model = None
             print(f"[RuntimeEngine] Failed to load deep learning artifacts, falling back: {exc}")
 
 
@@ -448,6 +461,7 @@ class RuntimeEngine:
 
             raw_probs = {}
             masks = [0.0, 0.0, 0.0]
+            latents = {"face": None, "voice": None, "physio": None}
             
             # Face
             if face is not None:
@@ -455,9 +469,10 @@ class RuntimeEngine:
                     seq_f = self._lock_features_deep("face", face, user_id=user_id)
                     seq_f_t = torch.FloatTensor(seq_f)
                     with torch.no_grad():
-                        logits_f = self.deep_models["face"](seq_f_t)
+                        logits_f, latent_f = self.deep_models["face"].forward_with_latent(seq_f_t)
                         prob_f = float(torch.softmax(logits_f, dim=1)[0][1].item())
                         raw_probs["face"] = prob_f
+                        latents["face"] = latent_f
                         masks[0] = 1.0
                 except Exception as exc:
                     print(f"[RuntimeEngine] Deep face prediction failed: {exc}")
@@ -468,9 +483,10 @@ class RuntimeEngine:
                     seq_v = self._lock_features_deep("voice", voice, user_id=user_id)
                     seq_v_t = torch.FloatTensor(seq_v)
                     with torch.no_grad():
-                        logits_v = self.deep_models["voice"](seq_v_t)
+                        logits_v, latent_v = self.deep_models["voice"].forward_with_latent(seq_v_t)
                         prob_v = float(torch.softmax(logits_v, dim=1)[0][1].item())
                         raw_probs["voice"] = prob_v
+                        latents["voice"] = latent_v
                         masks[1] = 1.0
                 except Exception as exc:
                     print(f"[RuntimeEngine] Deep voice prediction failed: {exc}")
@@ -481,9 +497,10 @@ class RuntimeEngine:
                     seq_p = self._lock_features_deep("physio", physio, user_id=user_id)
                     seq_p_t = torch.FloatTensor(seq_p)
                     with torch.no_grad():
-                        logits_p = self.deep_models["physio"](seq_p_t)
+                        logits_p, latent_p = self.deep_models["physio"].forward_with_latent(seq_p_t)
                         prob_p = float(torch.softmax(logits_p, dim=1)[0][1].item())
                         raw_probs["physio"] = prob_p
+                        latents["physio"] = latent_p
                         masks[2] = 1.0
                 except Exception as exc:
                     print(f"[RuntimeEngine] Deep physio prediction failed: {exc}")
@@ -491,49 +508,76 @@ class RuntimeEngine:
             if not raw_probs:
                 return {"error": "No valid deep modality predictions"}
 
-            # Build 9-dimensional input vector for Dynamic Router
+            # Store the individual modality probabilities
             pf = raw_probs.get("face", 0.5)
             pv = raw_probs.get("voice", 0.5)
             pp = raw_probs.get("physio", 0.5)
-            
-            cat_in = torch.FloatTensor([[1.0 - pf, pf, 1.0 - pv, pv, 1.0 - pp, pp] + masks])
-            
-            try:
-                with torch.no_grad():
-                    raw_weights = self.deep_models["router"](cat_in)
-                    w_f = float(raw_weights[0][0].item())
-                    w_v = float(raw_weights[0][1].item())
-                    w_p = float(raw_weights[0][2].item())
-                    
-                # Apply mask
-                w_f_m = w_f * masks[0]
-                w_v_m = w_v * masks[1]
-                w_p_m = w_p * masks[2]
-                
-                # Re-normalize
-                sum_w = w_f_m + w_v_m + w_p_m
-                if sum_w == 0:
-                    sum_w = 1.0
-                    
-                w_f_norm = w_f_m / sum_w
-                w_v_norm = w_v_m / sum_w
-                w_p_norm = w_p_m / sum_w
-                
-                avg_prob = w_f_norm * raw_probs.get("face", 0.0) + \
-                           w_v_norm * raw_probs.get("voice", 0.0) + \
-                           w_p_norm * raw_probs.get("physio", 0.0)
-                           
-                fusion_weights = {"face": w_f_norm, "voice": w_v_norm, "physio": w_p_norm}
-            except Exception as exc:
-                print(f"[RuntimeEngine] Deep router failed: {exc}, falling back to average")
-                num_active = sum(masks)
-                fallback_w = 1.0 / num_active if num_active > 0 else 0.33
-                fusion_weights = {
-                    "face": fallback_w * masks[0],
-                    "voice": fallback_w * masks[1],
-                    "physio": fallback_w * masks[2]
-                }
-                avg_prob = sum(raw_probs[m] * fusion_weights[m] for m in raw_probs)
+
+            use_ssvb = (self.ssvb_model is not None and
+                        sum(1 for v in latents.values() if v is not None) >= 2)
+
+            if use_ssvb:
+                try:
+                    hid = self.ssvb_model.hidden_dim
+                    device = next(self.ssvb_model.parameters()).device
+                    lf = latents["face"]   if latents["face"]   is not None else torch.zeros(1, hid)
+                    lv = latents["voice"]  if latents["voice"]  is not None else torch.zeros(1, hid)
+                    lp = latents["physio"] if latents["physio"] is not None else torch.zeros(1, hid)
+                    lf, lv, lp = lf.to(device), lv.to(device), lp.to(device)
+
+                    with torch.no_grad():
+                        result = self.ssvb_model.forward_from_latents(lf, lv, lp, return_all=True)
+                        stress_logits = result["stress_logits"]
+                        confidence = result["confidence"]
+                        gate_weights = result["gate_weights"]
+
+                    avg_prob = float(torch.softmax(stress_logits, dim=1)[0][1].item())
+                    ssvb_confidence = float(confidence[0].item()) if confidence.dim() > 0 else float(confidence.item())
+                    fusion_weights = {
+                        "face":  float(gate_weights[0][0].item()),
+                        "voice": float(gate_weights[0][1].item()),
+                        "physio": float(gate_weights[0][2].item()),
+                    }
+                    print(f"[SSVB-CASA-AIS] Fused: {avg_prob:.3f} | Confidence: {ssvb_confidence:.3f} | "
+                          f"Weights: F={fusion_weights['face']:.2f} V={fusion_weights['voice']:.2f} P={fusion_weights['physio']:.2f}")
+                except Exception as exc:
+                    print(f"[RuntimeEngine] SSVB-CASA-AIS inference failed: {exc}, falling back to DynamicRouter")
+                    use_ssvb = False
+
+            if not use_ssvb:
+                # Fallback: Dynamic Router (existing behaviour)
+                cat_in = torch.FloatTensor([[1.0 - pf, pf, 1.0 - pv, pv, 1.0 - pp, pp] + masks])
+                try:
+                    with torch.no_grad():
+                        raw_weights = self.deep_models["router"](cat_in)
+                        w_f = float(raw_weights[0][0].item())
+                        w_v = float(raw_weights[0][1].item())
+                        w_p = float(raw_weights[0][2].item())
+                    w_f_m = w_f * masks[0]
+                    w_v_m = w_v * masks[1]
+                    w_p_m = w_p * masks[2]
+                    sum_w = w_f_m + w_v_m + w_p_m
+                    if sum_w == 0:
+                        sum_w = 1.0
+                    w_f_norm = w_f_m / sum_w
+                    w_v_norm = w_v_m / sum_w
+                    w_p_norm = w_p_m / sum_w
+                    avg_prob = w_f_norm * raw_probs.get("face", 0.0) + \
+                               w_v_norm * raw_probs.get("voice", 0.0) + \
+                               w_p_norm * raw_probs.get("physio", 0.0)
+                    fusion_weights = {"face": w_f_norm, "voice": w_v_norm, "physio": w_p_norm}
+                    ssvb_confidence = None
+                except Exception as exc:
+                    print(f"[RuntimeEngine] Deep router failed: {exc}, falling back to average")
+                    num_active = sum(masks)
+                    fallback_w = 1.0 / num_active if num_active > 0 else 0.33
+                    fusion_weights = {
+                        "face": fallback_w * masks[0],
+                        "voice": fallback_w * masks[1],
+                        "physio": fallback_w * masks[2],
+                    }
+                    avg_prob = sum(raw_probs[m] * fusion_weights[m] for m in raw_probs)
+                    ssvb_confidence = None
 
             threshold    = 0.6 + (0.5 - sensitivity) * 0.4
             final_pred   = 1 if avg_prob > threshold else 0
@@ -552,13 +596,14 @@ class RuntimeEngine:
                 "predicted_class":       "Stress" if final_pred else "No Stress",
                 "stress_probability":    float(avg_prob),
                 "no_stress_probability": float(1.0 - avg_prob),
-                "confidence":            float(max(avg_prob, 1.0 - avg_prob)),
+                "confidence":            float(ssvb_confidence if ssvb_confidence is not None else max(avg_prob, 1.0 - avg_prob)),
                 "stress_level":          stress_level,
                 "percentage":            float(avg_prob * 100.0),
                 "individual_predictions": {
                     m: float(p) for m, p in raw_probs.items()
                 },
                 "fusion_weights":        fusion_weights,
+                "fusion_engine":         "ssvb_casa_ais" if use_ssvb else "dynamic_router",
                 "active_modalities":     list(raw_probs.keys()),
                 "explainability":        explanation,
             }

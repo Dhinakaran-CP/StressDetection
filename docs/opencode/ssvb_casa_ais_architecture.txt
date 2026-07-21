@@ -1,0 +1,92 @@
+SSVB-CASA-AIS Architecture (10 Sub-Modality Version)
+=====================================================
+
+1. OVERVIEW
+   - Full name: Shared-Subject Variational Bayes - Cross-Attention
+     Sequence Aggregation with Adversarial Identity Suppression
+   - Type: Hybrid Mixture-of-Experts with Cross-Attention
+   - Input: 10 sub-modality groups, 69 total features (from 72 raw channels,
+     minus 3 privacy exclusions)
+   - Output: Binary stress classification + confidence score
+
+2. ARCHITECTURE STAGES (6-Stage Pipeline)
+
+   Stage 1: RAW DATA LOADING (External)
+   - 3 datasets: StressID (all 3 mod), WESAD (physio only),
+     EmpathicSchool (face+physio)
+   - Missing modalities filled with zeros at inference
+
+   Stage 2: SUB-MODALITY EXPERTS (10 SequenceExperts)
+   - Each expert: Conv1D(3,4) -> BN -> ReLU -> MultiheadSelfAttn(4 heads)
+     -> GRU(hidden_dim)
+   - Face group (3 experts):
+     * exp_eye:           input_dim=9   (eye aspect ratios, deltas)
+     * exp_mouth:         input_dim=6   (lip compression, jaw, deltas)
+     * exp_global_face:   input_dim=18  (brow, head pose, forehead, nose, deltas)
+   - Voice group (3 experts):
+     * exp_spectral_prosody: input_dim=8  (rms, zcr, f0_std, spectral features)
+     * exp_mfcc:             input_dim=13 (13 MFCC coefficients)
+     * exp_quality:          input_dim=2  (hnr, jitter)
+   - Physio group (3 experts):
+     * exp_cardio:  input_dim=2  (hr, hrv_rmssd)
+     * exp_eda:     input_dim=3  (eda_clean, eda_phasic, scr_count)
+     * exp_somatic: input_dim=8  (resp_rate, resp_amp, temp, acc x/y/z/mag)
+   - Each expert outputs a [batch, hidden_dim] embedding
+   - Supports return_sequence=True for loss computation
+
+   Stage 3: INTRA-MODALITY GATES (3 GatedFusion modules)
+   - gate_face:  fuses {e_eye, e_mouth, e_gface} -> face latent
+   - gate_voice: fuses {e_sp, e_mfcc, e_qual} -> voice latent
+   - gate_physio: fuses {e_cardio, e_eda, e_soma} -> physio latent
+   - Each gate: learned weighted sum with softmax routing
+
+   Stage 4: CROSS-ATTENTION BLOCKS (6 CrossAttentionBlocks)
+   - 6 directional pairs: fv, fp, vf, vp, pf, pv
+   - Each block: target attends source with quality masking support
+   - Outputs fused per-modality: f_re, v_re, p_re
+   - Projection: proj_f/proj_v/proj_p map concat(cross_pair) -> hidden_dim
+
+   Stage 5: GLOBAL MOE ROUTER
+   - GlobalMoERouter: 3-modality gated fusion
+   - Learned routing weights per sample
+   - Final fused representation: f_rep
+
+   Stage 6: OUTPUT HEADS (3 heads)
+   - stress_head: Linear(hidden_dim, 2) -> logits
+   - confidence_head: Linear(hidden_dim, 1) -> sigmoid score
+   - subj_head (with GradientReversal): Linear(hidden_dim, num_subjects)
+     * GRL alpha=0.02 for adversarial subject de-identification
+   - Confidence-aware loss (DeVries et al.):
+     probs_adj = conf * softmax(logits) + (1-conf) * onehot(label)
+
+3. PASS-THROUGH INITIALIZATION
+   - All sub-experts: small random weights (Kaiming uniform)
+   - Intra-modality gates: equal weights (1/3 each)
+   - Cross-attention out_proj: zero initialized (no attention residual at init)
+   - Global MoE: equal weights (1/3 per modality)
+   - Stress head: zero initialized
+   - Confidence head: bias=0
+   - Subj head: weights=1e-3, bias=0
+   Purpose: Existing ModalityEncoder predictions preserved at deployment
+
+4. SUB-MODALITY GROUP MAPPING (72 raw channels -> 69 features)
+   Excluded (privacy): face[11]=face_height_norm, voice[36]=f0_mean,
+   physio[61]=eda_tonic_scl
+
+   Face (34 raw, 33 used):
+     eye:         [0,1,2,3,4, 18,19,20,32]         -> 9 feats
+     mouth:       [8,9,10, 24,25,26]                -> 6 feats
+     global_face: [5,6,7,12,13,14,15,16,17,
+                   21,22,23,27,28,29,30,31,33]      -> 18 feats
+
+   Voice (24 raw, 23 used):
+     spectral_prosody: [34,35,37, 51,52,53,54,55]   -> 8 feats
+     mfcc:             [38..50]                      -> 13 feats
+     quality:          [56,57]                       -> 2 feats
+
+   Physio (14 raw, 13 used):
+     cardio:   [58,59]                               -> 2 feats
+     eda:      [60,62,63]                            -> 3 feats
+     somatic:  [64,65,66,67,68,69,70,71]            -> 8 feats
+
+   Total: 33 + 23 + 13 = 69 features

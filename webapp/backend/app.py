@@ -1188,6 +1188,10 @@ def stream_face():
         print(f"[Face Expert] Processed frame. Score: {smoothed_score:.3f} (raw: {raw_score:.3f}, smile: {smile_score:.2f})")
         return jsonify({'score': smoothed_score, 'raw_score': raw_score, 'smile_detected': smile_score > 0.3})
     except Exception as e:
+        import traceback
+        with open("stream_face_error.log", "w") as ef:
+            traceback.print_exc(file=ef)
+            ef.write(f"Face streaming error: {e}\n")
         print(f"Face streaming error: {e}")
         return jsonify({'error': str(e)}), 500
 
