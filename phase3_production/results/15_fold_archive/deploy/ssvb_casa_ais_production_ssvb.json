@@ -1,0 +1,9 @@
+{
+  "architecture": "SSVB-CASA-AIS (Hybrid MoE)",
+  "model_type": "ssvb",
+  "hidden_dim": 16,
+  "num_subjects": 91,
+  "trained_on": "combined",
+  "optimal_threshold": 0.1,
+  "timestamp": "2026-07-22_19-27-40"
+}

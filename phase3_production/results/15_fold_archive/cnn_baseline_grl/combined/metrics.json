@@ -1,0 +1,76 @@
+{
+  "config": {
+    "seed": 42,
+    "seq_len": 5,
+    "batch_size": 256,
+    "ssl_epochs": 4,
+    "ft_epochs": 8,
+    "lr_ssl": 0.001,
+    "lr_ft": 0.0005,
+    "weight_decay": 0.0001,
+    "hidden_dim": 16,
+    "modality_dropout": 0.15,
+    "noise_std": 0.02,
+    "lambda_conf": 0.15,
+    "lambda_subj": 0.1,
+    "lambda_dataset": 0.1,
+    "lambda_attn": 0.05,
+    "lambda_ssl": 0.05,
+    "grl_alpha_subj": 0.02,
+    "grl_alpha_ds": 0.05,
+    "dataset_weight_empathicschool": 0.3,
+    "dataset_weight_stressid": 1.0,
+    "dataset_weight_wesad": 1.0,
+    "n_folds": 15,
+    "model_type": "cnn_baseline_grl",
+    "device": "cuda",
+    "trained_on": "combined",
+    "n_subjects": 91
+  },
+  "per_dataset": {
+    "combined": {
+      "accuracy": 0.19072307479607356,
+      "precision": 0.15385559017640277,
+      "recall": 0.9083140208574739,
+      "f1": 0.26313912258984956,
+      "roc_auc": 0.519578791059544,
+      "avg_precision": 0.23212956658758963,
+      "mse": 0.2527852698899393,
+      "mae": 0.49368355720836976,
+      "mean_confidence": 1.0,
+      "n_folds": 11
+    }
+  },
+  "combined": {
+    "accuracy": 0.19072307479607356,
+    "precision": 0.15385559017640277,
+    "recall": 0.9083140208574739,
+    "f1": 0.26313912258984956,
+    "roc_auc": 0.519578791059544,
+    "avg_precision": 0.23212956658758963,
+    "mse": 0.2527852698899393,
+    "mae": 0.49368355720836976,
+    "optimal": {
+      "accuracy": 0.16281856306742246,
+      "precision": 0.15645575531169742,
+      "recall": 0.9705967555040557,
+      "f1": 0.26947359954960387,
+      "roc_auc": 0.519578791059544,
+      "avg_precision": 0.23212956658758963,
+      "mse": 0.2527852698899393,
+      "mae": 0.49368355720836976
+    },
+    "mean_confidence": 1.0,
+    "optimal_threshold": 0.1
+  },
+  "per_subject": {
+    "subject_acc_mean": 0.4151790794287979,
+    "subject_acc_std": 0.15399070649183044,
+    "subject_acc_min": 0.13339074927807892,
+    "subject_acc_max": 0.6785714285714286
+  },
+  "per_dataset_breakdown": {
+    "combined": 0.16281856306742246
+  },
+  "timestamp": "2026-07-22 18:52:07"
+}

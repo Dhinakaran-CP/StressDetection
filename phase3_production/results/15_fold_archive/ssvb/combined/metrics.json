@@ -1,0 +1,76 @@
+{
+  "config": {
+    "seed": 42,
+    "seq_len": 5,
+    "batch_size": 256,
+    "ssl_epochs": 4,
+    "ft_epochs": 8,
+    "lr_ssl": 0.001,
+    "lr_ft": 0.0005,
+    "weight_decay": 0.0001,
+    "hidden_dim": 16,
+    "modality_dropout": 0.15,
+    "noise_std": 0.02,
+    "lambda_conf": 0.15,
+    "lambda_subj": 0.1,
+    "lambda_dataset": 0.1,
+    "lambda_attn": 0.05,
+    "lambda_ssl": 0.05,
+    "grl_alpha_subj": 0.02,
+    "grl_alpha_ds": 0.05,
+    "dataset_weight_empathicschool": 0.3,
+    "dataset_weight_stressid": 1.0,
+    "dataset_weight_wesad": 1.0,
+    "n_folds": 15,
+    "model_type": "ssvb",
+    "device": "cuda",
+    "trained_on": "combined",
+    "n_subjects": 91
+  },
+  "per_dataset": {
+    "combined": {
+      "accuracy": 0.850085257385133,
+      "precision": 0.6809090909090909,
+      "recall": 0.10848783314020857,
+      "f1": 0.18715642178910544,
+      "roc_auc": 0.5485915485019808,
+      "avg_precision": 0.24968600485045253,
+      "mse": 0.14847236763326618,
+      "mae": 0.1506312897930024,
+      "mean_confidence": 0.4923812448978424,
+      "n_folds": 11
+    }
+  },
+  "combined": {
+    "accuracy": 0.850085257385133,
+    "precision": 0.6809090909090909,
+    "recall": 0.10848783314020857,
+    "f1": 0.18715642178910544,
+    "roc_auc": 0.5485915485019808,
+    "avg_precision": 0.24968600485045253,
+    "mse": 0.14847236763326618,
+    "mae": 0.1506312897930024,
+    "optimal": {
+      "accuracy": 0.8500622148486106,
+      "precision": 0.6692242114236999,
+      "recall": 0.11370220162224798,
+      "f1": 0.1943791011514176,
+      "roc_auc": 0.5485915485019808,
+      "avg_precision": 0.24968600485045253,
+      "mse": 0.14847236763326618,
+      "mae": 0.1506312897930024
+    },
+    "mean_confidence": 0.4923812448978424,
+    "optimal_threshold": 0.1
+  },
+  "per_subject": {
+    "subject_acc_mean": 0.7143136892180179,
+    "subject_acc_std": 0.20677645789510446,
+    "subject_acc_min": 0.32142857142857145,
+    "subject_acc_max": 0.9434523809523809
+  },
+  "per_dataset_breakdown": {
+    "combined": 0.8500622148486106
+  },
+  "timestamp": "2026-07-22 19:27:40"
+}

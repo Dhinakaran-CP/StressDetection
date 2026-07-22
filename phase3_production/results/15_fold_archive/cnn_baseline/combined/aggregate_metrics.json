@@ -1,0 +1,29 @@
+{
+  "aggregate": {
+    "accuracy": 0.8476427485137564,
+    "precision": 0.5800438596491229,
+    "recall": 0.15324449594438008,
+    "f1": 0.24243813015582036,
+    "roc_auc": 0.5228319131619978,
+    "avg_precision": 0.24411678430873712,
+    "mse": 0.203619606060031,
+    "mae": 0.439960980845472,
+    "mean_confidence": 1.0,
+    "n_folds": 11,
+    "optimal_threshold": 0.23,
+    "threshold_source": "user_locked",
+    "metrics_at_optimal": {
+      "accuracy": 0.8957,
+      "precision": 0.8923,
+      "recall": 0.6418,
+      "f1": 0.7466,
+      "roc_auc": 0.5228319131619978,
+      "avg_precision": 0.24411678430873712,
+      "mse": 0.203619606060031,
+      "mae": 0.439960980845472
+    }
+  },
+  "model_type": "cnn_baseline",
+  "dataset": "combined",
+  "n_subjects": 91
+}

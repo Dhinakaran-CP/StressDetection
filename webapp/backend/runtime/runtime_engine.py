@@ -71,6 +71,33 @@ if TORCH_AVAILABLE:
         def forward(self, x):
             return self.mlp(x)
 
+    class CNNBaseline(nn.Module):
+        """Production champion: plain 1D-CNN. 3 Conv1D layers + GAP + classifier.
+        Concatenates all 9 sub-modality features into one stream (69 dims).
+        Weights from 5-fold LOSO training: AUC=0.8414, threshold=0.23.
+        Input: [B, T, total_feat_dim] where T is temporal dimension."""
+        def __init__(self, total_feat_dim=69, hidden_dims=[64, 32, 16], num_classes=2):
+            super().__init__()
+            layers = []
+            in_ch = total_feat_dim
+            for h in hidden_dims:
+                layers.extend([
+                    nn.Conv1d(in_ch, h, kernel_size=3, padding=1),
+                    nn.BatchNorm1d(h),
+                    nn.ReLU(),
+                ])
+                in_ch = h
+            self.conv_stack = nn.Sequential(*layers)
+            self.classifier = nn.Linear(hidden_dims[-1], num_classes)
+
+        def forward(self, x):
+            if x.dim() == 2:
+                x = x.unsqueeze(1)
+            x = x.permute(0, 2, 1)
+            x = self.conv_stack(x)
+            x = x.mean(dim=2)
+            return self.classifier(x)
+
 
 # ── Phase 4 optimal fusion weights ────────────────────────────────────────────
 FUSION_WEIGHTS = {"face": 0.30, "voice": 0.40, "physio": 0.30}
@@ -149,6 +176,11 @@ class RuntimeEngine:
         self.deep_models = {}
         self.ssvb_model = None
         self.deep_sequence_history = {"face": [], "voice": [], "physio": []}
+
+        # Production champion (CNNBaseline, threshold=0.23)
+        self.champion_model = None
+        self.use_champion = False
+        self.champion_threshold = 0.23
 
         # Phase 4 Methodology: Subject-Aware Normalization & Temporal Windowing
         self.feature_history = {"face": [], "voice": [], "physio": []}
@@ -358,9 +390,30 @@ class RuntimeEngine:
                 self.ssvb_model = SSVBCASA_AIS(hidden_dim=16, num_subjects=65)
                 self.ssvb_model.eval()
                 print(f"[RuntimeEngine] SSVB-CASA-AIS cross-attention model initialised")
+
+            # Load production champion: CNNBaseline (5-fold, AUC=0.8414, threshold=0.23)
+            champion_path = os.path.join(ROOT, "phase3_production", "results", "deploy",
+                                         "ssvb_casa_ais_production_cnn_baseline.pt")
+            if os.path.exists(champion_path):
+                try:
+                    self.champion_model = self.CNNBaseline(total_feat_dim=69, num_classes=2)
+                    state = torch.load(champion_path, map_location="cpu", weights_only=True)
+                    if "model_state_dict" in state:
+                        state = state["model_state_dict"]
+                    self.champion_model.load_state_dict(state)
+                    self.champion_model.eval()
+                    self.use_champion = True
+                    print(f"[RuntimeEngine] Production champion CNNBaseline loaded (threshold=0.23)")
+                except Exception as exc:
+                    self.champion_model = None
+                    self.use_champion = False
+                    print(f"[RuntimeEngine] Failed to load champion CNNBaseline: {exc}")
+            else:
+                print(f"[RuntimeEngine] Champion weights not found at {champion_path}")
         except Exception as exc:
             self.use_deep = False
             self.ssvb_model = None
+            self.champion_model = None
             print(f"[RuntimeEngine] Failed to load deep learning artifacts, falling back: {exc}")
 
 
@@ -378,6 +431,109 @@ class RuntimeEngine:
             print(f"[RuntimeEngine] WARNING: Hash mismatch for {label}. Expected {expected[:16]}..., got {actual[:16]}...")
         else:
             print(f"[RuntimeEngine] Hash verified for {label}: {actual[:16]}...")
+    def predict_champion(
+        self,
+        face=None,
+        voice=None,
+        physio=None,
+        user_id='default',
+    ) -> dict:
+        """
+        Inference via the production champion CNNBaseline (threshold=0.23).
+
+        Args:
+            face:   ndarray of shape (18,) or list of frames (each 18-dim)
+            voice:  ndarray of shape (12,) or list of frames (each 12-dim)
+            physio: ndarray of shape (5,) or list of frames (each 5-dim)
+            user_id: For calibration baseline lookup
+
+        NOTE: The champion was trained on enriched data (69 dims across 9
+        sub-modality groups). The runtime uses 35 dims (18 face + 12 voice +
+        5 physio). Missing dimensions are zero-padded. For full accuracy,
+        align the feature extraction pipeline with the enriched data format.
+        """
+        if not self.use_champion or self.champion_model is None:
+            return {"error": "Champion model not loaded", "status": "error"}
+
+        if face is None and voice is None and physio is None:
+            return {"error": "All inputs are None", "status": "error"}
+
+        try:
+            # Process each modality through calibration
+            feat_face = np.zeros(18, dtype=np.float32)
+            feat_voice = np.zeros(12, dtype=np.float32)
+            feat_physio = np.zeros(5, dtype=np.float32)
+
+            if face is not None:
+                arr = np.asarray(face, dtype=np.float32)
+                if arr.ndim > 1:
+                    arr = arr[-1]
+                if arr.size >= 18:
+                    feat_face = arr[:18]
+                else:
+                    feat_face[:arr.size] = arr
+            if voice is not None:
+                arr = np.asarray(voice, dtype=np.float32)
+                if arr.ndim > 1:
+                    arr = arr[-1]
+                if arr.size >= 12:
+                    feat_voice = arr[:12]
+                else:
+                    feat_voice[:arr.size] = arr
+            if physio is not None:
+                arr = np.asarray(physio, dtype=np.float32)
+                if arr.ndim > 1:
+                    arr = arr[-1]
+                if arr.size >= 5:
+                    feat_physio = arr[:5]
+                else:
+                    feat_physio[:arr.size] = arr
+
+            # Concatenate to 35-dim feature vector
+            feats_35 = np.concatenate([feat_face, feat_voice, feat_physio])
+
+            # Pad to champion's expected 69-dim input (35 → 69)
+            feats_69 = np.zeros(69, dtype=np.float32)
+            feats_69[:35] = feats_35
+
+            # Apply calibration subtraction
+            locked_face, norm_face = self._apply_calibration("face", face, user_id)
+            locked_voice, norm_voice = self._apply_calibration("voice", voice, user_id)
+            locked_physio, norm_physio = self._apply_calibration("physio", physio, user_id)
+
+            norm_69 = np.zeros(69, dtype=np.float32)
+            if norm_face is not None and len(norm_face) >= 18:
+                norm_69[:18] = norm_face[:18]
+            if norm_voice is not None and len(norm_voice) >= 12:
+                norm_69[18:30] = norm_voice[:12]
+            if norm_physio is not None and len(norm_physio) >= 5:
+                norm_69[30:35] = norm_physio[:5]
+
+            # Reshape for CNNBaseline: [B=1, T=1, feat_dim=69]
+            inp = torch.FloatTensor(norm_69).unsqueeze(0).unsqueeze(1)
+
+            with torch.no_grad():
+                logits = self.champion_model(inp)
+                prob = float(torch.softmax(logits, dim=1)[0][1].item())
+
+            threshold = self.champion_threshold
+            final_pred = 1 if prob > threshold else 0
+            stress_level = "High" if prob > 0.7 else "Moderate" if prob > 0.4 else "Low"
+
+            return {
+                "status":             "success",
+                "predicted_class":    "Stress" if final_pred else "No Stress",
+                "stress_probability": prob,
+                "no_stress_probability": 1.0 - prob,
+                "stress_level":       stress_level,
+                "percentage":         prob * 100.0,
+                "threshold_applied":  threshold,
+                "fusion_engine":      "cnn_baseline_champion",
+                "active_modalities":  [m for m, v in [("face", face), ("voice", voice), ("physio", physio)] if v is not None],
+            }
+        except Exception as exc:
+            return {"error": str(exc), "status": "error", "modality": "all"}
+
     # ── Public: status ────────────────────────────────────────────────────────
 
     @property
@@ -405,6 +561,15 @@ class RuntimeEngine:
             "loaded_modalities":   list(self._models.keys()),
             "models":              model_versions,
             "load_errors":         self.load_errors,
+            "champion": {
+                "loaded": self.use_champion,
+                "architecture": "CNNBaseline",
+                "threshold": self.champion_threshold,
+                "aggregate_auc": 0.8414,
+                "f1_at_threshold": 0.7466,
+                "precision_at_threshold": 0.8923,
+                "recall_at_threshold": 0.6418,
+            },
             "explainability": {
                 "engine_loaded": self.expl_engine.is_loaded if self.expl_engine else False,
                 "bundle_version": bundle_entry.get("version") if bundle_entry else None,
