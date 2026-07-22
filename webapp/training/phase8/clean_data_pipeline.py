@@ -46,12 +46,9 @@ def load_stressid_raw():
     
     for _, row in labels_df.iterrows():
         st = str(row['subject/task']).strip()
-        if '/' in st:
-            subject, task = st.split('/', 1)
-        elif '_' in st:
-            subject, task = st.split('_', 1)
-        else:
+        if '/' not in st:
             continue
+        subject, task = st.split('/', 1)
         subject = subject.strip().lower()
         task = task.strip()
         
@@ -65,10 +62,6 @@ def load_stressid_raw():
         
         video = os.path.join(base_dir, 'Videos', subject, f"{subject}_{task}.mp4")
         audio = os.path.join(base_dir, 'Audio', subject, f"{subject}_{task}.wav")
-        # Fix: skip Mac artifact files
-        if audio.endswith('.wav') and os.path.basename(audio).startswith('._'):
-            audio = audio.replace('._', '')
-        
         physio = os.path.join(base_dir, 'Physiological', subject, f"{subject}_{task}.txt")
         
         records.append({
@@ -143,8 +136,14 @@ def load_empathicschool_raw():
                         e4_files[os.path.dirname(root)].append(os.path.join(root, f))
         
         # Tags file for labels
-        tags_files = glob.glob(os.path.join(subj_dir, '**', 'tags.csv'), recursive=True)
-        tags_path = tags_files[0] if tags_files else None
+        tags_path = None
+        for root, dirs, files in os.walk(subj_dir):
+            for f in files:
+                if f.lower() == 'tags.csv':
+                    content = open(os.path.join(root, f)).read().strip()
+                    if content:
+                        tags_path = os.path.join(root, f)
+                    break
         
         # Create session records
         # EmpathicSchool has T1-T8 tasks with potential stress annotations
@@ -503,26 +502,46 @@ def extract_face_features(video_path, target_fps=3):
         if len(frames) < 2:
             return None
         
-        # Use OpenCV face detection only (robust fallback)
-        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        if not os.path.exists(cascade_path):
-            print("    Face detection: haarcascade file not found, skipping face extraction")
-            return np.zeros((len(frames), 34), dtype=np.float32)
-
-        face_cascade = cv2.CascadeClassifier(cascade_path)
-        for frame in frames:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-            if len(faces) > 0:
-                x, y, w, h = faces[0]
-                feats = np.zeros(34)
-                feats[0] = w / frame.shape[1]
-                feats[1] = h / frame.shape[0]
-                feats[2] = x / frame.shape[1]
-                feats[3] = y / frame.shape[0]
-                face_features.append(feats)
-            else:
-                face_features.append(np.full(34, np.nan))
+        # Try MediaPipe for face mesh
+        face_features = []
+        try:
+            import mediapipe as mp
+            mp_face_mesh = mp.solutions.face_mesh
+            with mp_face_mesh.FaceMesh(
+                static_image_mode=False,
+                max_num_faces=1,
+                refine_landmarks=True,
+                min_detection_confidence=0.3,
+                min_tracking_confidence=0.3
+            ) as face_mesh:
+                for frame in frames:
+                    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    results = face_mesh.process(rgb)
+                    if results.multi_face_landmarks:
+                        landmarks = results.multi_face_landmarks[0]
+                        pts = np.array([(lm.x, lm.y, lm.z) for lm in landmarks.landmark])
+                        feats = _compute_face_features(pts)
+                        face_features.append(feats)
+                    else:
+                        face_features.append(np.full(34, np.nan))
+        except ImportError:
+            # Fallback to OpenCV face detection
+            face_cascade = cv2.CascadeClassifier(
+                cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            for frame in frames:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+                if len(faces) > 0:
+                    # Simple features: bounding box + position
+                    x, y, w, h = faces[0]
+                    feats = np.zeros(34)
+                    feats[0] = w / frame.shape[1]  # relative width
+                    feats[1] = h / frame.shape[0]  # relative height
+                    feats[2] = x / frame.shape[1]  # relative x pos
+                    feats[3] = y / frame.shape[0]  # relative y pos
+                    face_features.append(feats)
+                else:
+                    face_features.append(np.full(34, np.nan))
         
         if len(face_features) == 0:
             return None
@@ -549,8 +568,6 @@ def extract_voice_features(audio_path, target_fps=3):
         
         # Extract features with hop_length matching target_fps
         hop_length = int(sr / target_fps)
-        if len(y) < hop_length:
-            return None
         
         # RMS energy
         rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]

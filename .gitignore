@@ -1,6 +1,10 @@
-# ===========================================
-# Python
-# ===========================================
+# ==============================================================================
+# StressDetectionUsingML — Production .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Python & Bytecode Caches
+# ------------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,111 +24,114 @@ sdist/
 var/
 wheels/
 .pytest_cache/
+.coverage
+htmlcov/
 
-# ===========================================
-# Virtual Environments
-# ===========================================
+# ------------------------------------------------------------------------------
+# 2. Virtual Environments
+# ------------------------------------------------------------------------------
 .venv/
 venv/
 ENV/
 env/
+env.bak/
+venv.bak/
 
-# ===========================================
-# Environment / Secrets
-# ===========================================
-configs/.env
+# ------------------------------------------------------------------------------
+# 3. Environment Variables & Secrets
+# ------------------------------------------------------------------------------
 .env
-*.env.local
+.env.local
+.env.development
+.env.test
+.env.production
+configs/.env
+frontend/.env
+frontend/.env.local
 
-# ===========================================
-# ML Models & Large Binary Files
-# Large legacy models NOT committed (100MB+)
-# ===========================================
-backend/facial_expert_model.pkl
-backend/voice_expert_model.pkl
-backend/physio_expert_model.pkl
-
-# Training intermediate checkpoints
-*.h5
-*.onnx
-*.npz
-
-# ===========================================
-# Training / Research Data (large, not versioned)
-# ===========================================
-training/Dataset/
-training/Feature Extraction/Features/*.csv
+# ------------------------------------------------------------------------------
+# 4. Large Datasets & Raw Data Streams (Excluded from Git)
+# ------------------------------------------------------------------------------
 data/
 datasets/
-certified_data/*.csv
-!certified_data/*.json
+data/*
+data/**
+training/Dataset/
+training/Feature Extraction/Features/
+certified_data/
 stress_features_*.csv
+Physiological/
+pipeline/
+research/pipeline/data/
+TheFacialExpressions/
+WorkStress3D Dataset/
+
+# Data file extensions
 *.parquet
+*.npz
 *.npy
+*.mp4
+*.wav
+*.avi
+*.mov
 
-# ===========================================
-# Uploads & Temp Files
-# ===========================================
-backend/uploads/
+# ------------------------------------------------------------------------------
+# 5. Large Model Weights & Checkpoint Binaries (>50MB)
+# ------------------------------------------------------------------------------
+*.pt
+*.pth
+*.bin
+*.h5
+*.onnx
+*.pkl
+backend/*.pkl
+research/Phase_*/outputs/**/*.pkl
+research/Phase_*/outputs/**/*.pt
+research/model_archive.zip
+research/model_archive/
+phase3_production/results/checkpoints/
+phase3_production/results/deploy/
+webapp/backend/runtime/models/*.pt
+
+# ------------------------------------------------------------------------------
+# 6. Logs, Temporary Files & Uploads
+# ------------------------------------------------------------------------------
+logs/
+*.log
+scratch/
 uploads/
+backend/uploads/
 *.tmp
-backend/current_reqs.txt
 current_reqs.txt
+backend/current_reqs.txt
+research/Phase_*/logs/
 
-# ===========================================
-# OS & IDE
-# ===========================================
-.DS_Store
-._.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# ===========================================
-# Frontend
-# ===========================================
+# ------------------------------------------------------------------------------
+# 7. Frontend Dependencies & Build Artifacts
+# ------------------------------------------------------------------------------
 frontend/node_modules/
 frontend/dist/
 frontend/build/
-frontend/.env
-frontend/.env.local
 node_modules/
+.next/
+.out/
 
-# ===========================================
-# Archived / Obsolete (never commit quarantine)
-# ===========================================
+# ------------------------------------------------------------------------------
+# 8. IDE, Editor & OS Artifacts
+# ------------------------------------------------------------------------------
+.DS_Store
+._.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ------------------------------------------------------------------------------
+# 9. Archived & Quarantine Files
+# ------------------------------------------------------------------------------
 quarantine/
 _archive/
-Physiological/
-
-# ===========================================
-# Deployment Export Packages
-# ===========================================
 StressDetectionUsingML_Deploy/
-data/raw/
-data/processed/
-data/features/
-
-# ===========================================
-# Phase-Wise Research Ignores (Exclude models & logs)
-# ===========================================
-research/Phase_4_Temporal_Deep/logs/
-research/Phase_5_GAN_Augmentation/logs/
-research/Phase_6_Expert_Gating/logs/
-research/Phase_7_RF_Specialist/logs/
-research/model_archive.zip
-research/model_archive/
-
-# ===========================================
-# ML Models in Research Outputs (Do not commit large binaries)
-# ===========================================
-research/Phase_*/outputs/**/*.pkl
-research/Phase_*/outputs/**/*.pt
-
-# ===========================================
-# Local runs & Large generated splits
-# ===========================================
-/pipeline/
-research/pipeline/logs/loso_splits.json
-scratch/
-test_endpoints.py

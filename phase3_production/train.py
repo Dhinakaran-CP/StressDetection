@@ -35,12 +35,11 @@ if hasattr(sys.stdout, 'reconfigure'):
         pass
 
 # -- Paths ------------------------------------------------------------------
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-sys.path.insert(0, PROJECT_ROOT)
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'webapp'))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.dirname(__file__))
 
-from backend.runtime.ssvb_casa_ais import SSVBCASA_AIS
-from backend.runtime.conv_moe_mf import ConvMoE_MF
+from models.ssvb_casa_ais import SSVBCASA_AIS
+from models.conv_moe_mf import ConvMoE_MF
 
 
 # ===========================================================================
@@ -144,7 +143,7 @@ class CNNBaselineGRL(nn.Module):
             eye, mouth, global_face,
             spectral_prosody, mfcc, quality,
             cardio, eda, somatic)
-        from backend.runtime.conv_moe_mf import grad_reverse
+        from models.conv_moe_mf import grad_reverse
         rev = grad_reverse(latent, self.grl_alpha)
         subj_logits = self.subj_head(rev)
         B = logits.size(0)
@@ -162,10 +161,9 @@ class CNNBaselineGRL(nn.Module):
 
 CERTIFIED_DIR  = os.path.join(PROJECT_ROOT, 'data', 'processed', 'certified_data')
 PIPELINE_DATA   = os.path.join(PROJECT_ROOT, 'research', 'pipeline', 'data')
-REPORTS_DIR     = os.path.join(PROJECT_ROOT, 'research', 'Phase_3_Production',
-                               'production_model', 'ssvb_casa_ais_production')
+REPORTS_DIR     = os.path.join(os.path.dirname(__file__), 'results')
 CHECKPOINT_DIR  = os.path.join(REPORTS_DIR, 'checkpoints')
-DEPLOY_DIR      = os.path.join(PROJECT_ROOT, 'webapp', 'backend', 'runtime', 'models')
+DEPLOY_DIR      = os.path.join(REPORTS_DIR, 'deploy')
 os.makedirs(REPORTS_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(DEPLOY_DIR, exist_ok=True)
@@ -193,7 +191,7 @@ CONFIG = {
     'dataset_weight_empathicschool': 0.3,
     'dataset_weight_stressid': 1.0,
     'dataset_weight_wesad': 1.0,
-    'n_folds':            5,
+    'n_folds':            15,
     'model_type':         'conv_moe_mf',  # 'ssvb', 'conv_moe_mf', 'cnn_baseline'
     'device':             'cuda' if torch.cuda.is_available() else 'cpu',
 }
@@ -759,8 +757,8 @@ def export_deployment_weights(model, path, optimal_threshold=0.5):
 # ===========================================================================
 
 def run_cross_validation(dataset_name, config):
-    """Run LOSO (leave-one-subject-out) CV using enriched data and
-    return aggregate results + best model state."""
+    """Run stratified LOSO CV. Selects test subjects proportionally from
+    each dataset to avoid degenerate folds from random sampling."""
     device = torch.device(config['device'])
 
     # Load enriched metadata to get subjects
@@ -769,27 +767,56 @@ def run_cross_validation(dataset_name, config):
     subjects = sorted(meta['subject_id'].unique())
     num_subjects = len(subjects)
 
-    # Use LOSO: each fold leaves one subject out
     if len(subjects) < 2:
         print(f"  SKIP {dataset_name}: only {len(subjects)} subjects")
         return None, [], None, None
 
-    n_folds = min(config['n_folds'], len(subjects))
-    # Shuffle subjects for cross-validation
+    # Stratified subject selection: pick proportionally from each dataset
     rng = np.random.RandomState(config['seed'])
-    rng.shuffle(subjects)
+    if 'dataset' in meta.columns:
+        subj_per_ds = meta.groupby('dataset')['subject_id'].unique()
+        n_folds = min(config['n_folds'], len(subjects))
+        # Allocate folds per dataset proportionally
+        total = len(meta)
+        folds_per_ds = {}
+        for ds, subjs in subj_per_ds.items():
+            pct = len(subjs) / num_subjects
+            folds_per_ds[ds] = max(1, int(round(n_folds * pct)))
+        # Adjust total to match n_folds
+        diff = n_folds - sum(folds_per_ds.values())
+        if diff > 0:
+            # Give extra folds to largest dataset
+            largest = max(folds_per_ds, key=folds_per_ds.get)
+            folds_per_ds[largest] += diff
+        # Select subjects from each dataset
+        selected = []
+        for ds, n_sel in folds_per_ds.items():
+            pool = list(subj_per_ds[ds])
+            rng.shuffle(pool)
+            selected.extend(pool[:n_sel])
+        # Deduplicate (in case of overlap) and cap at n_folds
+        selected = list(dict.fromkeys(selected))[:n_folds]
+    else:
+        n_folds = min(config['n_folds'], len(subjects))
+        rng.shuffle(subjects)
+        selected = subjects[:n_folds]
 
     all_true, all_prob, all_conf, all_subj = [], [], [], []
     fold_metrics = []
     best_avg_auc = 0.0
     best_state = None
+    successful_folds = 0
 
-    for fold in range(n_folds):
-        test_subj = subjects[fold]
+    for fold, test_subj in enumerate(selected, 1):
         train_subjs = [s for s in subjects if s != test_subj]
+        # Check that test set has both classes (otherwise AUC is meaningless)
+        test_labels = meta[meta['subject_id'] == test_subj]['label'].values
+        if len(np.unique(test_labels)) < 2:
+            print(f"\n  SKIP fold {fold}/{len(selected)}: test subject {test_subj} has only 1 class")
+            continue
 
         print(f"\n{'='*60}")
-        print(f"  {dataset_name} — Fold {fold+1}/{n_folds} (test: {test_subj})")
+        print(f"  {dataset_name} — Fold {fold}/{len(selected)} (test: {test_subj})")
         print(f"{'='*60}")
 
         # LOSO split: one subject for test, rest for train
@@ -902,7 +929,8 @@ def run_cross_validation(dataset_name, config):
         all_conf.append(fold_conf)
         all_subj.append(fold_subj)
 
-        print(f"  → Fold {fold+1}: ACC={metrics['accuracy']:.4f}  F1={metrics['f1']:.4f}  "
+        successful_folds += 1
+        print(f"  → Fold {fold}: ACC={metrics['accuracy']:.4f}  F1={metrics['f1']:.4f}  "
               f"AUC={metrics['roc_auc']:.4f}  Conf={metrics['mean_confidence']:.4f}")
 
         # Track best model across folds
@@ -911,14 +939,19 @@ def run_cross_validation(dataset_name, config):
             best_state = copy.deepcopy(model.state_dict())
 
     # Aggregate
+    if successful_folds == 0:
+        print(f"\n  ERROR: No valid folds completed")
+        return None, [], None, None
+
     all_true = np.hstack(all_true)
     all_prob = np.hstack(all_prob)
     all_conf = np.hstack(all_conf)
 
     agg = calculate_metrics(all_true, all_prob)
     agg['mean_confidence'] = float(all_conf.mean()) if len(all_conf) > 0 else 0.0
+    agg['n_folds'] = successful_folds
 
-    print(f"\n  {dataset_name} — AGGREGATE: ACC={agg['accuracy']:.4f}  "
+    print(f"\n  {dataset_name} — AGGREGATE ({successful_folds} folds): ACC={agg['accuracy']:.4f}  "
           f"F1={agg['f1']:.4f}  AUC={agg['roc_auc']:.4f}")
 
     return agg, fold_metrics, best_state, (all_true, all_prob, all_conf, all_subj)
@@ -987,6 +1020,7 @@ def main():
     combined_subj_labels = []
     combined_ds_labels = []
     best_thresh_for_export = 0.5
+    combined_metrics_at_opt = None
 
     seen_datasets = set()
     for ds_name in datasets + ['combined']:
@@ -1038,13 +1072,16 @@ def main():
         # Find optimal threshold for combined dataset
         if ds_name == 'combined':
             best_thresh_for_export, thresh_results = find_optimal_threshold(y_true, y_prob, metric='f1')
+            combined_metrics_at_opt = calculate_metrics(y_true, y_prob, threshold=best_thresh_for_export)
             print(f"\n  Optimal threshold (max F1): {best_thresh_for_export:.3f}")
+            print(f"    At optimal: prec={combined_metrics_at_opt['precision']:.4f}  recall={combined_metrics_at_opt['recall']:.4f}  f1={combined_metrics_at_opt['f1']:.4f}")
             for r in thresh_results:
                 if abs(r['threshold'] - 0.5) < 0.01 or abs(r['threshold'] - best_thresh_for_export) < 0.01 or \
                    abs(r['threshold'] - 0.2) < 0.01 or abs(r['threshold'] - 0.32) < 0.01:
                     print(f"    thresh={r['threshold']:.2f}  prec={r['precision']:.4f}  recall={r['recall']:.4f}  f1={r['f1']:.4f}")
         else:
             best_thresh_for_export = 0.5
+            combined_metrics_at_opt = None
 
         # Per-model directory
         model_dir = os.path.join(REPORTS_DIR, model_type_str, ds_name)
@@ -1060,9 +1097,13 @@ def main():
         pd.DataFrame(fold_rows).to_csv(os.path.join(model_dir, 'fold_metrics.csv'), index=False)
 
         # Save aggregate metrics as JSON
+        agg_save = dict(agg)
+        if ds_name == 'combined':
+            agg_save['optimal_threshold'] = best_thresh_for_export
+            agg_save['metrics_at_optimal'] = combined_metrics_at_opt
         agg_path = os.path.join(model_dir, 'aggregate_metrics.json')
         with open(agg_path, 'w') as f:
-            json.dump({'aggregate': agg, 'model_type': model_type_str,
+            json.dump({'aggregate': agg_save, 'model_type': model_type_str,
                        'dataset': ds_name, 'n_subjects': n_subj}, f, indent=2)
 
         # Save per-subject predictions CSV
@@ -1120,14 +1161,17 @@ def main():
     combined_prob = np.hstack(combined_prob)
     combined_conf = np.hstack(combined_conf)
 
-    combined_metrics = calculate_metrics(combined_true, combined_prob)
+    combined_metrics_default = calculate_metrics(combined_true, combined_prob)
+    combined_metrics_at_opt = calculate_metrics(combined_true, combined_prob, threshold=best_thresh_for_export)
+    combined_metrics = combined_metrics_default
+    combined_metrics['optimal'] = combined_metrics_at_opt
     combined_metrics['mean_confidence'] = float(combined_conf.mean())
     combined_metrics['optimal_threshold'] = best_thresh_for_export
 
     combined_subj_labels = np.hstack(combined_subj_labels)
     results_df = pd.DataFrame({
         'true': combined_true,
-        'pred': (combined_prob >= 0.5).astype(int),
+        'pred': (combined_prob >= best_thresh_for_export).astype(int),
         'prob': combined_prob,
         'subject_id': combined_subj_labels,
         'dataset': combined_ds_labels,
@@ -1150,7 +1194,8 @@ def main():
     combined_dir = os.path.join(REPORTS_DIR, model_type_str, 'combined')
     os.makedirs(combined_dir, exist_ok=True)
     generate_plots(combined_true, combined_prob,
-                   f'{model_type_str} (All Datasets)', combined_dir)
+                   f'{model_type_str} (All Datasets)', combined_dir,
+                   threshold=best_thresh_for_export)
 
     report_path = os.path.join(combined_dir, 'metrics.json')
     with open(report_path, 'w') as f:

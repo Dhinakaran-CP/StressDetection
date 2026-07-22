@@ -1,0 +1,14 @@
+Classification Report — ssvb (All Datasets)
+==================================================
+
+              precision    recall  f1-score   support
+
+        Calm     0.8644    0.9834    0.9201      2172
+      Stress     0.9065    0.5102    0.6529       684
+
+    accuracy                         0.8701      2856
+   macro avg     0.8855    0.7468    0.7865      2856
+weighted avg     0.8745    0.8701    0.8561      2856
+
+AUC-ROC: 0.7056
+Average Precision (AP): 0.6654

@@ -1,0 +1,75 @@
+{
+  "config": {
+    "seed": 42,
+    "seq_len": 5,
+    "batch_size": 256,
+    "ssl_epochs": 4,
+    "ft_epochs": 8,
+    "lr_ssl": 0.001,
+    "lr_ft": 0.0005,
+    "weight_decay": 0.0001,
+    "hidden_dim": 16,
+    "modality_dropout": 0.15,
+    "noise_std": 0.02,
+    "lambda_conf": 0.15,
+    "lambda_subj": 0.1,
+    "lambda_dataset": 0.1,
+    "lambda_attn": 0.05,
+    "lambda_ssl": 0.05,
+    "grl_alpha_subj": 0.02,
+    "grl_alpha_ds": 0.05,
+    "dataset_weight_empathicschool": 0.3,
+    "dataset_weight_stressid": 1.0,
+    "dataset_weight_wesad": 1.0,
+    "n_folds": 5,
+    "model_type": "ssvb",
+    "device": "cuda",
+    "trained_on": "combined",
+    "n_subjects": 91
+  },
+  "per_dataset": {
+    "combined": {
+      "accuracy": 0.8711484593837535,
+      "precision": 0.9413407821229051,
+      "recall": 0.4926900584795322,
+      "f1": 0.6468330134357005,
+      "roc_auc": 0.705568883073245,
+      "avg_precision": 0.6653789950736988,
+      "mse": 0.12346708208908905,
+      "mae": 0.13456307349370084,
+      "mean_confidence": 0.7019786834716797
+    }
+  },
+  "combined": {
+    "accuracy": 0.8711484593837535,
+    "precision": 0.9413407821229051,
+    "recall": 0.4926900584795322,
+    "f1": 0.6468330134357005,
+    "roc_auc": 0.705568883073245,
+    "avg_precision": 0.6653789950736988,
+    "mse": 0.12346708208908905,
+    "mae": 0.13456307349370084,
+    "optimal": {
+      "accuracy": 0.8700980392156863,
+      "precision": 0.9064935064935065,
+      "recall": 0.5102339181286549,
+      "f1": 0.6529466791393826,
+      "roc_auc": 0.705568883073245,
+      "avg_precision": 0.6653789950736988,
+      "mse": 0.12346708208908905,
+      "mae": 0.13456307349370084
+    },
+    "mean_confidence": 0.7019786834716797,
+    "optimal_threshold": 0.32
+  },
+  "per_subject": {
+    "subject_acc_mean": 0.7829973907371168,
+    "subject_acc_std": 0.24792045986740283,
+    "subject_acc_min": 0.3958333333333333,
+    "subject_acc_max": 1.0
+  },
+  "per_dataset_breakdown": {
+    "combined": 0.8700980392156863
+  },
+  "timestamp": "2026-07-22 18:13:18"
+}

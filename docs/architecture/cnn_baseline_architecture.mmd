@@ -1,0 +1,64 @@
+%%{init: {"theme": "dark", "flowchart": {"defaultRenderer": "elk"}} }%%
+flowchart TD
+    %% Stage 1: Raw Sub-Modality Inputs
+    subgraph Stage1 ["Stage 1: Sub-Modality Inputs (9 Streams)"]
+        direction LR
+        Eye(["Eye Data (30×9)"])
+        Mouth(["Mouth Data (30×6)"])
+        GFace(["Global Face (30×18)"])
+        Pros(["Prosody (30×8)"])
+        MFCC(["MFCC (30×13)"])
+        Qual(["Voice Quality (30×2)"])
+        Card(["Cardio (30×2)"])
+        EDA(["EDA (30×3)"])
+        Soma(["Somatic (30×8)"])
+    end
+
+    %% Stage 2: Stream Concatenation
+    subgraph Stage2 ["Stage 2: Early Feature Concatenation"]
+        Concat["Channel Concatenation (30 × 69)"]
+    end
+
+    Eye --> Concat
+    Mouth --> Concat
+    GFace --> Concat
+    Pros --> Concat
+    MFCC --> Concat
+    Qual --> Concat
+    Card --> Concat
+    EDA --> Concat
+    Soma --> Concat
+
+    %% Stage 3: Shared Conv1D Backbone Stack
+    subgraph Stage3 ["Stage 3: Shared Conv1D Feature Extractor"]
+        direction TB
+        C1["Conv1D Block 1 (69 → 64, k=3, BN, ReLU)"]
+        C2["Conv1D Block 2 (64 → 32, k=3, BN, ReLU)"]
+        C3["Conv1D Block 3 (32 → 16, k=3, BN, ReLU)"]
+        
+        C1 --> C2
+        C2 --> C3
+    end
+
+    Concat --> C1
+
+    %% Stage 4: Global Temporal Pooling
+    subgraph Stage4 ["Stage 4: Global Temporal Pooling"]
+        GAP(("Global Average Pooling (16-d)"))
+    end
+
+    C3 --> GAP
+
+    %% Stage 5: Output Heads
+    subgraph Stage5 ["Stage 5: Output Heads"]
+        stress["Stress Output Head (Linear 16 → 2)"]
+        conf["Dummy Confidence Head (Constant 1.0)"]
+    end
+
+    GAP --> stress
+    GAP --> conf
+
+    classDef outputHead fill:#2b2d42,stroke:#ef233c,stroke-width:2px,color:#fff;
+    classDef dummyHead fill:#3d405b,stroke:#8d99ae,stroke-width:1.5px,color:#fff;
+    class stress outputHead;
+    class conf dummyHead;

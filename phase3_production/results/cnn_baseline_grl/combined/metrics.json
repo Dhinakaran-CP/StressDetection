@@ -1,0 +1,75 @@
+{
+  "config": {
+    "seed": 42,
+    "seq_len": 5,
+    "batch_size": 256,
+    "ssl_epochs": 4,
+    "ft_epochs": 8,
+    "lr_ssl": 0.001,
+    "lr_ft": 0.0005,
+    "weight_decay": 0.0001,
+    "hidden_dim": 16,
+    "modality_dropout": 0.15,
+    "noise_std": 0.02,
+    "lambda_conf": 0.15,
+    "lambda_subj": 0.1,
+    "lambda_dataset": 0.1,
+    "lambda_attn": 0.05,
+    "lambda_ssl": 0.05,
+    "grl_alpha_subj": 0.02,
+    "grl_alpha_ds": 0.05,
+    "dataset_weight_empathicschool": 0.3,
+    "dataset_weight_stressid": 1.0,
+    "dataset_weight_wesad": 1.0,
+    "n_folds": 5,
+    "model_type": "cnn_baseline_grl",
+    "device": "cuda",
+    "trained_on": "combined",
+    "n_subjects": 91
+  },
+  "per_dataset": {
+    "combined": {
+      "accuracy": 0.873249299719888,
+      "precision": 0.9878787878787879,
+      "recall": 0.4766081871345029,
+      "f1": 0.6429980276134122,
+      "roc_auc": 0.9399070304675131,
+      "avg_precision": 0.8580615601608109,
+      "mse": 0.108021387338611,
+      "mae": 0.2662558979406974,
+      "mean_confidence": 1.0
+    }
+  },
+  "combined": {
+    "accuracy": 0.873249299719888,
+    "precision": 0.9878787878787879,
+    "recall": 0.4766081871345029,
+    "f1": 0.6429980276134122,
+    "roc_auc": 0.9399070304675131,
+    "avg_precision": 0.8580615601608109,
+    "mse": 0.108021387338611,
+    "mae": 0.2662558979406974,
+    "optimal": {
+      "accuracy": 0.8998599439775911,
+      "precision": 0.7374701670644391,
+      "recall": 0.9035087719298246,
+      "f1": 0.812089356110381,
+      "roc_auc": 0.9399070304675131,
+      "avg_precision": 0.8580615601608109,
+      "mse": 0.108021387338611,
+      "mae": 0.2662558979406974
+    },
+    "mean_confidence": 1.0,
+    "optimal_threshold": 0.22
+  },
+  "per_subject": {
+    "subject_acc_mean": 0.8576164109223257,
+    "subject_acc_std": 0.11430934141328851,
+    "subject_acc_min": 0.7351190476190477,
+    "subject_acc_max": 1.0
+  },
+  "per_dataset_breakdown": {
+    "combined": 0.8998599439775911
+  },
+  "timestamp": "2026-07-22 17:55:00"
+}

@@ -1,0 +1,27 @@
+{
+  "aggregate": {
+    "accuracy": 0.853641456582633,
+    "precision": 1.0,
+    "recall": 0.3888888888888889,
+    "f1": 0.56,
+    "roc_auc": 0.4340994636683792,
+    "avg_precision": 0.5040673482947094,
+    "mse": 0.14609581284130965,
+    "mae": 0.15345229286332254,
+    "mean_confidence": 0.6215119361877441,
+    "optimal_threshold": 0.1,
+    "metrics_at_optimal": {
+      "accuracy": 0.853641456582633,
+      "precision": 1.0,
+      "recall": 0.3888888888888889,
+      "f1": 0.56,
+      "roc_auc": 0.4340994636683792,
+      "avg_precision": 0.5040673482947094,
+      "mse": 0.14609581284130965,
+      "mae": 0.15345229286332254
+    }
+  },
+  "model_type": "conv_moe_mf",
+  "dataset": "combined",
+  "n_subjects": 91
+}

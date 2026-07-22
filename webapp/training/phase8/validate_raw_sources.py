@@ -219,8 +219,11 @@ def check_labels():
     tags_files = glob.glob(os.path.join(es_dir, 'S*', '*tags.csv'))
     print(f"  EmpathicSchool tags files: {len(tags_files)}")
     if tags_files:
-        t = pd.read_csv(tags_files[0])
-        print(f"    Sample tags columns: {list(t.columns)}")
+        try:
+            t = pd.read_csv(tags_files[0])
+            print(f"    Sample tags columns: {list(t.columns)}")
+        except Exception as e:
+            print(f"    Sample tags file empty or unparseable ({os.path.basename(tags_files[0])}): {e}")
 
 
 if __name__ == '__main__':

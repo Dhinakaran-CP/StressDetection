@@ -341,10 +341,23 @@ class RuntimeEngine:
             if reg_r:
                 self._verify_hash(router_path, reg_r.get("hash"), f"{prefix}fusion_router")
 
-            # Load SSVB-CASA-AIS full architecture
-            self.ssvb_model = SSVBCASA_AIS(hidden_dim=16, num_subjects=65)
-            self.ssvb_model.eval()
-            print(f"[RuntimeEngine] SSVB-CASA-AIS cross-attention model initialised")
+            # Load production ConvMoE-MF model weights
+            prod_model_path = os.path.join(ROOT, "webapp", "backend", "runtime", "models", "ssvb_casa_ais_production.pt")
+            if os.path.exists(prod_model_path):
+                try:
+                    from backend.runtime.conv_moe_mf import ConvMoE_MF
+                    self.ssvb_model = ConvMoE_MF(hidden_dim=16, embed_dim=8, num_subjects=91, num_datasets=3)
+                    self.ssvb_model.load_state_dict(torch.load(prod_model_path, map_location="cpu"))
+                    self.ssvb_model.eval()
+                    print(f"[RuntimeEngine] Production ConvMoE-MF model loaded successfully from {prod_model_path}")
+                except Exception as exc:
+                    print(f"[RuntimeEngine] Error loading production model from {prod_model_path}: {exc}")
+                    self.ssvb_model = SSVBCASA_AIS(hidden_dim=16, num_subjects=65)
+                    self.ssvb_model.eval()
+            else:
+                self.ssvb_model = SSVBCASA_AIS(hidden_dim=16, num_subjects=65)
+                self.ssvb_model.eval()
+                print(f"[RuntimeEngine] SSVB-CASA-AIS cross-attention model initialised")
         except Exception as exc:
             self.use_deep = False
             self.ssvb_model = None
@@ -533,12 +546,16 @@ class RuntimeEngine:
 
                     avg_prob = float(torch.softmax(stress_logits, dim=1)[0][1].item())
                     ssvb_confidence = float(confidence[0].item()) if confidence.dim() > 0 else float(confidence.item())
-                    fusion_weights = {
-                        "face":  float(gate_weights[0][0].item()),
-                        "voice": float(gate_weights[0][1].item()),
-                        "physio": float(gate_weights[0][2].item()),
-                    }
-                    print(f"[SSVB-CASA-AIS] Fused: {avg_prob:.3f} | Confidence: {ssvb_confidence:.3f} | "
+                    gw = gate_weights[0].cpu().numpy() if isinstance(gate_weights, torch.Tensor) else gate_weights[0]
+                    if len(gw) >= 3:
+                        fusion_weights = {
+                            "face":  float(gw[0]),
+                            "voice": float(gw[1]),
+                            "physio": float(gw[2]),
+                        }
+                    else:
+                        fusion_weights = {"face": 0.33, "voice": 0.33, "physio": 0.34}
+                    print(f"[ConvMoE-MF] Fused: {avg_prob:.3f} | Confidence: {ssvb_confidence:.3f} | "
                           f"Weights: F={fusion_weights['face']:.2f} V={fusion_weights['voice']:.2f} P={fusion_weights['physio']:.2f}")
                 except Exception as exc:
                     print(f"[RuntimeEngine] SSVB-CASA-AIS inference failed: {exc}, falling back to DynamicRouter")

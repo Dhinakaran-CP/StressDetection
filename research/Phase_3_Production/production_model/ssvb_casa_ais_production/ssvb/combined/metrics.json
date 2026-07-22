@@ -1,0 +1,64 @@
+{
+  "config": {
+    "seed": 42,
+    "seq_len": 5,
+    "batch_size": 256,
+    "ssl_epochs": 4,
+    "ft_epochs": 8,
+    "lr_ssl": 0.001,
+    "lr_ft": 0.0005,
+    "weight_decay": 0.0001,
+    "hidden_dim": 16,
+    "modality_dropout": 0.15,
+    "noise_std": 0.02,
+    "lambda_conf": 0.15,
+    "lambda_subj": 0.1,
+    "lambda_dataset": 0.1,
+    "lambda_attn": 0.05,
+    "lambda_ssl": 0.05,
+    "grl_alpha_subj": 0.02,
+    "grl_alpha_ds": 0.05,
+    "dataset_weight_empathicschool": 0.3,
+    "dataset_weight_stressid": 1.0,
+    "dataset_weight_wesad": 1.0,
+    "n_folds": 5,
+    "model_type": "ssvb",
+    "device": "cuda",
+    "trained_on": "combined",
+    "n_subjects": 91
+  },
+  "per_dataset": {
+    "combined": {
+      "accuracy": 0.853641456582633,
+      "precision": 1.0,
+      "recall": 0.3888888888888889,
+      "f1": 0.56,
+      "roc_auc": 0.9444356940540425,
+      "avg_precision": 0.8351986195331015,
+      "mse": 0.14622592185814606,
+      "mae": 0.14669015062136856,
+      "mean_confidence": 0.684256911277771
+    }
+  },
+  "combined": {
+    "accuracy": 0.8623949579831933,
+    "precision": 0.9663461538461539,
+    "recall": 0.4407894736842105,
+    "f1": 0.6054216867469879,
+    "roc_auc": 0.7954902507188784,
+    "avg_precision": 0.6801084905921914,
+    "mse": 0.13484650197361756,
+    "mae": 0.1406266120575347,
+    "mean_confidence": 0.6931177973747253
+  },
+  "per_subject": {
+    "subject_acc_mean": 0.7709425962165689,
+    "subject_acc_std": 0.2496783411895033,
+    "subject_acc_min": 0.3958333333333333,
+    "subject_acc_max": 1.0
+  },
+  "per_dataset_breakdown": {
+    "combined": 0.8623949579831933
+  },
+  "timestamp": "2026-07-22 16:34:40"
+}

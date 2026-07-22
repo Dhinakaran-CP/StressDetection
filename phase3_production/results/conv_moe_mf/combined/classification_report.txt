@@ -1,0 +1,14 @@
+Classification Report — conv_moe_mf (All Datasets)
+==================================================
+
+              precision    recall  f1-score   support
+
+        Calm     0.8386    1.0000    0.9122      2172
+      Stress     1.0000    0.3889    0.5600       684
+
+    accuracy                         0.8536      2856
+   macro avg     0.9193    0.6944    0.7361      2856
+weighted avg     0.8773    0.8536    0.8279      2856
+
+AUC-ROC: 0.4341
+Average Precision (AP): 0.5041

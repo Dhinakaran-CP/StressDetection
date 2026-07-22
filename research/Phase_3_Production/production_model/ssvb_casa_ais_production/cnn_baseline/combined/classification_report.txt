@@ -1,0 +1,14 @@
+Classification Report — cnn_baseline (All Datasets)
+==================================================
+
+              precision    recall  f1-score   support
+
+        Calm     0.8513    0.9993    0.9194      4344
+      Stress     0.9951    0.4459    0.6159      1368
+
+    accuracy                         0.8668      5712
+   macro avg     0.9232    0.7226    0.7676      5712
+weighted avg     0.8858    0.8668    0.8467      5712
+
+AUC-ROC: 0.9270
+Average Precision (AP): 0.8938
