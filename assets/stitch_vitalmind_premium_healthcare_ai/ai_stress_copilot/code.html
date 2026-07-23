@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VitalMind Pro | AI Stress Copilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Geist:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9ff;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-card {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 80, 203, 0.1);
+            box-shadow: 0 40px 40px -10px rgba(0, 80, 203, 0.05);
+        }
+        .ai-bubble {
+            background: rgba(0, 102, 255, 0.03);
+            border-left: 3px solid #0050cb;
+        }
+        .user-bubble {
+            background: #ffffff;
+            border: 1px solid rgba(0, 80, 203, 0.1);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#0050cb",
+                        "primary-container": "#0066ff",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#f8f7ff",
+                        "secondary": "#006875",
+                        "secondary-container": "#00e3fd",
+                        "tertiary": "#6834d2",
+                        "surface": "#f8f9ff",
+                        "on-surface": "#0b1c30",
+                        "on-surface-variant": "#424656",
+                        "surface-variant": "#d3e4fe",
+                        "outline": "#727687",
+                        "outline-variant": "#c2c6d8"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "margin-desktop": "64px",
+                        "stack-md": "24px",
+                        "unit": "8px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-caps": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "metric-xl": ["Geist"]
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="hidden md:flex flex-col h-full w-64 bg-surface/80 backdrop-blur-xl border-r border-primary/10 p-4 space-y-unit sticky left-0 shrink-0">
+<div class="flex items-center gap-3 mb-8 px-2">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">VitalMind Pro</h1>
+<p class="text-[10px] font-label-caps tracking-widest text-primary/60 uppercase">Clinical AI</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-primary/5 transition-colors rounded-lg group">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-primary/5 transition-colors rounded-lg group">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-caps text-label-caps">Realtime Monitor</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 bg-primary-container text-on-primary-container font-bold rounded-lg shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="font-label-caps text-label-caps">AI Copilot</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-primary/5 transition-colors rounded-lg group">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-label-caps text-label-caps">Insights</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-primary/5 transition-colors rounded-lg group">
+<span class="material-symbols-outlined">tune</span>
+<span class="font-label-caps text-label-caps">Calibration</span>
+</button>
+</nav>
+<div class="pt-4 mt-4 border-t border-primary/5">
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-primary/5 transition-colors rounded-lg group">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</button>
+</div>
+<!-- Conversation History Mini-Panel -->
+<div class="mt-4 flex flex-col gap-2 h-48 overflow-y-auto no-scrollbar">
+<p class="px-3 text-[10px] font-bold text-outline uppercase tracking-tighter">Recent Chats</p>
+<div class="px-3 py-2 text-body-md text-sm text-on-surface-variant border-l-2 border-primary/20 hover:border-primary transition-all cursor-pointer truncate">Morning Cortisol Analysis</div>
+<div class="px-3 py-2 text-body-md text-sm text-on-surface-variant border-l-2 border-transparent hover:border-primary transition-all cursor-pointer truncate">Sleep Hygiene Protocol</div>
+<div class="px-3 py-2 text-body-md text-sm text-on-surface-variant border-l-2 border-transparent hover:border-primary transition-all cursor-pointer truncate">Pre-Presentation Calmness</div>
+</div>
+<button class="w-full bg-primary text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all mt-4">
+<span class="material-symbols-outlined">add</span>
+                New Session
+            </button>
+</aside>
+<!-- Main Chat Area -->
+<main class="flex-1 flex flex-col relative bg-surface">
+<!-- Top Bar -->
+<header class="h-16 flex items-center justify-between px-8 border-b border-primary/5 bg-white/50 backdrop-blur-md z-10">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-size: 18px;">auto_awesome</span>
+</div>
+<span class="font-headline-md text-lg text-primary font-bold">Stress Copilot</span>
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">Active Analysis</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-primary/5 rounded-full"><span class="material-symbols-outlined">history</span></button>
+<button class="p-2 text-on-surface-variant hover:bg-primary/5 rounded-full"><span class="material-symbols-outlined">share</span></button>
+</div>
+</header>
+<!-- Chat Canvas -->
+<section class="flex-1 overflow-y-auto px-8 py-10 space-y-8 no-scrollbar" id="chat-canvas">
+<!-- AI Welcome Message -->
+<div class="flex gap-4 max-w-3xl">
+<div class="w-10 h-10 rounded-xl glass-card flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary">smart_toy</span>
+</div>
+<div class="glass-card p-6 rounded-2xl rounded-tl-none ai-bubble">
+<p class="font-body-md text-body-md leading-relaxed text-on-surface">
+                            Good morning, Alexander. I've analyzed your biometric data from the last 24 hours. Your heart rate variability (HRV) is slightly lower than your baseline (42ms vs 58ms). 
+                        </p>
+<p class="mt-4 font-body-md text-body-md leading-relaxed text-on-surface">
+                            You have an executive board meeting in 2 hours. Would you like to perform a 5-minute resonance breathing exercise or review your stress-mitigation strategy?
+                        </p>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex gap-4 max-w-3xl ml-auto flex-row-reverse">
+<div class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div class="glass-card p-6 rounded-2xl rounded-tr-none user-bubble">
+<p class="font-body-md text-body-md leading-relaxed text-on-surface">
+                            Analyze my sleep patterns from last night. I feel more fatigued than usual despite sleeping for 7.5 hours.
+                        </p>
+</div>
+</div>
+<!-- AI Response with Rich Media (Chart) -->
+<div class="flex gap-4 max-w-3xl">
+<div class="w-10 h-10 rounded-xl glass-card flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary">smart_toy</span>
+</div>
+<div class="glass-card p-6 rounded-2xl rounded-tl-none ai-bubble w-full">
+<p class="font-body-md text-body-md leading-relaxed text-on-surface mb-6">
+                            Based on your polysomnography data, your deep sleep (N3 stage) was truncated by 34% compared to your weekly average. Your core temperature remained 0.4°C higher than optimal, suggesting delayed circadian cooling.
+                        </p>
+<!-- Embedded Chart Component -->
+<div class="bg-white/40 p-4 rounded-xl border border-primary/10 mb-6">
+<div class="flex justify-between items-end h-32 gap-1 px-2">
+<div class="w-full bg-primary/20 rounded-t-sm h-[20%]"></div>
+<div class="w-full bg-primary/20 rounded-t-sm h-[40%]"></div>
+<div class="w-full bg-primary/20 rounded-t-sm h-[80%]"></div>
+<div class="w-full bg-primary/40 rounded-t-sm h-[95%]"></div>
+<div class="w-full bg-primary/20 rounded-t-sm h-[30%]"></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[10%] relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">Deep Sleep Drop</div>
+</div>
+<div class="w-full bg-primary/20 rounded-t-sm h-[50%]"></div>
+<div class="w-full bg-primary/20 rounded-t-sm h-[60%]"></div>
+</div>
+<div class="flex justify-between mt-2 px-1">
+<span class="text-[9px] font-label-caps text-outline uppercase tracking-wider">11pm</span>
+<span class="text-[9px] font-label-caps text-primary uppercase font-bold tracking-wider">Deep Sleep Loss (3am)</span>
+<span class="text-[9px] font-label-caps text-outline uppercase tracking-wider">7am</span>
+</div>
+</div>
+<div class="p-4 bg-primary-container/10 rounded-xl border border-primary-container/20 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">info</span>
+<p class="text-sm font-body-md text-on-surface-variant">
+<strong>Potential Cause:</strong> Late-night caffeine ingestion detected (User Log @ 8:15 PM) correlated with elevated resting heart rate during first 4 hours of sleep.
+                            </p>
+</div>
+</div>
+</div>
+<!-- Suggested Prompts -->
+<div class="flex flex-wrap gap-3 py-4">
+<button class="px-4 py-2 rounded-full border border-primary/20 bg-white hover:bg-primary/5 transition-all text-sm font-medium text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">self_improvement</span>
+                        Reduce current stress
+                    </button>
+<button class="px-4 py-2 rounded-full border border-primary/20 bg-white hover:bg-primary/5 transition-all text-sm font-medium text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">bedtime</span>
+                        Improve tonight's sleep
+                    </button>
+<button class="px-4 py-2 rounded-full border border-primary/20 bg-white hover:bg-primary/5 transition-all text-sm font-medium text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">nutrition</span>
+                        Nutrition for HRV
+                    </button>
+</div>
+</section>
+<!-- Bottom Input Bar -->
+<footer class="p-8 bg-white/50 backdrop-blur-xl border-t border-primary/10">
+<div class="max-w-4xl mx-auto relative flex items-center gap-4">
+<button class="w-12 h-12 flex items-center justify-center rounded-full glass-card hover:bg-primary/10 text-primary transition-all">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<div class="flex-1 relative">
+<input class="w-full h-14 bg-white border border-primary/10 rounded-2xl px-6 py-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface shadow-sm font-body-md" placeholder="Describe your mental state or ask for clinical insights..." type="text"/>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+<button class="p-2 text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">mic</span>
+</button>
+</div>
+</div>
+<button class="w-14 h-14 flex items-center justify-center rounded-2xl bg-primary text-white shadow-lg hover:shadow-primary/20 active:scale-95 transition-all">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<p class="text-center text-[10px] text-outline mt-4 uppercase tracking-widest font-label-caps">
+                    VitalMind Clinical Engine v4.2 • HIPAA Compliant • Real-time Biometrics Enabled
+                </p>
+</footer>
+</main>
+<!-- Right Recommendations Panel -->
+<aside class="hidden lg:flex flex-col w-80 h-full bg-white border-l border-primary/10 p-6 space-y-6 shrink-0 overflow-y-auto no-scrollbar">
+<div>
+<h3 class="font-headline-md text-md font-bold text-on-surface mb-4">Elite Recommendations</h3>
+<div class="space-y-4">
+<!-- Recommendation Card 1 -->
+<div class="p-4 rounded-2xl glass-card border-l-4 border-l-tertiary">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface">Cognitive Load Alert</h4>
+<p class="text-xs text-on-surface-variant mt-1">Mental fatigue detected. Schedule a 15m "Dark Room" break before the board meeting.</p>
+<button class="mt-3 text-[10px] font-bold text-tertiary uppercase tracking-wider flex items-center gap-1 group">
+                                    Apply Protocol <span class="material-symbols-outlined text-[14px] group-hover:translate-x-1 transition-transform">arrow_right_alt</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Recommendation Card 2 -->
+<div class="p-4 rounded-2xl glass-card border-l-4 border-l-secondary">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">coffee</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface">Caffeine Restriction</h4>
+<p class="text-xs text-on-surface-variant mt-1">Based on sleep latency, your last caffeine window closes at 2:00 PM today.</p>
+<button class="mt-3 text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1 group">
+                                    Set Reminder <span class="material-symbols-outlined text-[14px] group-hover:translate-x-1 transition-transform">arrow_right_alt</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Recommendation Card 3 (Health Report) -->
+<div class="p-4 rounded-2xl glass-card relative overflow-hidden group">
+<div class="absolute inset-0 opacity-10 bg-gradient-to-br from-primary to-transparent"></div>
+<div class="relative z-10">
+<span class="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">Weekly Summary</span>
+<h4 class="text-sm font-bold text-on-surface mt-2">Stress Resilience Report</h4>
+<p class="text-xs text-on-surface-variant mt-1">Your resilience has improved by 12% since implementing the morning light protocol.</p>
+<div class="mt-4 w-full h-1 bg-primary/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[78%]"></div>
+</div>
+<button class="mt-4 w-full py-2 bg-primary text-white text-[10px] font-bold rounded-lg uppercase tracking-widest hover:opacity-90">View Full PDF</button>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto">
+<div class="p-4 bg-surface-variant rounded-2xl border border-primary/10 flex items-center gap-3">
+<img class="w-10 h-10 rounded-full border-2 border-white" data-alt="A portrait of a professional healthcare specialist or wellness coach with a calm expression, soft studio lighting, medical blue accents, and a clean professional environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQnVMHSogyXjjCgv-RTvhTHeycMQmvpW15PXAqgXvFSPvdUXrtyKPKG9iTdirmdszR4IUQ3gMtQ6HothXsN__Rg7fzK5zTXp8Ec2jRySmUCck_Ll6LQFoF3rdRuZEmaRl2rxYAwr5-XSeGQVRB-c8bN2_I2nQ7lYhFA5sLiZJP6C7-CdFHmmdQUteb3P9beiHur5wEweNkq9CMaKrAM5_1-lZY82YLFXXaOxjBpJ6Lh-rmoggGCw"/>
+<div>
+<p class="text-xs font-bold text-on-surface">Dr. Sarah Chen</p>
+<p class="text-[10px] text-on-surface-variant">Wellness Advisor (Human)</p>
+</div>
+<button class="ml-auto w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary shadow-sm hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</button>
+</div>
+</div>
+</aside>
+</div>
+<!-- Micro-interaction Scripts -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.querySelector('input');
+            const chatCanvas = document.getElementById('chat-canvas');
+
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && input.value.trim() !== '') {
+                    const val = input.value;
+                    input.value = '';
+                    
+                    // Add User Bubble
+                    const userMsg = `
+                        <div class="flex gap-4 max-w-3xl ml-auto flex-row-reverse animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined">person</span>
+                            </div>
+                            <div class="glass-card p-6 rounded-2xl rounded-tr-none user-bubble">
+                                <p class="font-body-md text-body-md leading-relaxed text-on-surface">${val}</p>
+                            </div>
+                        </div>
+                    `;
+                    chatCanvas.insertAdjacentHTML('beforeend', userMsg);
+                    chatCanvas.scrollTop = chatCanvas.scrollHeight;
+
+                    // Simulate AI Thinking
+                    setTimeout(() => {
+                        const aiMsg = `
+                            <div class="flex gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div class="w-10 h-10 rounded-xl glass-card flex items-center justify-center shrink-0">
+                                    <span class="material-symbols-outlined text-primary">smart_toy</span>
+                                </div>
+                                <div class="glass-card p-6 rounded-2xl rounded-tl-none ai-bubble">
+                                    <p class="font-body-md text-body-md leading-relaxed text-on-surface">
+                                        Processing your request with current biomarker streams... I'm looking into your ${val.toLowerCase()} now.
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                        chatCanvas.insertAdjacentHTML('beforeend', aiMsg);
+                        chatCanvas.scrollTop = chatCanvas.scrollHeight;
+                    }, 1000);
+                }
+            });
+        });
+    </script>
+</body></html>

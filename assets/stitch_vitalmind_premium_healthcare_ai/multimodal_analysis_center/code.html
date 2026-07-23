@@ -1,0 +1,497 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Multimodal Analysis Center | VitalMind AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-primary-fixed-variant": "#003fa4",
+                "surface-tint": "#0054d6",
+                "on-secondary-fixed-variant": "#004f58",
+                "surface-variant": "#d3e4fe",
+                "on-error": "#ffffff",
+                "tertiary-fixed-dim": "#d0bcff",
+                "surface-bright": "#f8f9ff",
+                "inverse-primary": "#b3c5ff",
+                "outline-variant": "#c2c6d8",
+                "primary-fixed-dim": "#b3c5ff",
+                "surface-container": "#e5eeff",
+                "error": "#ba1a1a",
+                "error-container": "#ffdad6",
+                "surface-dim": "#cbdbf5",
+                "on-tertiary-fixed": "#23005c",
+                "on-primary-fixed": "#001849",
+                "outline": "#727687",
+                "primary-container": "#0066ff",
+                "secondary": "#006875",
+                "on-primary-container": "#f8f7ff",
+                "background": "#f8f9ff",
+                "primary-fixed": "#dae1ff",
+                "surface-container-highest": "#d3e4fe",
+                "on-tertiary": "#ffffff",
+                "on-secondary": "#ffffff",
+                "tertiary-container": "#8252ec",
+                "surface-container-high": "#dce9ff",
+                "on-surface-variant": "#424656",
+                "on-background": "#0b1c30",
+                "on-secondary-container": "#00616d",
+                "surface-container-low": "#eff4ff",
+                "tertiary-fixed": "#e9ddff",
+                "surface": "#f8f9ff",
+                "primary": "#0050cb",
+                "on-error-container": "#93000a",
+                "on-tertiary-container": "#fdf6ff",
+                "inverse-surface": "#213145",
+                "surface-container-lowest": "#ffffff",
+                "inverse-on-surface": "#eaf1ff",
+                "tertiary": "#6834d2",
+                "secondary-fixed": "#9cf0ff",
+                "secondary-fixed-dim": "#00daf3",
+                "on-secondary-fixed": "#001f24",
+                "on-surface": "#0b1c30",
+                "on-tertiary-fixed-variant": "#5516be",
+                "on-primary": "#ffffff",
+                "secondary-container": "#00e3fd"
+            },
+            "borderRadius": {
+                "DEFAULT": "1rem",
+                "lg": "1.25rem",
+                "xl": "20px",
+                "full": "9999px"
+            },
+            "spacing": {
+                "gutter": "24px",
+                "margin-mobile": "20px",
+                "stack-lg": "48px",
+                "unit": "8px",
+                "stack-md": "24px",
+                "margin-desktop": "64px",
+                "container-max-width": "1440px",
+                "stack-sm": "12px"
+            },
+            "fontFamily": {
+                "display-hero": ["Geist"],
+                "body-md": ["Inter"],
+                "headline-lg": ["Geist"],
+                "label-caps": ["Geist"],
+                "body-lg": ["Inter"],
+                "metric-xl": ["Geist"],
+                "headline-md": ["Geist"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(248, 249, 255, 0.7);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(0, 84, 214, 0.08);
+            box-shadow: 0 20px 25px -5px rgba(0, 84, 214, 0.05), 0 10px 10px -5px rgba(0, 84, 214, 0.02);
+        }
+        
+        .upload-dashed {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='20' ry='20' stroke='%230050CB44' stroke-width='2' stroke-dasharray='8%2c 8' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+        }
+
+        .upload-active:hover {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='20' ry='20' stroke='%230050CB' stroke-width='2' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -10px rgba(0, 80, 203, 0.15);
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .waveform-bar {
+            animation: wave 1.2s infinite ease-in-out;
+        }
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 40px; }
+        }
+
+        .modal-overlay {
+            background: rgba(11, 28, 48, 0.4);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md selection:bg-primary/20">
+<!-- Side Navigation Shell -->
+<aside class="hidden lg:flex flex-col fixed left-0 top-0 h-full z-50 px-4 py-8 bg-surface/70 backdrop-blur-2xl border-r border-primary/10 w-64">
+<div class="mb-10 px-4">
+<h1 class="font-display-hero text-headline-md text-primary tracking-tighter">VitalMind AI</h1>
+<p class="font-label-caps text-[10px] text-on-surface-variant tracking-widest mt-1 opacity-70 uppercase">Executive Health</p>
+</div>
+<nav class="space-y-2 flex-grow">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-surface-variant/30 transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-surface-variant/30 transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">animated_images</span>
+<span class="font-label-caps text-label-caps">Realtime Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-surface-variant/30 transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">insights</span>
+<span class="font-label-caps text-label-caps">Insights</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-primary bg-primary-container/20 border-r-2 border-primary transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+<span class="font-label-caps text-label-caps">Multimodal Center</span>
+</a>
+</nav>
+<div class="mt-auto p-4 glass-card rounded-xl border-primary/5">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface block">Clinical ID: 9482</p>
+<p class="text-[10px] text-on-surface-variant">Standard Tier</p>
+</div>
+</div>
+<button class="w-full py-2 bg-primary text-white rounded-lg font-label-caps text-[10px] hover:shadow-lg transition-all active:scale-95">SETTINGS</button>
+</div>
+</aside>
+<!-- Top App Bar -->
+<header class="flex justify-between items-center w-full px-gutter lg:pl-72 h-16 z-40 fixed top-0 bg-surface/80 backdrop-blur-xl border-b border-primary/10">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-md text-headline-md text-primary lg:hidden">VitalMind</h2>
+<div class="hidden md:flex items-center bg-surface-container-low px-4 py-1.5 rounded-full border border-primary/5">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-64 placeholder:text-on-surface-variant/50" placeholder="Search biometrics..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">smart_toy</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/5 transition-colors relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGGibu7RJFviDCHzwQ97rc-1lIYdS_y0MT1QFC3i2YBx3ttf1__hXAxHF95ALBu202YPdq-CS5jyLsZHwZTcJkBHHFpeslcLFqBFMVFWmRHUmaMXCYU7jTbbd5IqIdOrfnFayK5EKIQhRJviQgXyeDtD3L9411Kek6LMHECS3HGR-v2LiRG6X6y9M4A_eYoOyT_jAWiC8FYoTAtwtIwrDXK96_Lm5O5l90Pe1jLF7_ohuhTsK9Pg">
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="lg:ml-64 pt-24 pb-24 px-gutter">
+<div class="max-w-6xl mx-auto">
+<!-- Page Header -->
+<div class="mb-10">
+<h3 class="font-display-hero text-display-hero text-on-background mb-2">Multimodal Analysis Center</h3>
+<p class="text-body-lg text-on-surface-variant max-w-2xl">Execute deep clinical fusion. Upload synchronized facial, vocal, and physiological data streams for comprehensive stress profiling.</p>
+</div>
+<div class="space-y-6">
+<!-- Row 1: Facial & Vocal -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Card 1: Facial Analysis -->
+<div class="glass-card rounded-xl p-6 flex flex-col h-full border border-primary/5">
+<div class="flex items-start justify-between mb-4">
+<div>
+<h4 class="font-headline-md text-headline-md flex items-center gap-2">🧑 Facial Analysis</h4>
+<p class="text-on-surface-variant text-body-md mt-1">Upload a facial image or capture a live webcam snapshot for facial micro-expression analysis.</p>
+</div>
+<div class="text-primary/20">
+<span class="material-symbols-outlined text-[48px]">videocam</span>
+</div>
+</div>
+<div class="flex-grow upload-dashed upload-active rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all mb-6 group bg-white/30">
+<span class="material-symbols-outlined text-primary text-[32px] mb-3 group-hover:scale-110 transition-transform">add_a_photo</span>
+<p class="text-body-md font-medium text-on-surface">Drag &amp; Drop Image</p>
+<p class="text-[11px] text-on-surface-variant/70 uppercase tracking-widest mt-1">JPG, PNG</p>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">videocam</span>
+<span class="text-body-md font-medium">Live Webcam</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value="">
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<button class="w-full py-2.5 bg-surface-container text-on-surface rounded-xl font-label-caps text-[11px] hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">photo_library</span> BROWSE FILES
+                        </button>
+</div>
+<div class="mt-6 pt-4 border-t border-primary/5 flex items-center justify-around">
+<div class="text-center">
+<p class="text-[10px] font-label-caps text-on-surface-variant uppercase">Resolution</p>
+<p class="text-body-md font-semibold text-primary">--</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] font-label-caps text-on-surface-variant uppercase">Face Det.</p>
+<p class="text-body-md font-semibold text-error">WAITING</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] font-label-caps text-on-surface-variant uppercase">AI Status</p>
+<p class="text-body-md font-semibold text-on-surface-variant/40">IDLE</p>
+</div>
+</div>
+</div>
+<!-- Card 2: Vocal Analysis -->
+<div class="glass-card rounded-xl p-6 flex flex-col h-full border border-primary/5">
+<div class="flex items-start justify-between mb-4">
+<div>
+<h4 class="font-headline-md text-headline-md flex items-center gap-2">🎤 Vocal Analysis</h4>
+<p class="text-on-surface-variant text-body-md mt-1">Upload an audio recording or capture your voice directly using the microphone.</p>
+</div>
+<div class="text-primary/20">
+<span class="material-symbols-outlined text-[48px]">settings_voice</span>
+</div>
+</div>
+<div class="flex-grow glass-card rounded-xl border border-primary/10 overflow-hidden relative mb-6 min-h-[160px] flex items-center justify-center bg-surface-container-low/50">
+<div class="flex items-end justify-center gap-1 w-full h-24 px-12">
+<div class="waveform-bar w-1 bg-primary/20 rounded-full" style="animation-delay: 0.1s"></div>
+<div class="waveform-bar w-1 bg-primary/40 rounded-full" style="animation-delay: 0.3s"></div>
+<div class="waveform-bar w-1 bg-primary/60 rounded-full" style="animation-delay: 0.2s"></div>
+<div class="waveform-bar w-1 bg-primary rounded-full" style="animation-delay: 0.4s"></div>
+<div class="waveform-bar w-1 bg-primary/80 rounded-full" style="animation-delay: 0.5s"></div>
+<div class="waveform-bar w-1 bg-primary/40 rounded-full" style="animation-delay: 0.2s"></div>
+<div class="waveform-bar w-1 bg-primary/20 rounded-full" style="animation-delay: 0.6s"></div>
+<div class="waveform-bar w-1 bg-primary/50 rounded-full" style="animation-delay: 0.3s"></div>
+<div class="waveform-bar w-1 bg-primary/30 rounded-full" style="animation-delay: 0.1s"></div>
+<div class="waveform-bar w-1 bg-primary/50 rounded-full" style="animation-delay: 0.2s"></div>
+<div class="waveform-bar w-1 bg-primary/80 rounded-full" style="animation-delay: 0.4s"></div>
+<div class="waveform-bar w-1 bg-primary/60 rounded-full" style="animation-delay: 0.5s"></div>
+<div class="waveform-bar w-1 bg-primary/20 rounded-full" style="animation-delay: 0.2s"></div>
+</div>
+<div class="absolute inset-0 shimmer opacity-10"></div>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<p class="text-[10px] font-label-caps text-primary tracking-[0.2em]">WAITING FOR INPUT...</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<button class="py-3 bg-error text-white rounded-xl font-label-caps text-[11px] flex items-center justify-center gap-2 hover:bg-error/90 transition-colors shadow-lg shadow-error/10">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: &quot;FILL&quot; 1;">mic</span> RECORD
+                        </button>
+<button class="py-3 bg-surface-container text-on-surface rounded-xl font-label-caps text-[11px] flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">upload</span> UPLOAD FILE
+                        </button>
+</div>
+<div class="mt-6 pt-4 border-t border-primary/5 grid grid-cols-3 gap-2">
+<div class="bg-surface-container-low p-2 rounded-lg text-center">
+<p class="text-[9px] font-label-caps text-on-surface-variant uppercase">Rate</p>
+<p class="text-[12px] font-semibold text-on-surface">48 kHz</p>
+</div>
+<div class="bg-surface-container-low p-2 rounded-lg text-center border border-primary/5">
+<p class="text-[9px] font-label-caps text-on-surface-variant uppercase">Noise</p>
+<p class="text-[12px] font-semibold text-primary">-42 dB</p>
+</div>
+<div class="bg-surface-container-low p-2 rounded-lg text-center">
+<p class="text-[9px] font-label-caps text-on-surface-variant uppercase">Voice</p>
+<p class="text-[12px] font-semibold text-on-surface">CLEAR</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 2: Physiological Data (GSR) -->
+<div class="glass-card rounded-xl p-8 border border-primary/5">
+<div class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+<div>
+<h4 class="font-headline-md text-headline-md flex items-center gap-2">📈 Physiological Data</h4>
+<p class="text-on-surface-variant text-body-md mt-1 max-w-xl">Upload physiological sensor recordings or manually enter telemetry values. Optimized for GSR (Galvanic Skin Response) and heart rate variability sync.</p>
+</div>
+<div class="flex gap-3">
+<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-label-caps text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">verified</span> VALIDATED
+                        </span>
+<span class="bg-primary-container/20 text-primary px-3 py-1 rounded-full font-label-caps text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">precision_manufacturing</span> GSR OPTIMIZED
+                        </span>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+<div class="xl:col-span-1 upload-dashed upload-active rounded-xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all bg-white/20 h-full">
+<span class="material-symbols-outlined text-primary text-[40px] mb-4">table_chart</span>
+<h5 class="font-semibold text-body-md">Drop Signal CSV</h5>
+<p class="text-[11px] text-on-surface-variant/70 mt-2">Maximum file size: 50MB</p>
+<button class="mt-6 px-6 py-2 bg-primary text-white rounded-full font-label-caps text-[10px] tracking-wide hover:shadow-lg transition-all">CHOOSE CSV</button>
+</div>
+<div class="xl:col-span-2 space-y-6">
+<div class="glass-card bg-on-background/5 rounded-xl p-6 h-48 relative overflow-hidden flex items-end border border-primary/5">
+<!-- SVG Grid Line Mock -->
+<div class="absolute inset-0 opacity-10">
+<svg class="w-full h-full" height="100%" width="100%">
+<defs>
+<pattern height="40" id="grid" patternUnits="userSpaceOnUse" width="40">
+<path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="0.5"></path>
+</pattern>
+</defs>
+<rect fill="url(#grid)" height="100%" width="100%"></rect>
+</svg>
+</div>
+<!-- Medical Waveform Path Mock -->
+<svg class="w-full h-full absolute bottom-0 left-0 text-primary" preserveAspectRatio="none" viewBox="0 0 1000 200">
+<path class="opacity-80" d="M0,150 Q100,20 200,150 T400,150 T600,80 T800,160 T1000,120" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="opacity-30" d="M0,160 Q100,50 200,160 T400,160 T600,110 T800,170 T1000,140" fill="none" stroke="currentColor" stroke-width="1.5"></path>
+</svg>
+<div class="relative z-10 w-full flex justify-between items-center text-on-surface-variant">
+<span class="text-[10px] font-mono">μS (GSR)</span>
+<span class="text-[10px] font-mono">0.0s — 120.0s</span>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="p-3 bg-surface-container rounded-xl">
+<p class="text-[10px] font-label-caps text-on-surface-variant mb-1">Signal Integrity</p>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+<span class="text-body-md font-bold">99.4%</span>
+</div>
+</div>
+<div class="p-3 bg-surface-container rounded-xl">
+<p class="text-[10px] font-label-caps text-on-surface-variant mb-1">Sample Frequency</p>
+<span class="text-body-md font-bold">128 Hz</span>
+</div>
+<div class="p-3 bg-surface-container rounded-xl">
+<p class="text-[10px] font-label-caps text-on-surface-variant mb-1">Duration</p>
+<span class="text-body-md font-bold">02:14m</span>
+</div>
+<div class="p-3 bg-surface-container rounded-xl">
+<p class="text-[10px] font-label-caps text-on-surface-variant mb-1">Data Quality</p>
+<span class="text-body-md font-bold text-primary">STABLE</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Global Analysis Section -->
+<div class="flex flex-col items-center justify-center py-12 max-w-2xl mx-auto">
+<div class="flex gap-8 mb-8">
+<div class="flex items-center gap-2 text-on-surface-variant/40">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+<span class="text-label-caps text-[11px]">Face Ready</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant/40">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+<span class="text-label-caps text-[11px]">Voice Ready</span>
+</div>
+<div class="flex items-center gap-2 text-primary font-bold">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+<span class="text-label-caps text-[11px]">GSR Ready</span>
+</div>
+</div>
+<div class="w-full space-y-4">
+<button class="w-full py-5 bg-primary text-white rounded-xl font-headline-md text-headline-md flex items-center justify-center gap-3 shadow-2xl shadow-primary/30 hover:scale-[1.01] active:scale-[0.99] transition-all relative overflow-hidden group" id="analyze-btn">
+<span class="relative z-10 flex items-center gap-3">
+                            Analyze Stress Index
+                            <span class="material-symbols-outlined group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform">rocket_launch</span>
+</span>
+<div class="absolute inset-0 shimmer opacity-20"></div>
+</button>
+<div class="flex items-center justify-between px-2">
+<button class="text-label-caps text-[11px] text-on-surface-variant hover:text-error transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span> RESET ALL INPUTS
+                        </button>
+<div class="flex gap-4 text-[10px] font-label-caps text-on-surface-variant/60">
+<span class="">Est. Time: ~14s</span>
+<span class="">Confidence: 98.2%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Processing Modal Overlay -->
+<div class="fixed inset-0 z-[100] modal-overlay flex items-center justify-center hidden" id="processing-modal">
+<div class="glass-card bg-white rounded-xl p-10 max-w-md w-full shadow-2xl border border-primary/10">
+<div class="flex flex-col items-center text-center">
+<div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6 relative">
+<div class="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+<span class="material-symbols-outlined text-primary text-[32px]">psychology</span>
+</div>
+<h3 class="font-display-hero text-headline-md mb-2">Multimodal Fusion</h3>
+<p class="text-on-surface-variant text-body-md mb-8">AI Core is integrating clinical signals...</p>
+<div class="w-full space-y-3">
+<div class="flex items-center justify-between text-[11px] font-label-caps" id="step-1">
+<span class="text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] animate-pulse">sync</span>
+                        Extracting Facial Features...
+                    </span>
+<span class="text-on-surface-variant/40 italic">In Progress</span>
+</div>
+<div class="flex items-center justify-between text-[11px] font-label-caps opacity-40" id="step-2">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">hourglass_empty</span>
+                        Running Multimodal Fusion...
+                    </span>
+<span class="">Waiting</span>
+</div>
+<div class="flex items-center justify-between text-[11px] font-label-caps opacity-40" id="step-3">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">model_training</span>
+                        Predicting Stress Index...
+                    </span>
+<span class="">Waiting</span>
+</div>
+</div>
+<button class="mt-10 text-[11px] font-label-caps text-on-surface-variant/60 hover:text-on-surface" onclick="closeModal()">CANCEL ANALYSIS</button>
+</div>
+</div>
+</div>
+<!-- Mobile Nav -->
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-xl border-t border-primary/10 flex justify-around items-center py-4 px-6 z-50">
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-label-caps uppercase">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+<span class="text-[10px] font-label-caps uppercase">Analysis</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">insights</span>
+<span class="text-[10px] font-label-caps uppercase">Insights</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-label-caps uppercase">Profile</span>
+</button>
+</nav>
+<script>
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const modal = document.getElementById('processing-modal');
+    
+    analyzeBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        
+        // Mock sequence
+        setTimeout(() => {
+            document.getElementById('step-1').innerHTML = `<span class="text-emerald-600 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check_circle</span> Facial Extraction Complete</span><span class="text-emerald-600">DONE</span>`;
+            const step2 = document.getElementById('step-2');
+            step2.classList.remove('opacity-40');
+            step2.querySelector('span').classList.add('text-primary');
+            step2.querySelector('.material-symbols-outlined').classList.add('animate-spin');
+            step2.querySelector('.material-symbols-outlined').textContent = 'sync';
+            step2.querySelector('span:last-child').textContent = 'In Progress';
+        }, 1500);
+    });
+
+    function closeModal() {
+        modal.classList.add('hidden');
+    }
+</script>
+
+
+</body></html>

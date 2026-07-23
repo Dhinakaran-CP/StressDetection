@@ -1,92 +1,60 @@
 import React from 'react';
 
-export default function TopAppBar({ title, activeView, dashboardMode, setDashboardMode, showCopilot, setShowCopilot }) {
+export default function TopAppBar({ title, activeView, dashboardMode, setDashboardMode, showCopilot, setShowCopilot, isSidebarOpen = true, setIsSidebarOpen }) {
   return (
-    <header className="fixed top-0 right-0 left-64 h-16 bg-surface/85 backdrop-blur-md z-40 flex justify-between items-center px-12 border-b border-outline-variant/10">
-      <div className="flex items-center gap-8">
-        <span className="font-headline-sm text-[20px] font-bold text-primary">{title}</span>
-        
-        {activeView === 'dashboard' && (
-          <nav className="flex gap-4">
-            <button
-              onClick={() => setDashboardMode('realtime')}
-              className={`pb-1 font-label-caps text-xs tracking-wider transition-all border-b-2 ${
-                dashboardMode === 'realtime'
-                  ? 'text-primary border-primary font-bold'
-                  : 'text-on-surface-variant border-transparent hover:text-primary'
-              }`}
-            >
-              Realtime
-            </button>
-            <button
-              onClick={() => setDashboardMode('upload')}
-              className={`pb-1 font-label-caps text-xs tracking-wider transition-all border-b-2 ${
-                dashboardMode === 'upload'
-                  ? 'text-primary border-primary font-bold'
-                  : 'text-on-surface-variant border-transparent hover:text-primary'
-              }`}
-            >
-              Upload
-            </button>
-          </nav>
-        )}
+    <header
+      className={`fixed top-0 right-0 left-0 ${
+        isSidebarOpen ? 'lg:left-64' : 'lg:left-20'
+      } h-16 bg-surface/80 backdrop-blur-xl z-40 flex justify-between items-center px-4 md:px-6 border-b border-primary/10 shadow-[0_40px_40px_-10px_rgba(0,84,214,0.05)] transition-all duration-300`}
+    >
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => setIsSidebarOpen && setIsSidebarOpen(!isSidebarOpen)}
+          className="lg:hidden text-primary cursor-pointer p-1 rounded-lg hover:bg-primary/5"
+          aria-label="Toggle menu"
+        >
+          <span className="material-symbols-outlined">menu</span>
+        </button>
+        <span className="font-display-hero text-headline-md tracking-tighter text-primary font-bold">
+          {title || 'VitalMind'}
+        </span>
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="flex gap-2">
-          <button 
-            id="nav-notif-btn"
-            onClick={() => {
-              const btn = document.getElementById('nav-notif-btn');
-              if (btn) {
-                const icon = btn.querySelector('span');
-                const origIcon = icon.innerText;
-                icon.innerText = 'check';
-                icon.classList.add('text-[#4ADE80]');
-                setTimeout(() => {
-                  icon.innerText = origIcon;
-                  icon.classList.remove('text-[#4ADE80]');
-                }, 1500);
-              }
-            }}
-            className="p-2 text-on-surface-variant hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-surface-container-high active:scale-95"
-          >
-            <span className="material-symbols-outlined text-[20px]">notifications_active</span>
-          </button>
-          <button 
-            id="nav-tune-btn"
-            onClick={() => {
-              const btn = document.getElementById('nav-tune-btn');
-              if (btn) {
-                const icon = btn.querySelector('span');
-                icon.classList.add('animate-spin');
-                setTimeout(() => {
-                  icon.classList.remove('animate-spin');
-                }, 1000);
-              }
-            }}
-            className="p-2 text-on-surface-variant hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-surface-container-high active:scale-95"
-          >
-            <span className="material-symbols-outlined text-[20px]">tune</span>
-          </button>
+      <div className="flex items-center gap-4 md:gap-6">
+        <div className="hidden md:flex items-center bg-surface-container-low px-4 py-2 rounded-full border border-primary/5">
+          <span className="material-symbols-outlined text-outline text-[20px]">search</span>
+          <input
+            className="bg-transparent border-none focus:ring-0 text-body-md text-on-surface ml-2 w-48 lg:w-64 text-xs focus:outline-none"
+            placeholder="Search biometrics..."
+            type="text"
+          />
         </div>
 
-        <button
-          onClick={() => setShowCopilot(!showCopilot)}
-          className={`px-4 py-1.5 rounded-full font-label-caps text-xs tracking-wide flex items-center gap-2 transition-all ${
-            showCopilot
-              ? 'bg-primary text-on-primary shadow-sm'
-              : 'bg-primary-container/10 text-primary hover:bg-primary-container/20'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[16px] animate-pulse">auto_awesome</span>
-          STRESS CHAT
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowCopilot(!showCopilot)}
+            className={`material-symbols-outlined p-2 rounded-full hover:bg-primary/5 transition-colors ${
+              showCopilot ? 'text-primary bg-primary-container/20' : 'text-on-surface-variant'
+            }`}
+            title="Toggle Copilot AI"
+          >
+            smart_toy
+          </button>
+          
+          <button
+            className="material-symbols-outlined p-2 rounded-full hover:bg-primary/5 text-on-surface-variant transition-colors relative"
+            title="Notifications"
+          >
+            notifications
+            <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+          </button>
 
-        <div className="w-8 h-8 rounded-full bg-secondary-container overflow-hidden border border-outline-variant/30 flex items-center justify-center font-bold text-xs text-primary">
-          VM
+          <div className="w-9 h-9 rounded-full bg-primary-container overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-on-primary font-bold text-xs">
+            A
+          </div>
         </div>
       </div>
     </header>
   );
 }
+

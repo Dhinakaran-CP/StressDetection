@@ -1,0 +1,14 @@
+Classification Report — cnn_baseline_grl (wesad)
+==================================================
+
+              precision    recall  f1-score   support
+
+        Calm     0.8516    0.7737    0.8108      3522
+      Stress     0.6560    0.7619    0.7050      1995
+
+    accuracy                         0.7694      5517
+   macro avg     0.7538    0.7678    0.7579      5517
+weighted avg     0.7809    0.7694    0.7725      5517
+
+AUC-ROC: 0.8582
+Average Precision (AP): 0.8187

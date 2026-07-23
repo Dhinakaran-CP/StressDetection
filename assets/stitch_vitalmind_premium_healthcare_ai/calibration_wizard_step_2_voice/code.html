@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VitalMind Pro | AI Calibration Wizard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Geist:wght@400;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .waveform-bar {
+            transition: height 0.1s ease-in-out;
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .glow-primary {
+            box-shadow: 0 0 20px rgba(0, 80, 203, 0.15);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#eaf1ff",
+                      "on-tertiary-container": "#fdf6ff",
+                      "primary-fixed-dim": "#b3c5ff",
+                      "tertiary-container": "#8252ec",
+                      "tertiary": "#6834d2",
+                      "surface-tint": "#0054d6",
+                      "on-error": "#ffffff",
+                      "surface-bright": "#f8f9ff",
+                      "on-tertiary-fixed": "#23005c",
+                      "surface-container": "#e5eeff",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#0066ff",
+                      "outline-variant": "#c2c6d8",
+                      "tertiary-fixed": "#e9ddff",
+                      "on-tertiary-fixed-variant": "#5516be",
+                      "on-primary-fixed-variant": "#003fa4",
+                      "on-tertiary": "#ffffff",
+                      "surface-dim": "#cbdbf5",
+                      "on-primary": "#ffffff",
+                      "on-surface-variant": "#424656",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#004f58",
+                      "tertiary-fixed-dim": "#d0bcff",
+                      "secondary": "#006875",
+                      "on-surface": "#0b1c30",
+                      "surface": "#f8f9ff",
+                      "on-primary-fixed": "#001849",
+                      "error-container": "#ffdad6",
+                      "on-primary-container": "#f8f7ff",
+                      "surface-container-low": "#eff4ff",
+                      "error": "#ba1a1a",
+                      "secondary-fixed-dim": "#00daf3",
+                      "on-secondary-fixed": "#001f24",
+                      "on-background": "#0b1c30",
+                      "primary": "#0050cb",
+                      "inverse-surface": "#213145",
+                      "surface-container-high": "#dce9ff",
+                      "surface-variant": "#d3e4fe",
+                      "secondary-container": "#00e3fd",
+                      "primary-fixed": "#dae1ff",
+                      "surface-container-lowest": "#ffffff",
+                      "background": "#f8f9ff",
+                      "inverse-primary": "#b3c5ff",
+                      "secondary-fixed": "#9cf0ff",
+                      "surface-container-highest": "#d3e4fe",
+                      "outline": "#727687",
+                      "on-secondary-container": "#00616d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "stack-lg": "48px",
+                      "gutter": "24px",
+                      "margin-mobile": "20px",
+                      "margin-desktop": "64px",
+                      "stack-md": "24px",
+                      "stack-sm": "12px",
+                      "container-max-width": "1440px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Geist"],
+                      "label-caps": ["Geist"],
+                      "display-hero-mobile": ["Geist"],
+                      "body-md": ["Inter"],
+                      "headline-md": ["Geist"],
+                      "display-hero": ["Geist"],
+                      "metric-xl": ["Geist"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                      "display-hero-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-hero": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                      "metric-xl": ["64px", {"lineHeight": "64px", "letterSpacing": "-0.05em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation Anchor -->
+<header class="w-full top-0 sticky bg-surface/80 backdrop-blur-xl border-b border-primary/10 shadow-[0_40px_40px_-10px_rgba(0,80,203,0.05)] z-50 flex justify-between items-center px-margin-desktop py-4 h-20">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-bold text-primary">VitalMind Pro</span>
+<div class="h-6 w-[1px] bg-outline/20"></div>
+<span class="text-on-surface-variant font-medium">AI Calibration Wizard</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-2 items-center text-primary font-bold">
+<span class="material-symbols-outlined text-primary">tune</span>
+<span class="font-label-caps text-label-caps">Step 2 of 3</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-primary/5 p-2 rounded-full transition-colors active:scale-95">close</button>
+</div>
+</header>
+<main class="flex-1 flex overflow-hidden relative">
+<!-- Background Ambient Mesh -->
+<div class="absolute inset-0 pointer-events-none -z-10 overflow-hidden">
+
+</div>
+<div class="flex-1 flex flex-col items-center justify-center p-gutter relative z-10 max-w-5xl mx-auto">
+<!-- Step Indicator Dots -->
+<div class="flex gap-2 mb-stack-md">
+<div class="w-2 h-2 rounded-full bg-primary/20"></div>
+<div class="w-12 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-primary/20"></div>
+</div>
+<!-- Central Calibration Modal-like Container -->
+<div class="w-full bg-surface/80 backdrop-blur-xl border border-primary/10 rounded-lg shadow-[0_40px_40px_-10px_rgba(0,80,203,0.05)] p-12 text-center flex flex-col items-center relative overflow-hidden">
+<div class="flex items-center gap-3 mb-stack-sm text-primary animate-pulse-soft">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mic</span>
+<span class="font-label-caps text-label-caps tracking-widest">RECORDING STATUS: ACTIVE</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg mb-8 max-w-2xl text-on-surface">
+                    "The system is now calibrating my unique vocal biomarkers for stress analysis."
+                </h1>
+<p class="text-on-surface-variant font-body-lg mb-stack-lg max-w-lg">
+                    Please read the phrase above clearly at your normal speaking pace.
+                </p>
+<!-- Visualization Container -->
+<div class="w-full flex items-center justify-between gap-12 bg-surface-container-low p-8 rounded-lg border border-primary/5 h-48">
+<!-- Vertical Pitch Meter -->
+<div class="flex flex-col items-center h-full gap-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant">PITCH</span>
+<div class="flex-1 w-3 bg-primary/10 rounded-full relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-tertiary transition-all duration-300" id="pitch-bar" style="height: 65%;"></div>
+</div>
+</div>
+<!-- Live Audio Waveform (Simulated) -->
+<div class="flex-1 h-32 flex items-center justify-center gap-1.5 overflow-hidden px-4" id="waveform">
+<!-- Bars generated by JS -->
+</div>
+<!-- Volume Meter -->
+<div class="flex flex-col items-center h-full gap-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant">VOL</span>
+<div class="flex-1 w-3 bg-primary/10 rounded-full relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-primary transition-all duration-200" id="volume-bar" style="height: 45%;"></div>
+</div>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="mt-stack-lg flex gap-4">
+<button class="px-8 py-3 bg-primary text-white font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all glow-primary">
+                        Complete Segment
+                    </button>
+<button class="px-8 py-3 bg-white border border-outline/10 text-on-surface-variant font-bold rounded-lg hover:bg-surface-variant transition-all active:scale-95">
+                        Restart
+                    </button>
+</div>
+</div>
+</div>
+<!-- Real-time Extraction Sidebar -->
+<aside class="w-80 h-full glass-panel bg-surface/70 border-l border-primary/10 p-gutter flex flex-col gap-gutter">
+<div class="space-y-1">
+<h2 class="font-headline-md text-headline-md text-primary">Real-time Extraction</h2>
+<p class="font-label-caps text-label-caps text-on-surface-variant">VOICE BIOMARKERS</p>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Extraction Card 1 -->
+<div class="p-4 bg-white/50 border border-primary/5 rounded-lg shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-caps text-on-surface-variant">Pitch (F0)</span>
+<span class="text-tertiary font-bold" id="val-pitch">142 Hz</span>
+</div>
+<div class="w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-3/4 animate-pulse"></div>
+</div>
+</div>
+<!-- Extraction Card 2 -->
+<div class="p-4 bg-white/50 border border-primary/5 rounded-lg shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-caps text-on-surface-variant">MFCC Vectors</span>
+<span class="text-primary font-bold">13-dim</span>
+</div>
+<div class="grid grid-cols-6 gap-1 h-8">
+<div class="bg-primary/20 h-full rounded-sm" style="height: 40%"></div>
+<div class="bg-primary/40 h-full rounded-sm" style="height: 80%"></div>
+<div class="bg-primary/30 h-full rounded-sm" style="height: 60%"></div>
+<div class="bg-primary/50 h-full rounded-sm" style="height: 90%"></div>
+<div class="bg-primary/20 h-full rounded-sm" style="height: 30%"></div>
+<div class="bg-primary/40 h-full rounded-sm" style="height: 70%"></div>
+</div>
+</div>
+<!-- Extraction Card 3 -->
+<div class="p-4 bg-white/50 border border-primary/5 rounded-lg shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-caps text-on-surface-variant">Voice Confidence</span>
+<span class="text-secondary font-bold" id="val-conf">98.2%</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex-1 h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[98.2%]"></div>
+</div>
+<span class="material-symbols-outlined text-secondary text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<!-- Extraction Card 4 -->
+<div class="p-4 bg-white/50 border border-primary/5 rounded-lg shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-caps text-on-surface-variant">Baseline Jitter</span>
+<span class="text-on-surface font-bold">0.12%</span>
+</div>
+<p class="text-[10px] text-on-surface-variant leading-tight">Stable glottal cycles detected. Calibration proceeding nominally.</p>
+</div>
+</div>
+<div class="mt-auto p-4 bg-primary/5 rounded-lg border border-primary/10">
+<div class="flex items-center gap-2 text-primary mb-1">
+<span class="material-symbols-outlined text-sm">info</span>
+<span class="font-label-caps text-label-caps">Privacy Note</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+                    Voice data is encrypted and processed locally for biomarker extraction. Original audio is never stored on clinical servers.
+                </p>
+</div>
+</aside>
+</main>
+<!-- Floating Action Panel (Contextual Suppression - Not needed here for wizard flow, but included for system consistency) -->
+<!-- Suppressed per instructions for Transactional/focused flow -->
+<script>
+        // Simulate Waveform Animation
+        const waveform = document.getElementById('waveform');
+        const numBars = 48;
+        const bars = [];
+
+        for (let i = 0; i < numBars; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'waveform-bar w-1 bg-primary/40 rounded-full';
+            bar.style.height = `${Math.random() * 100}%`;
+            waveform.appendChild(bar);
+            bars.push(bar);
+        }
+
+        function updateWaveform() {
+            bars.forEach(bar => {
+                const height = 15 + Math.random() * 70;
+                bar.style.height = `${height}%`;
+                // Color intensity based on height
+                if (height > 60) {
+                    bar.className = 'waveform-bar w-1 bg-primary rounded-full transition-all duration-100';
+                } else {
+                    bar.className = 'waveform-bar w-1 bg-primary/30 rounded-full transition-all duration-100';
+                }
+            });
+
+            // Randomize meters
+            document.getElementById('pitch-bar').style.height = `${40 + Math.random() * 40}%`;
+            document.getElementById('volume-bar').style.height = `${20 + Math.random() * 60}%`;
+            
+            // Randomize text values
+            document.getElementById('val-pitch').innerText = `${Math.floor(140 + Math.random() * 10)} Hz`;
+            document.getElementById('val-conf').innerText = `${(97 + Math.random() * 2).toFixed(1)}%`;
+
+            setTimeout(updateWaveform, 150);
+        }
+
+        updateWaveform();
+    </script>
+</body></html>

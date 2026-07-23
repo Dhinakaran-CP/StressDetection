@@ -205,8 +205,27 @@ export default function RecoveryActivities() {
                 )}
               </div>
             </div>
-            <div className="font-data-metric text-lg text-primary font-bold mb-4">
-              4-7-8 Rhythm
+            <div className="font-data-metric text-sm text-primary font-bold mb-3">
+              {selectedRhythm.name}
+            </div>
+            <div className="flex gap-2 mb-4 justify-center">
+              {BREATHING_RHYTHMS.map(rhythm => (
+                <button
+                  key={rhythm.id}
+                  onClick={() => {
+                    setSelectedRhythm(rhythm);
+                    setBreathCountdown(rhythm.inhale);
+                    setBreathPhase('inhale');
+                  }}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                    selectedRhythm.id === rhythm.id
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                  }`}
+                >
+                  {rhythm.id.toUpperCase()}
+                </button>
+              ))}
             </div>
             <button
               onClick={() => setBreathingRunning(!breathingRunning)}

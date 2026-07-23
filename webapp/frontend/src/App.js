@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import LoginConsent from './components/LoginConsent';
 import SideNavBar from './components/SideNavBar';
+import BottomNavBar from './components/BottomNavBar';
 import TopAppBar from './components/TopAppBar';
-import Dashboard from './pages/Dashboard';
-import PersonalInsights from './components/PersonalInsights';
-import RecoveryActivities from './components/RecoveryActivities';
+import VitalMindDashboard from './pages/VitalMindDashboard';
+import RealtimeMonitorStitch from './components/RealtimeMonitorStitch';
+import AIInsightsHub from './pages/AIInsightsHub';
+import MultimodalAnalysisCenter from './pages/MultimodalAnalysisCenter';
+import RecoveryCenterStitch from './pages/RecoveryCenterStitch';
+import UploadCenterStitch from './pages/UploadCenterStitch';
+import UserProfileSettings from './pages/UserProfileSettings';
+import StressChatbot from './components/StressChatbot';
 import CalibrationWizard from './components/CalibrationWizard';
 
 function App() {
@@ -13,10 +19,11 @@ function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'insights', 'recovery', 'profile'
-  const [dashboardMode, setDashboardMode] = useState('realtime'); // 'realtime' or 'upload'
+  const [activeView, setActiveView] = useState('dashboard');
+  const [dashboardMode, setDashboardMode] = useState('realtime');
   const [showCopilot, setShowCopilot] = useState(false);
   const [calibrationModal, setCalibrationModal] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -36,31 +43,44 @@ function App() {
     setActiveView('dashboard');
   };
 
-  // If not logged in, render the Login / Consent security wall
   if (!user) {
     return <LoginConsent onLogin={handleLogin} />;
   }
 
-  // Determine Title for TopAppBar
-  let viewTitle = 'Dashboard';
-  if (activeView === 'insights') viewTitle = 'Insights Summary';
+  let viewTitle = 'VitalMind Pro';
+  if (activeView === 'dashboard') viewTitle = 'Executive Health Dashboard';
+  if (activeView === 'realtime') viewTitle = 'Realtime Biometric Monitor';
+  if (activeView === 'insights') viewTitle = 'AI Insights & Analytics';
+  if (activeView === 'multimodal') viewTitle = 'Multimodal Analysis Center';
   if (activeView === 'recovery') viewTitle = 'Recovery & Resilience';
-  if (activeView === 'profile') viewTitle = 'User Profile';
+  if (activeView === 'upload') viewTitle = 'Bio-Data Upload Center';
+  if (activeView === 'profile') viewTitle = 'Executive User Profile';
 
   return (
-    <div className="bg-warm-sand text-on-surface font-body-md min-h-screen flex text-sm transition-all duration-300">
-      
-      {/* Permanent Side Navigation bar */}
+    <div className="bg-background text-on-background font-body-md min-h-screen flex text-sm transition-all duration-300">
+      {/* Sidebar Navigation */}
       <SideNavBar
         activeView={activeView}
         setActiveView={setActiveView}
         onCalibrateTrigger={() => setCalibrationModal(true)}
         user={user}
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
       />
 
-      {/* Global Top App Bar & Main Content */}
-      <div className="flex-1 flex flex-col pl-64">
-        
+      {/* Bottom Mobile Navigation */}
+      <BottomNavBar
+        activeView={activeView}
+        setActiveView={setActiveView}
+        onCalibrateTrigger={() => setCalibrationModal(true)}
+      />
+
+      {/* Main Content Area */}
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isSidebarOpen ? 'pl-0 lg:pl-64' : 'pl-0 lg:pl-20'
+        } pb-16 lg:pb-0`}
+      >
         <TopAppBar
           title={viewTitle}
           activeView={activeView}
@@ -68,80 +88,57 @@ function App() {
           setDashboardMode={setDashboardMode}
           showCopilot={showCopilot}
           setShowCopilot={setShowCopilot}
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
         />
 
-        {/* Content Canvas */}
-        <main className="flex-1 mt-16 p-12 bg-transparent overflow-x-hidden relative">
-          
-          {/* Atmospheric ambient highlights */}
-          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
-            <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-surface-variant/20 rounded-full blur-[120px]"></div>
-            <div className="absolute bottom-[-5%] left-[5%] w-[400px] h-[400px] bg-secondary-container/30 rounded-full blur-[100px]"></div>
-          </div>
-
-          <div className="relative z-10 max-w-container-max mx-auto">
+        <main className="flex-1 mt-16 p-4 md:p-8 lg:p-10 bg-transparent overflow-x-hidden relative">
+          <div className="relative z-10 w-full mx-auto">
             {activeView === 'dashboard' && (
-              <Dashboard
-                dashboardMode={dashboardMode}
-                showCopilot={showCopilot}
-                setShowCopilot={setShowCopilot}
-                onRequestRecovery={() => setActiveView('recovery')}
-              />
+              <VitalMindDashboard onNavigate={setActiveView} />
             )}
 
-            {activeView === 'insights' && <PersonalInsights />}
+            {activeView === 'realtime' && (
+              <RealtimeMonitorStitch variant="collapsible" onNavigate={setActiveView} />
+            )}
 
-            {activeView === 'recovery' && <RecoveryActivities />}
+            {activeView === 'insights' && (
+              <AIInsightsHub onNavigate={setActiveView} />
+            )}
 
-            {activeView === 'profile' && (
-              <section className="bg-surface-container-lowest rounded-3xl p-8 border border-outline-variant/10 shadow-sm max-w-2xl mx-auto space-y-6">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-2xl shadow-sm">
-                    {user.email.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <h3 className="font-headline-sm text-headline-sm text-primary">
-                      {user.email.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                    </h3>
-                    <p className="text-on-surface-variant text-xs">{user.email}</p>
-                  </div>
-                </div>
+            {activeView === 'multimodal' && (
+              <MultimodalAnalysisCenter onNavigate={setActiveView} />
+            )}
 
-                <div className="h-[1px] bg-outline-variant/15 w-full"></div>
+            {activeView === 'recovery' && (
+              <RecoveryCenterStitch onNavigate={setActiveView} />
+            )}
 
-                <div className="space-y-4">
-                  <h4 className="font-label-caps text-xs font-bold tracking-wider text-outline uppercase">Security & Standards</h4>
-                  <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-on-surface-variant">
-                    <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10">
-                      <p className="text-[10px] text-outline font-bold tracking-wider uppercase mb-1">HIPAA Compliance</p>
-                      <p className="text-primary font-bold">ACTIVE & ENCRYPTED</p>
-                    </div>
-                    <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10">
-                      <p className="text-[10px] text-outline font-bold tracking-wider uppercase mb-1">ISO 27001</p>
-                      <p className="text-primary font-bold">CERTIFIED</p>
-                    </div>
-                  </div>
-                </div>
+            {activeView === 'upload' && (
+              <UploadCenterStitch onNavigate={setActiveView} />
+            )}
 
-                <div className="flex gap-4 pt-4">
-                  <button
-                    onClick={() => setCalibrationModal(true)}
-                    className="flex-1 bg-primary text-on-primary py-3 rounded-xl font-bold hover:opacity-90 active:scale-95 transition-all shadow-md text-xs tracking-wider font-label-caps"
-                  >
-                    CALIBRATE SENSORS
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="flex-1 border border-error text-error hover:bg-error-container/10 py-3 rounded-xl font-bold transition-all text-xs tracking-wider font-label-caps"
-                  >
-                    LOG OUT
-                  </button>
-                </div>
-              </section>
+            {(activeView === 'profile' || activeView === 'settings') && (
+              <UserProfileSettings user={user} onLogout={handleLogout} onCalibrateTrigger={() => setCalibrationModal(true)} />
             )}
           </div>
         </main>
       </div>
+
+      {/* Copilot AI Drawer / Modal */}
+      {showCopilot && (
+        <div className="fixed bottom-6 right-6 z-50 w-full max-w-md animate-fade-in-up">
+          <div className="relative bg-surface rounded-3xl shadow-2xl border border-primary/20 overflow-hidden p-4">
+            <button
+              onClick={() => setShowCopilot(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors z-10"
+            >
+              <span className="material-symbols-outlined text-xl">close</span>
+            </button>
+            <StressChatbot />
+          </div>
+        </div>
+      )}
 
       {/* Global Calibration Wizard Modal */}
       {calibrationModal && (
@@ -153,10 +150,7 @@ function App() {
             >
               <span className="material-symbols-outlined">close</span>
             </button>
-            <CalibrationWizard
-              userId="default"
-              onComplete={() => setCalibrationModal(false)}
-            />
+            <CalibrationWizard userId="default" onComplete={() => setCalibrationModal(false)} />
           </div>
         </div>
       )}
@@ -165,3 +159,4 @@ function App() {
 }
 
 export default App;
+

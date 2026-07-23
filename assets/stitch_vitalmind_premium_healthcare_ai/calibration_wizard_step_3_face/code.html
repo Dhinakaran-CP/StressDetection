@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-tertiary-container": "#fdf6ff",
+                    "primary-fixed-dim": "#b3c5ff",
+                    "tertiary-container": "#8252ec",
+                    "tertiary": "#6834d2",
+                    "surface-tint": "#0054d6",
+                    "on-error": "#ffffff",
+                    "surface-bright": "#f8f9ff",
+                    "on-tertiary-fixed": "#23005c",
+                    "surface-container": "#e5eeff",
+                    "on-secondary": "#ffffff",
+                    "primary-container": "#0066ff",
+                    "outline-variant": "#c2c6d8",
+                    "tertiary-fixed": "#e9ddff",
+                    "on-tertiary-fixed-variant": "#5516be",
+                    "on-primary-fixed-variant": "#003fa4",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#cbdbf5",
+                    "on-primary": "#ffffff",
+                    "on-surface-variant": "#424656",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#004f58",
+                    "tertiary-fixed-dim": "#d0bcff",
+                    "secondary": "#006875",
+                    "on-surface": "#0b1c30",
+                    "surface": "#f8f9ff",
+                    "on-primary-fixed": "#001849",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#f8f7ff",
+                    "surface-container-low": "#eff4ff",
+                    "error": "#ba1a1a",
+                    "secondary-fixed-dim": "#00daf3",
+                    "on-secondary-fixed": "#001f24",
+                    "on-background": "#0b1c30",
+                    "primary": "#0050cb",
+                    "inverse-surface": "#213145",
+                    "surface-container-high": "#dce9ff",
+                    "surface-variant": "#d3e4fe",
+                    "secondary-container": "#00e3fd",
+                    "primary-fixed": "#dae1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "background": "#f8f9ff",
+                    "inverse-primary": "#b3c5ff",
+                    "secondary-fixed": "#9cf0ff",
+                    "surface-container-highest": "#d3e4fe",
+                    "outline": "#727687",
+                    "on-secondary-container": "#00616d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "stack-lg": "48px",
+                    "gutter": "24px",
+                    "margin-mobile": "20px",
+                    "margin-desktop": "64px",
+                    "stack-md": "24px",
+                    "stack-sm": "12px",
+                    "container-max-width": "1440px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Geist"],
+                    "label-caps": ["Geist"],
+                    "display-hero-mobile": ["Geist"],
+                    "body-md": ["Inter"],
+                    "headline-md": ["Geist"],
+                    "display-hero": ["Geist"],
+                    "metric-xl": ["Geist"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                    "display-hero-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-hero": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                    "metric-xl": ["64px", {"lineHeight": "64px", "letterSpacing": "-0.05em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(248, 249, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 80, 203, 0.1);
+        }
+        .mesh-gradient {
+            background: radial-gradient(at 0% 0%, rgba(0, 102, 255, 0.15) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(130, 82, 236, 0.1) 0px, transparent 50%);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .progress-glow {
+            box-shadow: 0 0 15px rgba(0, 102, 255, 0.4);
+        }
+        .face-scan-overlay {
+            background: radial-gradient(circle, transparent 40%, rgba(0, 80, 203, 0.05) 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen overflow-hidden font-body-md mesh-gradient">
+<!-- Top Navigation Anchor -->
+<header class="w-full top-0 sticky bg-surface/80 backdrop-blur-xl z-50 border-b border-primary/10 shadow-[0_40px_40px_-10px_rgba(0,80,203,0.05)]">
+<div class="flex justify-between items-center px-margin-desktop py-4 w-full">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-bold text-primary">VitalMind Pro</span>
+<span class="h-4 w-[1px] bg-outline-variant/30"></span>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-widest">CALIBRATION WIZARD</span>
+</div>
+<div class="flex items-center gap-stack-md">
+<div class="flex items-center gap-2 px-3 py-1 bg-primary-container/10 rounded-full border border-primary/20">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-primary">STEP 3 OF 3</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-primary/5 p-2 rounded-full transition-colors active:scale-95">close</button>
+</div>
+</div>
+</header>
+<main class="relative h-[calc(100vh-80px)] flex flex-col items-center justify-center p-gutter">
+<!-- Background Animation Layer -->
+<div class="absolute inset-0 pointer-events-none opacity-40">
+
+</div>
+<div class="z-10 w-full max-w-5xl flex flex-col gap-gutter">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Left Control Panel: Status & Instructions -->
+<div class="lg:col-span-4 flex flex-col gap-stack-md">
+<div class="glass-panel p-stack-md rounded-lg shadow-xl">
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-stack-sm">Face Baseline</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mb-gutter">
+                            Our clinical AI maps 68 facial landmarks to establish your unique focus and stress baseline. This ensures millisecond-accurate biometric tracking.
+                        </p>
+<div class="flex flex-col gap-stack-sm">
+<div class="p-3 bg-surface-container rounded-lg border border-primary/5 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">light_mode</span>
+<div class="flex-1">
+<div class="flex justify-between text-label-caps mb-1">
+<span>LIGHTING QUALITY</span>
+<span class="text-primary">OPTIMAL</span>
+</div>
+<div class="h-1 bg-outline-variant/20 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[92%] transition-all duration-1000"></div>
+</div>
+</div>
+</div>
+<div class="p-3 bg-surface-container rounded-lg border border-primary/5 flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">distance</span>
+<div class="flex-1">
+<div class="flex justify-between text-label-caps mb-1">
+<span>CAMERA DISTANCE</span>
+<span class="text-secondary">IDEAL</span>
+</div>
+<div class="h-1 bg-outline-variant/20 rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[78%] transition-all duration-1000"></div>
+</div>
+</div>
+</div>
+<div class="p-3 bg-surface-container rounded-lg border border-primary/5 flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">face</span>
+<div class="flex-1">
+<div class="flex justify-between text-label-caps mb-1">
+<span>FACE ALIGNMENT</span>
+<span class="text-tertiary">LOCKED</span>
+</div>
+<div class="h-1 bg-outline-variant/20 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[100%] transition-all duration-1000"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Status Bubble -->
+<div class="glass-panel p-4 rounded-lg flex items-center gap-4 border-l-4 border-primary shadow-lg animate-fade-in">
+<div class="relative">
+<span class="material-symbols-outlined text-primary text-3xl">smart_toy</span>
+<div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-ping"></div>
+</div>
+<div>
+<p class="font-label-caps text-primary tracking-wider">AI COPILOT</p>
+<p class="font-body-md text-on-surface font-semibold">Learning facial baseline... Hold still for 5 seconds.</p>
+</div>
+</div>
+</div>
+<!-- Right Side: Large Camera Preview -->
+<div class="lg:col-span-8 relative rounded-lg overflow-hidden glass-panel border-2 border-primary/10 shadow-2xl group">
+<!-- Placeholder for Camera Stream -->
+<div class="aspect-video w-full relative bg-on-surface/90">
+<div class="absolute inset-0 w-full h-full bg-cover bg-center opacity-60" data-alt="A cinematic, high-definition close-up shot of a professional executive face positioned perfectly in front of a modern laptop camera. The lighting is soft and professional, coming from the side to define facial features. Overlaid on the face is a delicate, glowing blue digital mesh consisting of fine lines and geometric nodes that move slightly with facial expressions. Subtle circles highlight the pupils for eye-tracking visualization. Minimal luxury AI aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDQO8zq5L922QoPNz-Vki7q9t8qi8u-yz35pXBfp4DumdxSCFo7bXKdwOySqMeQ3kUdUSxo6OCyr8-6e1tJAxvDeuwlnOpgCYzVHBfOV994k_dmeni5F0D_C3kbZ8Rj_58aYDiqxHTwZlHElbYAPyKZFMJBXUTt11lDQm-PrRQKpKcinwOcxXcwD9H_IGG0FneMdUxGx6MeaNHyBOSz8iVxA2iBbzhjx-zBdYtOttfaQVOaAZi3Mw')"></div>
+<!-- Face Mesh Overlay SVG Container -->
+<div class="absolute inset-0 face-scan-overlay flex items-center justify-center pointer-events-none">
+<div class="w-3/4 h-3/4 border-2 border-primary/20 rounded-[4rem] border-dashed animate-[spin_20s_linear_infinite]"></div>
+<!-- Targeting Reticles -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-primary/40 rounded-full"></div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-primary/60 rounded-full"></div>
+<!-- Scanning Line -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50 shadow-[0_0_10px_#0050cb] animate-[bounce_4s_ease-in-out_infinite]"></div>
+</div>
+<!-- Active Tracking Indicators -->
+<div class="absolute bottom-6 left-6 flex gap-3">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+<span class="text-[10px] text-white font-label-caps">PUPIL_TRACKING_ON</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+<span class="text-[10px] text-white font-label-caps">MESH_DENSITY_HIGH</span>
+</div>
+</div>
+<!-- Recording Indicator -->
+<div class="absolute top-6 right-6 px-4 py-2 bg-red-500/10 backdrop-blur-xl border border-red-500/30 rounded-lg flex items-center gap-2">
+<div class="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>
+<span class="text-red-500 text-label-caps font-bold">ANALYZING</span>
+</div>
+</div>
+<!-- Bottom Progress Bar -->
+<div class="absolute bottom-0 left-0 w-full h-1.5 bg-outline-variant/10">
+<div class="h-full bg-primary progress-glow w-[40%] transition-all duration-[5000ms] ease-linear" id="calibration-progress"></div>
+</div>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="flex justify-between items-center py-gutter">
+<button class="flex items-center gap-2 px-6 py-3 text-on-surface-variant font-medium hover:bg-primary/5 rounded-lg transition-all active:scale-95">
+<span class="material-symbols-outlined">arrow_back</span>
+<span>Back to Bio-Sync</span>
+</button>
+<div class="flex items-center gap-gutter">
+<div class="text-right hidden md:block">
+<p class="text-label-caps text-on-surface-variant">TIME REMAINING</p>
+<p class="font-metric-xl text-headline-md text-primary" id="timer">05:00</p>
+</div>
+<button class="px-10 py-4 bg-primary text-white rounded-lg font-bold shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group flex items-center gap-2" disabled="">
+<span>Finalizing Baseline</span>
+<span class="material-symbols-outlined animate-spin text-sm">refresh</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Micro-interaction Scripts -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const progress = document.getElementById('calibration-progress');
+            const timer = document.getElementById('timer');
+            const button = document.querySelector('button[disabled]');
+            const buttonText = button.querySelector('span:first-child');
+            const buttonIcon = button.querySelector('.material-symbols-outlined');
+            
+            let seconds = 5;
+            
+            // Start the progress simulation
+            setTimeout(() => {
+                progress.style.width = '100%';
+            }, 100);
+
+            const interval = setInterval(() => {
+                seconds -= 1;
+                if (seconds <= 0) {
+                    clearInterval(interval);
+                    timer.innerText = "00:00";
+                    timer.classList.add('text-emerald-500');
+                    
+                    // Enable completion
+                    button.disabled = false;
+                    button.classList.remove('bg-primary');
+                    button.classList.add('bg-emerald-600');
+                    buttonText.innerText = "Complete Calibration";
+                    buttonIcon.innerText = "check_circle";
+                    buttonIcon.classList.remove('animate-spin');
+                } else {
+                    timer.innerText = `0${seconds}:00`;
+                }
+            }, 1000);
+        });
+
+        // Interactive mouse movement for glass effects
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.glass-panel');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            cards.forEach(card => {
+                const shiftX = (x - 0.5) * 10;
+                const shiftY = (y - 0.5) * 10;
+                card.style.transform = `translateY(${shiftY}px) translateX(${shiftX}px)`;
+            });
+        });
+    </script>
+</body></html>

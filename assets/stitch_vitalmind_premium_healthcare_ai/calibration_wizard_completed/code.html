@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Calibration Completed | VitalMind Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist:wght@400;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        .glass-panel {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        @keyframes success-check {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-success {
+            animation: success-check 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .mesh-gradient-bg {
+            background: radial-gradient(at 0% 0%, rgba(0, 80, 203, 0.05) 0px, transparent 50%),
+                        radial-gradient(at 100% 0%, rgba(130, 82, 236, 0.05) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(0, 104, 117, 0.05) 0px, transparent 50%),
+                        radial-gradient(at 0% 100%, rgba(0, 80, 203, 0.05) 0px, transparent 50%);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#eaf1ff",
+                      "on-tertiary-container": "#fdf6ff",
+                      "primary-fixed-dim": "#b3c5ff",
+                      "tertiary-container": "#8252ec",
+                      "tertiary": "#6834d2",
+                      "surface-tint": "#0054d6",
+                      "on-error": "#ffffff",
+                      "surface-bright": "#f8f9ff",
+                      "on-tertiary-fixed": "#23005c",
+                      "surface-container": "#e5eeff",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#0066ff",
+                      "outline-variant": "#c2c6d8",
+                      "tertiary-fixed": "#e9ddff",
+                      "on-tertiary-fixed-variant": "#5516be",
+                      "on-primary-fixed-variant": "#003fa4",
+                      "on-tertiary": "#ffffff",
+                      "surface-dim": "#cbdbf5",
+                      "on-primary": "#ffffff",
+                      "on-surface-variant": "#424656",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#004f58",
+                      "tertiary-fixed-dim": "#d0bcff",
+                      "secondary": "#006875",
+                      "on-surface": "#0b1c30",
+                      "surface": "#f8f9ff",
+                      "on-primary-fixed": "#001849",
+                      "error-container": "#ffdad6",
+                      "on-primary-container": "#f8f7ff",
+                      "surface-container-low": "#eff4ff",
+                      "error": "#ba1a1a",
+                      "secondary-fixed-dim": "#00daf3",
+                      "on-secondary-fixed": "#001f24",
+                      "on-background": "#0b1c30",
+                      "primary": "#0050cb",
+                      "inverse-surface": "#213145",
+                      "surface-container-high": "#dce9ff",
+                      "surface-variant": "#d3e4fe",
+                      "secondary-container": "#00e3fd",
+                      "primary-fixed": "#dae1ff",
+                      "surface-container-lowest": "#ffffff",
+                      "background": "#f8f9ff",
+                      "inverse-primary": "#b3c5ff",
+                      "secondary-fixed": "#9cf0ff",
+                      "surface-container-highest": "#d3e4fe",
+                      "outline": "#727687",
+                      "on-secondary-container": "#00616d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "stack-lg": "48px",
+                      "gutter": "24px",
+                      "margin-mobile": "20px",
+                      "margin-desktop": "64px",
+                      "stack-md": "24px",
+                      "stack-sm": "12px",
+                      "container-max-width": "1440px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Geist"],
+                      "label-caps": ["Geist"],
+                      "display-hero-mobile": ["Geist"],
+                      "body-md": ["Inter"],
+                      "headline-md": ["Geist"],
+                      "display-hero": ["Geist"],
+                      "metric-xl": ["Geist"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                      "display-hero-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-hero": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                      "metric-xl": ["64px", {"lineHeight": "64px", "letterSpacing": "-0.05em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen overflow-hidden mesh-gradient-bg">
+<!-- Blurred Background Dashboard Representation -->
+<div class="fixed inset-0 z-0 blur-xl opacity-40 pointer-events-none p-margin-desktop grid grid-cols-12 gap-gutter">
+<!-- Sidebar placeholder -->
+<div class="col-span-2 bg-surface-container h-full rounded-lg"></div>
+<!-- Main Content placeholder -->
+<div class="col-span-10 space-y-gutter">
+<div class="h-16 bg-surface-container rounded-lg w-full"></div>
+<div class="grid grid-cols-3 gap-gutter h-48">
+<div class="bg-surface-container rounded-lg"></div>
+<div class="bg-surface-container rounded-lg"></div>
+<div class="bg-surface-container rounded-lg"></div>
+</div>
+<div class="h-96 bg-surface-container rounded-lg w-full"></div>
+</div>
+</div>
+<!-- Modal Overlay Backdrop -->
+<div class="fixed inset-0 z-10 bg-on-surface/20 backdrop-blur-md flex items-center justify-center p-margin-mobile">
+<!-- Main Calibration Modal -->
+<div class="glass-panel bg-surface/90 border border-primary/10 rounded-lg shadow-[0_40px_80px_-15px_rgba(0,80,203,0.15)] w-full max-w-2xl overflow-hidden animate-success">
+<!-- Header Section -->
+<div class="p-gutter text-center border-b border-primary/5">
+<div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6 border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[40px]" data-icon="check_circle" data-weight="fill">check_circle</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary mb-2">Calibration Completed</h1>
+<p class="font-body-md text-on-surface-variant max-w-md mx-auto">Your biometrics and environmental sensors have been synchronized with clinical precision. VitalMind Pro is ready for monitoring.</p>
+</div>
+<!-- Score Section -->
+<div class="p-gutter bg-surface-container-low/50">
+<div class="flex flex-col items-center justify-center space-y-4">
+<div class="flex flex-col items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Overall Calibration Score</span>
+<div class="flex items-baseline space-x-1">
+<span class="font-metric-xl text-metric-xl text-primary">97</span>
+<span class="font-headline-md text-headline-md text-on-surface-variant">/100</span>
+</div>
+</div>
+<div class="flex items-center px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700">
+<span class="material-symbols-outlined text-sm mr-2" data-icon="verified">verified</span>
+<span class="font-label-caps text-label-caps">High Confidence</span>
+</div>
+</div>
+</div>
+<!-- Metrics Bento Grid -->
+<div class="p-gutter grid grid-cols-1 md:grid-cols-3 gap-stack-md">
+<!-- Environment Quality -->
+<div class="glass-panel bg-surface/60 border border-primary/10 p-4 rounded-xl flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="wb_sunny">wb_sunny</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">Environment</span>
+<span class="font-headline-md text-headline-md text-on-surface">98%</span>
+<div class="w-full bg-primary/10 h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary h-full" style="width: 98%"></div>
+</div>
+</div>
+<!-- Voice Quality -->
+<div class="glass-panel bg-surface/60 border border-primary/10 p-4 rounded-xl flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="mic">mic</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">Voice Quality</span>
+<span class="font-headline-md text-headline-md text-on-surface">94%</span>
+<div class="w-full bg-primary/10 h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary h-full" style="width: 94%"></div>
+</div>
+</div>
+<!-- Face Quality -->
+<div class="glass-panel bg-surface/60 border border-primary/10 p-4 rounded-xl flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="face">face</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">Face Quality</span>
+<span class="font-headline-md text-headline-md text-on-surface">99%</span>
+<div class="w-full bg-primary/10 h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary h-full" style="width: 99%"></div>
+</div>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="p-gutter flex flex-col md:flex-row gap-4">
+<button class="flex-1 order-2 md:order-1 px-8 py-4 border border-outline/30 rounded-lg font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container transition-colors active:scale-95 duration-200 uppercase tracking-widest">
+                    Recalibrate
+                </button>
+<button class="flex-[2] order-1 md:order-2 px-8 py-4 bg-primary text-white rounded-lg font-headline-md text-body-md font-bold shadow-[0_10px_20px_-5px_rgba(0,80,203,0.3)] hover:bg-primary/90 transition-all active:scale-95 duration-200 flex items-center justify-center space-x-2">
+<span>Start Realtime Monitoring</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Micro-interaction: Atmospheric particle effect -->
+<canvas class="fixed inset-0 pointer-events-none opacity-20" id="atmosphere"></canvas>
+<script>
+        const canvas = document.getElementById('atmosphere');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    speedX: Math.random() * 0.5 - 0.25,
+                    speedY: Math.random() * 0.5 - 0.25,
+                    opacity: Math.random() * 0.5
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 80, 203, ${p.opacity})`;
+                ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+        animate();
+    </script>
+</body></html>

@@ -21,55 +21,105 @@
     "dataset_weight_empathicschool": 0.3,
     "dataset_weight_stressid": 1.0,
     "dataset_weight_wesad": 1.0,
-    "n_folds": 5,
+    "n_folds": 15,
     "model_type": "cnn_baseline_grl",
     "device": "cuda",
+    "exclude_dataset": "empathicschool",
     "trained_on": "combined",
-    "n_subjects": 91
+    "n_subjects": 68
   },
   "per_dataset": {
+    "stressid": {
+      "accuracy": 0.7343309477336804,
+      "precision": 0.71875,
+      "recall": 0.6877076411960132,
+      "f1": 0.7028862478777589,
+      "roc_auc": 0.7329793924405338,
+      "avg_precision": 0.6881717877959586,
+      "mse": 0.19898091759784622,
+      "mae": 0.3931275370082998,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "wesad": {
+      "accuracy": 0.7694399129961936,
+      "precision": 0.6560207164436772,
+      "recall": 0.7619047619047619,
+      "f1": 0.7050092764378478,
+      "roc_auc": 0.8582114713245352,
+      "avg_precision": 0.8186940884477605,
+      "mse": 0.15576992734011874,
+      "mae": 0.3403827135969552,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
     "combined": {
-      "accuracy": 0.873249299719888,
-      "precision": 0.9878787878787879,
-      "recall": 0.4766081871345029,
-      "f1": 0.6429980276134122,
-      "roc_auc": 0.9399070304675131,
-      "avg_precision": 0.8580615601608109,
-      "mse": 0.108021387338611,
-      "mae": 0.2662558979406974,
-      "mean_confidence": 1.0
+      "accuracy": 0.7159860455571516,
+      "precision": 0.6884328358208955,
+      "recall": 0.6733576642335767,
+      "f1": 0.6808118081180812,
+      "roc_auc": 0.7509130894072099,
+      "avg_precision": 0.6551711840049166,
+      "mse": 0.20308301435608553,
+      "mae": 0.3982325777283029,
+      "mean_confidence": 1.0,
+      "n_folds": 15
     }
   },
   "combined": {
-    "accuracy": 0.873249299719888,
-    "precision": 0.9878787878787879,
-    "recall": 0.4766081871345029,
-    "f1": 0.6429980276134122,
-    "roc_auc": 0.9399070304675131,
-    "avg_precision": 0.8580615601608109,
-    "mse": 0.108021387338611,
-    "mae": 0.2662558979406974,
+    "accuracy": 0.7412839144057063,
+    "precision": 0.6862745098039216,
+    "recall": 0.7062281537972672,
+    "f1": 0.6961083705269752,
+    "roc_auc": 0.7870446107867364,
+    "avg_precision": 0.7238717273364784,
+    "mse": 0.1844215205077201,
+    "mae": 0.3753876311799008,
     "optimal": {
-      "accuracy": 0.8998599439775911,
-      "precision": 0.7374701670644391,
-      "recall": 0.9035087719298246,
-      "f1": 0.812089356110381,
-      "roc_auc": 0.9399070304675131,
-      "avg_precision": 0.8580615601608109,
-      "mse": 0.108021387338611,
-      "mae": 0.2662558979406974
+      "accuracy": 0.678021465235651,
+      "precision": 0.5810990471969865,
+      "recall": 0.8333333333333334,
+      "f1": 0.6847258485639687,
+      "roc_auc": 0.7870446107867364,
+      "avg_precision": 0.7238717273364784,
+      "mse": 0.1844215205077201,
+      "mae": 0.3753876311799008
     },
     "mean_confidence": 1.0,
-    "optimal_threshold": 0.22
+    "optimal_threshold": 0.33999999999999997
   },
   "per_subject": {
-    "subject_acc_mean": 0.8576164109223257,
-    "subject_acc_std": 0.11430934141328851,
-    "subject_acc_min": 0.7351190476190477,
-    "subject_acc_max": 1.0
+    "subject_acc_mean": 0.6697501745872718,
+    "subject_acc_std": 0.20465448745092168,
+    "subject_acc_min": 0.3506849315068493,
+    "subject_acc_max": 0.9800995024875622
   },
   "per_dataset_breakdown": {
-    "combined": 0.8998599439775911
+    "combined": 0.7161912579519804,
+    "stressid": 0.6779440468445023,
+    "wesad": 0.6443719412724307
   },
-  "timestamp": "2026-07-22 17:55:00"
+  "per_source_dataset": {
+    "stressid": {
+      "n_windows": 8013,
+      "auc": 0.7648121337594829,
+      "accuracy": 0.7460376887557719,
+      "f1": 0.7174788282660003,
+      "optimal_threshold": 0.4099999999999999,
+      "optimal_f1": 0.727705112960761,
+      "optimal_precision": 0.7247368421052631,
+      "optimal_recall": 0.7306977978243566
+    },
+    "wesad": {
+      "n_windows": 6988,
+      "auc": 0.8158899022324368,
+      "accuracy": 0.7358328563251287,
+      "f1": 0.6684626436781609,
+      "optimal_threshold": 0.49999999999999994,
+      "optimal_f1": 0.6684626436781609,
+      "optimal_precision": 0.6115675320407492,
+      "optimal_recall": 0.737029702970297
+    }
+  },
+  "timestamp": "2026-07-23 17:49:18"
 }

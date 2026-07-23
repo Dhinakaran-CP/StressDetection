@@ -4,247 +4,205 @@ export default function LoginConsent({ onLogin }) {
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [consentChecked, setConsentChecked] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [consentChecked, setConsentChecked] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMessage('Please fill in all fields.');
+      setErrorMessage('Please fill in all required credentials.');
       return;
     }
-    // Perform simulated login
+    if (isSignup && !consentChecked) {
+      setErrorMessage('Biometric Security Protocol Consent is required for account creation.');
+      return;
+    }
     onLogin({ email });
   };
 
-  const handleSignup = (e) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setErrorMessage('Please fill in all fields.');
-      return;
-    }
-    if (!consentChecked) {
-      setErrorMessage('You must accept the Biometric Security Protocol consent.');
-      return;
-    }
-    // Perform simulated sign up
-    onLogin({ email });
+  const handleBiometricLogin = (type) => {
+    onLogin({ email: type === 'face' ? 'alexander.faceid@vitalmind.ai' : 'alexander.touchid@vitalmind.ai' });
   };
 
   return (
-    <div className="bg-warm-sand text-on-surface font-body-md min-h-screen flex items-center justify-center p-6 w-full">
-      <main className="w-full max-w-[1100px] grid md:grid-cols-2 bg-surface-container-lowest rounded-[32px] overflow-hidden shadow-sm min-h-[700px] transition-all duration-300">
-        
-        {/* Left Visual Panel */}
-        <section className="relative hidden md:flex flex-col justify-between p-12 overflow-hidden bg-primary text-white">
-          <div className="relative z-10">
-            <h1 className="font-headline-md text-[32px] font-bold text-surface-bright mb-2">VitalMind</h1>
-            <p className="text-surface-variant/80 max-w-xs font-body-md">Empirical clarity for the modern professional mind.</p>
-          </div>
-          
-          <div className="relative z-10 bg-white/5 backdrop-blur-lg border border-white/10 p-8 rounded-2xl">
-            <blockquote className="text-surface-bright italic font-headline-sm mb-6 leading-relaxed">
-              "The quiet mind is the most powerful tool in the clinical arsenal."
-            </blockquote>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-surface-container-high/20 flex items-center justify-center border border-white/20">
-                <span className="material-symbols-outlined text-surface-bright">monitoring</span>
-              </div>
-              <div>
-                <p className="text-surface-bright font-semibold">Dr. Elena Vance</p>
-                <p className="text-surface-variant text-sm">Chief of Neuroscience</p>
-              </div>
-            </div>
-          </div>
-          <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-surface-variant/10 rounded-full blur-3xl"></div>
-        </section>
+    <div className="bg-surface/90 min-h-screen w-full flex flex-col items-center justify-center p-6 font-body-md text-on-surface relative overflow-hidden select-none">
+      {/* Background Mesh Gradient */}
+      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/10 blur-[140px] rounded-full"></div>
+        <div className="absolute top-[50%] -right-[10%] w-[40%] h-[40%] bg-tertiary/10 blur-[120px] rounded-full"></div>
+      </div>
 
-        {/* Right Interaction Panel */}
-        <section className="p-8 md:p-16 flex flex-col justify-center bg-surface-container-lowest">
-          <div className="w-full">
-            {errorMessage && (
-              <div className="mb-4 p-3 bg-error-container text-on-error-container text-xs rounded-xl flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px]">error</span>
-                <span>{errorMessage}</span>
+      {/* Main Container */}
+      <main className="w-full max-w-[480px] z-10 animate-fade-in-up">
+        {/* Brand & Header Section */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center space-x-3 mb-3">
+            <span className="material-symbols-outlined text-[42px] text-primary">
+              psychology
+            </span>
+            <h1 className="font-display-hero text-3xl md:text-4xl font-bold text-primary tracking-tight">
+              VitalMind Pro
+            </h1>
+          </div>
+          <p className="font-body-lg text-sm md:text-base text-on-surface-variant">
+            {isSignup ? 'Create your clinical account sanctuary.' : 'Welcome back to your clinical sanctuary.'}
+          </p>
+        </div>
+
+        {/* Login / Signup Glass Card */}
+        <div className="glass-card rounded-3xl p-8 shadow-xl">
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-error-container/80 text-on-error-container text-xs rounded-2xl flex items-center gap-2 border border-error/20">
+              <span className="material-symbols-outlined text-base">error</span>
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div className="space-y-1">
+              <label className="font-label-caps text-xs text-outline font-semibold uppercase px-1">Email Address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setErrorMessage(''); }}
+                placeholder="alexander@vitalmind.ai"
+                className="w-full px-4 py-3.5 rounded-2xl border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 bg-surface-container-lowest/80 text-on-surface transition-all outline-none text-sm font-medium"
+              />
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-1">
+              <label className="font-label-caps text-xs text-outline font-semibold uppercase px-1">Password</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setErrorMessage(''); }}
+                placeholder="••••••••••••"
+                className="w-full px-4 py-3.5 rounded-2xl border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 bg-surface-container-lowest/80 text-on-surface transition-all outline-none text-sm font-medium"
+              />
+            </div>
+
+            {/* Utilities Row */}
+            <div className="flex items-center justify-between text-xs">
+              <label className="flex items-center space-x-2 cursor-pointer group select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded text-primary focus:ring-primary border-outline-variant"
+                />
+                <span className="font-body-md text-on-surface-variant group-hover:text-primary transition-colors">Remember me</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowConsentModal(true)}
+                className="font-body-md text-primary font-semibold hover:underline"
+              >
+                Security Protocols
+              </button>
+            </div>
+
+            {/* Signup Consent Checkbox */}
+            {isSignup && (
+              <div className="p-4 bg-surface-container-low rounded-2xl border border-primary/10 text-xs space-y-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentChecked}
+                    onChange={(e) => setConsentChecked(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary border-outline-variant"
+                  />
+                  <span className="text-on-surface-variant leading-relaxed">
+                    I consent to real-time 468-point facial landmark processing, acoustic feature extraction, and encrypted biometric telemetry analysis.
+                  </span>
+                </label>
               </div>
             )}
 
-            {!isSignup ? (
-              /* Login Form */
-              <form onSubmit={handleLogin} className="space-y-8">
-                <div className="space-y-2">
-                  <h2 className="font-headline-sm text-headline-sm text-primary">Welcome Back</h2>
-                  <p className="text-on-surface-variant">Enter your credentials to access your vitals.</p>
-                </div>
+            {/* Primary Action Button */}
+            <button
+              type="submit"
+              className="w-full bg-primary text-on-primary font-display-hero text-sm py-4 rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary-container transition-all flex items-center justify-center space-x-2 font-bold"
+            >
+              <span>{isSignup ? 'Create Account' : 'Sign In'}</span>
+              <span className="material-symbols-outlined text-lg">arrow_forward</span>
+            </button>
 
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="font-label-caps text-[12px] text-outline px-1 focus-within:text-primary block">Email Address</label>
-                    <input
-                      className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-outline-variant text-on-surface"
-                      placeholder="name@organization.com"
-                      type="email"
-                      value={email}
-                      onChange={(e) => { setEmail(e.target.value); setErrorMessage(''); }}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center px-1">
-                      <label className="font-label-caps text-[12px] text-outline block">Password</label>
-                      <a className="text-primary font-label-caps text-[11px] hover:underline" href="#forgot" onClick={(e) => e.preventDefault()}>Forgot?</a>
-                    </div>
-                    <input
-                      className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-outline-variant text-on-surface"
-                      placeholder="••••••••"
-                      type="password"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setErrorMessage(''); }}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <button
-                    type="submit"
-                    className="w-full bg-primary text-on-primary py-4 rounded-xl font-semibold shadow-sm hover:opacity-90 active:scale-[0.98] transition-all flex justify-center items-center gap-2"
-                  >
-                    Sign In
-                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                  </button>
-                  <div className="relative flex items-center gap-4 py-2">
-                    <div className="flex-grow border-t border-outline-variant/30"></div>
-                    <span className="font-label-caps text-[12px] text-outline-variant">or</span>
-                    <div className="flex-grow border-t border-outline-variant/30"></div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onLogin({ email: 'sso-user@hospital.com' })}
-                    className="w-full bg-white border border-outline-variant text-on-surface-variant py-3.5 rounded-xl font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-3"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
-                    </svg>
-                    Continue with SSO
-                  </button>
-                </div>
-
-                <p className="text-center text-on-surface-variant text-sm">
-                  New to VitalMind?{' '}
-                  <button type="button" className="text-primary font-semibold hover:underline" onClick={() => { setIsSignup(true); setErrorMessage(''); }}>Create Account</button>
-                </p>
-              </form>
-            ) : (
-              /* Signup & Consent Form */
-              <form onSubmit={handleSignup} className="space-y-6">
-                <div className="space-y-2">
-                  <h2 className="font-headline-sm text-headline-sm text-primary">Elevate Your Care</h2>
-                  <p className="text-on-surface-variant">Step 1: Clinical Data Ethics & Consent</p>
-                </div>
-
-                {/* Consent Card */}
-                <div className="bg-surface-container-low p-6 rounded-2xl border border-primary/10 space-y-4">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary-container p-2 rounded-lg">
-                      <span className="material-symbols-outlined text-on-primary-container">security</span>
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-primary">Biometric Security Protocol</h3>
-                      <p className="text-xs text-on-surface-variant leading-relaxed">
-                        VitalMind uses real-time camera and microphone telemetry to analyze physiological stress markers.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white/50 p-3 rounded-xl flex items-center gap-2 border border-outline-variant/20">
-                      <span className="material-symbols-outlined text-primary text-lg">videocam</span>
-                      <span className="text-[11px] font-label-caps text-on-surface-variant">Micro-Expressions</span>
-                    </div>
-                    <div className="bg-white/50 p-3 rounded-xl flex items-center gap-2 border border-outline-variant/20">
-                      <span className="material-symbols-outlined text-primary text-lg">mic</span>
-                      <span className="text-[11px] font-label-caps text-on-surface-variant">Vocal Tonality</span>
-                    </div>
-                    <div className="bg-white/50 p-3 rounded-xl flex items-center gap-2 border border-outline-variant/20">
-                      <span className="material-symbols-outlined text-primary text-lg">lock</span>
-                      <span className="text-[11px] font-label-caps text-on-surface-variant">E2E Encrypted</span>
-                    </div>
-                    <div className="bg-white/50 p-3 rounded-xl flex items-center gap-2 border border-outline-variant/20">
-                      <span className="material-symbols-outlined text-primary text-lg">cloud_off</span>
-                      <span className="text-[11px] font-label-caps text-on-surface-variant">Local Processing</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 pt-2">
-                    <input
-                      className="mt-1 rounded text-primary focus:ring-primary h-4 w-4 accent-primary"
-                      id="consent"
-                      type="checkbox"
-                      checked={consentChecked}
-                      onChange={(e) => { setConsentChecked(e.target.checked); setErrorMessage(''); }}
-                    />
-                    <label className="text-xs text-on-surface-variant leading-tight" htmlFor="consent">
-                      I understand that my biometric data is strictly used for clinical analysis and will never be shared with third parties or advertisers.
-                    </label>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="font-label-caps text-[12px] text-outline px-1 block">Institutional Email</label>
-                    <input
-                      className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-on-surface"
-                      placeholder="name@hospital.com"
-                      type="email"
-                      value={email}
-                      onChange={(e) => { setEmail(e.target.value); setErrorMessage(''); }}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="font-label-caps text-[12px] text-outline px-1 block">Create Password</label>
-                    <input
-                      className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-on-surface"
-                      placeholder="Minimum 12 characters"
-                      type="password"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setErrorMessage(''); }}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-primary text-on-primary py-4 rounded-xl font-semibold shadow-sm hover:opacity-90 active:scale-[0.98] transition-all"
-                >
-                  Complete Registration
-                </button>
-                <p className="text-center text-on-surface-variant text-sm">
-                  Already have an account?{' '}
-                  <button type="button" className="text-primary font-semibold hover:underline" onClick={() => { setIsSignup(false); setErrorMessage(''); }}>Log In</button>
-                </p>
-              </form>
-            )}
-          </div>
-
-          <footer className="mt-12 pt-6 border-t border-outline-variant/10 text-center">
-            <p className="text-[10px] text-outline uppercase tracking-widest mb-2 font-label-caps">Clinical Standard ISO-27001 Certified</p>
-            <div className="flex justify-center gap-4 text-[11px] text-on-surface-variant">
-              <a className="hover:text-primary transition-colors" href="#privacy" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
-              <span className="text-outline-variant">•</span>
-              <a className="hover:text-primary transition-colors" href="#terms" onClick={(e) => e.preventDefault()}>Terms of Use</a>
-              <span className="text-outline-variant">•</span>
-              <a className="hover:text-primary transition-colors" href="#support" onClick={(e) => e.preventDefault()}>Support</a>
+            {/* Divider */}
+            <div className="relative flex items-center py-2">
+              <div className="flex-grow border-t border-outline-variant/30"></div>
+              <span className="flex-shrink mx-4 text-on-surface-variant/70 font-label-caps text-[10px] font-bold uppercase tracking-wider">
+                OR CONTINUE WITH
+              </span>
+              <div className="flex-grow border-t border-outline-variant/30"></div>
             </div>
-          </footer>
-        </section>
 
+            {/* Biometric & Fast Access Buttons */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => handleBiometricLogin('face')}
+                className="flex items-center justify-center space-x-2 p-3.5 border border-outline-variant/40 rounded-2xl hover:bg-primary/5 transition-all active:scale-95 text-xs font-semibold text-on-surface-variant"
+              >
+                <span className="material-symbols-outlined text-primary text-xl">face</span>
+                <span>Face ID</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBiometricLogin('touch')}
+                className="flex items-center justify-center space-x-2 p-3.5 border border-outline-variant/40 rounded-2xl hover:bg-primary/5 transition-all active:scale-95 text-xs font-semibold text-on-surface-variant"
+              >
+                <span className="material-symbols-outlined text-primary text-xl">fingerprint</span>
+                <span>Touch ID</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Toggle Account Mode Footer */}
+        <p className="text-center mt-6 font-body-md text-xs text-on-surface-variant">
+          {isSignup ? 'Already have an executive account?' : "Don't have a professional account?"}
+          <button
+            onClick={() => { setIsSignup(!isSignup); setErrorMessage(''); }}
+            className="text-primary font-bold hover:underline ml-1"
+          >
+            {isSignup ? 'Sign In' : 'Create an Account'}
+          </button>
+        </p>
       </main>
+
+      {/* Security Consent Protocol Modal */}
+      {showConsentModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+          <div className="relative w-full max-w-md bg-surface rounded-3xl overflow-hidden shadow-2xl p-8 border border-primary/20 space-y-4">
+            <div className="flex items-center justify-between border-b border-primary/10 pb-3">
+              <h3 className="font-display-hero text-lg font-bold text-primary">Biometric Security Protocols</h3>
+              <button onClick={() => setShowConsentModal(false)} className="text-on-surface-variant hover:text-primary">
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+            <div className="space-y-3 text-xs text-on-surface-variant leading-relaxed">
+              <p>
+                <strong>HIPAA & ISO 27001 Certified:</strong> All video frames, facial landmark vectors, and acoustic recordings are processed locally or via encrypted 256-bit TLS streams.
+              </p>
+              <p>
+                No raw imagery is stored permanently on remote servers without explicit user approval.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowConsentModal(false)}
+              className="w-full py-3 bg-primary text-on-primary rounded-xl font-label-caps text-xs font-bold shadow-md hover:bg-primary/90 transition-all"
+            >
+              Acknowledge & Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

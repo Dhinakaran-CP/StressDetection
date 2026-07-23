@@ -192,7 +192,7 @@ CONFIG = {
     'dataset_weight_stressid': 1.0,
     'dataset_weight_wesad': 1.0,
     'n_folds':            15,
-    'model_type':         'conv_moe_mf',  # 'ssvb', 'conv_moe_mf', 'cnn_baseline'
+    'model_type':         'cnn_baseline_grl',  # 'ssvb', 'conv_moe_mf', 'cnn_baseline', 'cnn_baseline_grl'
     'device':             'cuda' if torch.cuda.is_available() else 'cpu',
 }
 
@@ -364,7 +364,7 @@ class SSVBDataset(Dataset):
     groups.  Provides per-window [T, feat_dim] tensors for training."""
 
     def __init__(self, dataset_name, seq_len=30, augment=False, noise_std=0.02,
-                 modality_dropout=0.15, dataset_weights=None):
+                 modality_dropout=0.15, dataset_weights=None, subject_filter=None):
         self.seq_len = seq_len
         self.augment = augment
         self.noise_std = noise_std
@@ -380,10 +380,20 @@ class SSVBDataset(Dataset):
         # Load feature arrays
         loaded = np.load(os.path.join(data_dir, "sequences.npz"))
         self.group_keys = sorted(loaded.keys())
-        self.features = {k: loaded[k].astype(np.float32) for k in self.group_keys}
+        all_features = {k: loaded[k].astype(np.float32) for k in self.group_keys}
 
         # Load metadata
         self.meta = pd.read_parquet(os.path.join(data_dir, "metadata.parquet"))
+
+        # Filter to specific subjects if requested (e.g., exclude a dataset)
+        if subject_filter is not None:
+            mask = self.meta['subject_id'].isin(subject_filter)
+            self.meta = self.meta[mask].reset_index(drop=True)
+            feat_idx = mask.values
+            self.features = {k: v[feat_idx] for k, v in all_features.items()}
+        else:
+            self.features = all_features
+
         self.subjects = sorted(self.meta['subject_id'].unique())
         self.subj_to_idx = {s: i for i, s in enumerate(self.subjects)}
 
@@ -529,10 +539,49 @@ def per_subject_metrics(df_results):
 
 
 def per_dataset_metrics(df_results):
-    """Compute accuracy per dataset."""
+    """Compute accuracy per dataset (by training dataset name)."""
     ds_accs = df_results.groupby('dataset').apply(
         lambda g: accuracy_score(g['true'], g['pred']))
     return {str(k): float(v) for k, v in ds_accs.items()}
+
+
+def per_source_dataset_metrics(df_results):
+    """Compute AUC, F1, ACC per source dataset (stressid/wesad/empathicschool)
+    with per-dataset optimal threshold sweep."""
+    df = df_results.copy()
+    df['source_ds'] = df['subject_id'].apply(lambda x: str(x).split('_')[0])
+    report = {}
+    for src in sorted(df['source_ds'].unique()):
+        sub = df[df['source_ds'] == src]
+        if len(sub) < 2:
+            continue
+        y_true = sub['true']
+        y_prob = sub['prob']
+        auc = roc_auc_score(y_true, y_prob) if len(set(y_true)) > 1 else None
+        # Default threshold=0.5 metrics
+        pred_05 = (y_prob >= 0.5).astype(int)
+        acc_05 = accuracy_score(y_true, pred_05)
+        f1_05 = f1_score(y_true, pred_05, zero_division=0)
+        # Per-dataset optimal threshold sweep
+        best_f1, best_t, best_prec, best_rec = 0.0, 0.5, 0.0, 0.0
+        for t in np.linspace(0.05, 0.95, 91):
+            yp = (y_prob >= t).astype(int)
+            f1v = f1_score(y_true, yp, zero_division=0)
+            if f1v > best_f1:
+                best_f1, best_t = f1v, t
+                best_prec = precision_score(y_true, yp, zero_division=0)
+                best_rec = recall_score(y_true, yp, zero_division=0)
+        report[src] = {
+            'n_windows': int(len(sub)),
+            'auc': float(auc) if auc is not None else None,
+            'accuracy': float(acc_05),
+            'f1': float(f1_05),
+            'optimal_threshold': float(best_t),
+            'optimal_f1': float(best_f1),
+            'optimal_precision': float(best_prec),
+            'optimal_recall': float(best_rec),
+        }
+    return report
 
 
 def generate_plots(y_true, y_prob, model_name, save_dir, threshold=0.5):
@@ -729,7 +778,7 @@ def save_checkpoint(model, optimizer, epoch, metrics, path):
     }, path)
 
 
-def export_deployment_weights(model, path, optimal_threshold=0.5):
+def export_deployment_weights(model, path, optimal_threshold=0.5, per_dataset_thresholds=None):
     """Export model weights in a format loadable by RuntimeEngine."""
     torch.save(model.state_dict(), path)
     arch_name = CONFIG.get('model_type', 'ssvb')
@@ -746,6 +795,7 @@ def export_deployment_weights(model, path, optimal_threshold=0.5):
         'num_subjects': CONFIG.get('n_subjects', 65),
         'trained_on': str(CONFIG.get('trained_on', 'unknown')),
         'optimal_threshold': optimal_threshold,
+        'per_dataset_thresholds': per_dataset_thresholds or {},
         'timestamp': time.strftime('%Y-%m-%d_%H-%M-%S'),
     }
     with open(path.replace('.pt', '.json'), 'w') as f:
@@ -756,14 +806,33 @@ def export_deployment_weights(model, path, optimal_threshold=0.5):
 # CROSS-VALIDATION
 # ===========================================================================
 
-def run_cross_validation(dataset_name, config):
-    """Run stratified LOSO CV. Selects test subjects proportionally from
-    each dataset to avoid degenerate folds from random sampling."""
+def run_cross_validation(dataset_name, config, exclude_dataset=None):
+    """Run stratified LOSO CV. Optionally exclude a source dataset
+    (e.g., empathicschool) from training — those subjects become a
+    held-out transfer test set evaluated after CV completes."""
     device = torch.device(config['device'])
 
     # Load enriched metadata to get subjects
     meta_path = os.path.join(ENRICHED_DIR, dataset_name, "metadata.parquet")
     meta = pd.read_parquet(meta_path)
+
+    # If excluding a dataset, split into train and held-out pools
+    held_out_meta = None
+    train_subjects = None
+    held_subjects = None
+    if exclude_dataset and 'dataset' in meta.columns:
+        held_out_meta = meta[meta['dataset'] == exclude_dataset].copy()
+        meta = meta[meta['dataset'] != exclude_dataset].copy()
+        if len(held_out_meta) == 0:
+            print(f"  WARNING: exclude_dataset='{exclude_dataset}' not found in '{dataset_name}' metadata")
+            held_out_meta = None
+        else:
+            n_held = held_out_meta['subject_id'].nunique()
+            train_subjects = set(meta['subject_id'].unique())
+            held_subjects = set(held_out_meta['subject_id'].unique())
+            print(f"  Excluded {exclude_dataset}: {n_held} subjects, {len(held_out_meta)} windows (held-out transfer test)")
+    # Reset index so row positions match SSVBDataset positions (both 0..N-1)
+    meta = meta.reset_index(drop=True)
     subjects = sorted(meta['subject_id'].unique())
     num_subjects = len(subjects)
 
@@ -771,35 +840,48 @@ def run_cross_validation(dataset_name, config):
         print(f"  SKIP {dataset_name}: only {len(subjects)} subjects")
         return None, [], None, None
 
-    # Stratified subject selection: pick proportionally from each dataset
+    # Audit: identify single-class subjects (only calm=0 or only stress=1)
+    # These cannot be held-out test subjects (AUC undefined), but remain in training.
+    subj_label_set = meta.groupby('subject_id')['label'].unique()
+    single_class_subjects = set(subj_label_set[subj_label_set.apply(lambda x: len(x) < 2)].index)
+    multi_class_subjects = [s for s in subjects if s not in single_class_subjects]
+
+    if len(multi_class_subjects) < 2:
+        print(f"  SKIP {dataset_name}: only {len(multi_class_subjects)} multi-class subjects (need >=2 for LOSO)")
+        return None, [], None, None
+
+    print(f"  Subjects: {num_subjects} total, {len(multi_class_subjects)} multi-class, {len(single_class_subjects)} single-class (train-only)")
+
+    # Stratified subject selection from multi-class pool only
     rng = np.random.RandomState(config['seed'])
     if 'dataset' in meta.columns:
         subj_per_ds = meta.groupby('dataset')['subject_id'].unique()
-        n_folds = min(config['n_folds'], len(subjects))
+        n_folds = min(config['n_folds'], len(multi_class_subjects))
         # Allocate folds per dataset proportionally
-        total = len(meta)
         folds_per_ds = {}
-        for ds, subjs in subj_per_ds.items():
-            pct = len(subjs) / num_subjects
-            folds_per_ds[ds] = max(1, int(round(n_folds * pct)))
+        for ds in subj_per_ds.keys():
+            eligible = [s for s in subj_per_ds[ds] if s in multi_class_subjects]
+            folds_per_ds[ds] = max(1, int(round(n_folds * len(eligible) / len(multi_class_subjects))))
         # Adjust total to match n_folds
         diff = n_folds - sum(folds_per_ds.values())
         if diff > 0:
-            # Give extra folds to largest dataset
             largest = max(folds_per_ds, key=folds_per_ds.get)
             folds_per_ds[largest] += diff
-        # Select subjects from each dataset
+        # Select subjects from each dataset (only multi-class)
         selected = []
         for ds, n_sel in folds_per_ds.items():
-            pool = list(subj_per_ds[ds])
-            rng.shuffle(pool)
-            selected.extend(pool[:n_sel])
-        # Deduplicate (in case of overlap) and cap at n_folds
+            eligible = [s for s in subj_per_ds[ds] if s in multi_class_subjects]
+            rng.shuffle(eligible)
+            selected.extend(eligible[:n_sel])
         selected = list(dict.fromkeys(selected))[:n_folds]
     else:
-        n_folds = min(config['n_folds'], len(subjects))
-        rng.shuffle(subjects)
-        selected = subjects[:n_folds]
+        n_folds = min(config['n_folds'], len(multi_class_subjects))
+        rng.shuffle(multi_class_subjects)
+        selected = multi_class_subjects[:n_folds]
+
+    # Map numeric subject IDs back to strings for per-dataset breakdown
+    subj_to_idx = {s: i for i, s in enumerate(sorted(meta['subject_id'].unique()))}
+    idx_to_subj = {v: k for k, v in subj_to_idx.items()}
 
     all_true, all_prob, all_conf, all_subj = [], [], [], []
     fold_metrics = []
@@ -841,11 +923,13 @@ def run_cross_validation(dataset_name, config):
 
         # Reuse a single SSVBDataset for the whole dataset (handles features)
         full_ds = SSVBDataset(dataset_name, seq_len=config['seq_len'],
-                              augment=False, dataset_weights=ds_weight_map)
+                              augment=False, dataset_weights=ds_weight_map,
+                              subject_filter=train_subjects)
         train_ds = IndexedDataset(SSVBDataset(dataset_name, seq_len=config['seq_len'],
                                   augment=True, noise_std=config['noise_std'],
                                   modality_dropout=config['modality_dropout'],
-                                  dataset_weights=ds_weight_map),
+                                  dataset_weights=ds_weight_map,
+                                  subject_filter=train_subjects),
                                   train_idx)
         test_ds  = IndexedDataset(full_ds, test_idx)
 
@@ -946,6 +1030,10 @@ def run_cross_validation(dataset_name, config):
     all_true = np.hstack(all_true)
     all_prob = np.hstack(all_prob)
     all_conf = np.hstack(all_conf)
+    all_subj_h = np.hstack(all_subj)
+
+    # Convert numeric subject IDs to strings for per-dataset breakdown
+    all_subj_str = np.array([idx_to_subj.get(int(s), str(int(s))) for s in all_subj_h])
 
     agg = calculate_metrics(all_true, all_prob)
     agg['mean_confidence'] = float(all_conf.mean()) if len(all_conf) > 0 else 0.0
@@ -954,7 +1042,34 @@ def run_cross_validation(dataset_name, config):
     print(f"\n  {dataset_name} — AGGREGATE ({successful_folds} folds): ACC={agg['accuracy']:.4f}  "
           f"F1={agg['f1']:.4f}  AUC={agg['roc_auc']:.4f}")
 
-    return agg, fold_metrics, best_state, (all_true, all_prob, all_conf, all_subj)
+    # Held-out transfer test evaluation
+    held_out_metrics = None
+    if held_out_meta is not None and best_state is not None and successful_folds > 0:
+        print(f"\n  {'='*60}")
+        print(f"  Held-out transfer test: {exclude_dataset} ({len(held_out_meta)} windows)")
+        print(f"  {'='*60}")
+        try:
+            held_ds = SSVBDataset(dataset_name, seq_len=config['seq_len'], augment=False)
+            held_idx = held_out_meta.index.values
+            held_subset = IndexedDataset(held_ds, held_idx)
+            held_loader = DataLoader(held_subset, batch_size=config['batch_size'], shuffle=False, num_workers=0)
+            held_prob, held_true, held_conf, held_subj_ids = evaluate(model, held_loader, device)
+            held_metrics = calculate_metrics(held_true, held_prob)
+            held_metrics['mean_confidence'] = float(held_conf.mean())
+            held_opt_t, _ = find_optimal_threshold(held_true, held_prob, metric='f1')
+            held_metrics['optimal_threshold'] = held_opt_t
+            held_metrics['optimal'] = calculate_metrics(held_true, held_prob, threshold=held_opt_t)
+            print(f"  Held-out {exclude_dataset}: AUC={held_metrics['roc_auc']:.4f}  "
+                  f"ACC={held_metrics['accuracy']:.4f}  F1={held_metrics['f1']:.4f}")
+            print(f"    Optimal threshold={held_opt_t:.3f}: "
+                  f"P={held_metrics['optimal']['precision']:.4f}  "
+                  f"R={held_metrics['optimal']['recall']:.4f}  "
+                  f"F1={held_metrics['optimal']['f1']:.4f}")
+        except Exception as exc:
+            print(f"  Held-out evaluation failed: {exc}")
+            held_metrics = None
+
+    return agg, fold_metrics, best_state, (all_true, all_prob, all_conf, all_subj_str), held_out_metrics
 
 
 # ===========================================================================
@@ -968,12 +1083,21 @@ def main():
     parser.add_argument('--model-type', '--model_type', type=str, default=None,
                         choices=['ssvb', 'conv_moe_mf', 'cnn_baseline', 'cnn_baseline_grl'],
                         help='Model type: ssvb, conv_moe_mf, cnn_baseline, cnn_baseline_grl')
+    parser.add_argument('--exclude-dataset', '--exclude_dataset', type=str, default=None,
+                        choices=['stressid', 'wesad', 'empathicschool'],
+                        help='Exclude a dataset from training (held-out transfer test only)')
     parser.add_argument('--dry-run', action='store_true',
                         help='Validate setup without full training')
     args = parser.parse_args()
 
     if args.model_type:
         CONFIG['model_type'] = args.model_type
+
+    if args.exclude_dataset:
+        CONFIG['exclude_dataset'] = args.exclude_dataset
+        print(f"  Excluding dataset from training: {args.exclude_dataset} (held-out transfer test only)")
+    else:
+        CONFIG['exclude_dataset'] = None
 
     if args.dataset:
         datasets = [args.dataset]
@@ -1037,11 +1161,25 @@ def main():
 
         meta_path = os.path.join(ENRICHED_DIR, ds_name, 'metadata.parquet')
         meta = pd.read_parquet(meta_path)
-        n_subj = meta['subject_id'].nunique()
-        n_rows = len(meta)
+
+        # When excluding a dataset from combined training, adjust subject count
+        exclude_ds = CONFIG.get('exclude_dataset') if ds_name == 'combined' else None
+        if exclude_ds and 'dataset' in meta.columns:
+            train_meta = meta[meta['dataset'] != exclude_ds]
+            n_subj = train_meta['subject_id'].nunique()
+            n_rows = len(train_meta)
+        else:
+            n_subj = meta['subject_id'].nunique()
+            n_rows = len(meta)
 
         if n_subj < 2:
             print(f"\n  SKIP {ds_name}: only {n_subj} subjects (need ≥2 for LOSO)")
+            continue
+
+        # Skip individual dataset training if it matches --exclude-dataset
+        if CONFIG.get('exclude_dataset') and ds_name != 'combined' and \
+           ds_name == CONFIG['exclude_dataset']:
+            print(f"\n  SKIP {ds_name} per-dataset training (held-out transfer test only)")
             continue
 
         print(f"\n{'='*60}")
@@ -1052,12 +1190,17 @@ def main():
         CONFIG['n_subjects'] = n_subj
 
         model_type_str = CONFIG.get('model_type', 'ssvb')
-        agg, fold_metrics, best_state, (y_true, y_prob, y_conf, y_subj) = \
-            run_cross_validation(ds_name, CONFIG)
+        exclude_ds = CONFIG.get('exclude_dataset') if ds_name == 'combined' else None
+        agg, fold_metrics, best_state, (y_true, y_prob, y_conf, y_subj), held_out_metrics = \
+            run_cross_validation(ds_name, CONFIG, exclude_dataset=exclude_ds)
 
         if agg is None:
             print(f"\n  SKIP {ds_name}: cross-validation returned no results")
             continue
+
+        if exclude_ds and held_out_metrics:
+            print(f"\n  Hold-out transfer test ({exclude_ds}): " +
+                  f"AUC={held_out_metrics['roc_auc']:.4f}  F1={held_out_metrics['f1']:.4f}")
 
         all_results[ds_name] = {
             'aggregate': agg,
@@ -1106,11 +1249,14 @@ def main():
             json.dump({'aggregate': agg_save, 'model_type': model_type_str,
                        'dataset': ds_name, 'n_subjects': n_subj}, f, indent=2)
 
-        # Save per-subject predictions CSV
+        # Save per-subject predictions CSV with source dataset
+        subj_ids_flat = np.hstack(y_subj)
+        src_ds = np.array([str(s).split('_')[0] for s in subj_ids_flat])
         pred_df = pd.DataFrame({
             'true': y_true, 'prob': y_prob, 'confidence': y_conf,
-            'subject_id': np.hstack(y_subj),
+            'subject_id': subj_ids_flat,
             'dataset': [ds_name] * len(y_true),
+            'source_ds': src_ds,
         })
         pred_df.to_csv(os.path.join(model_dir, 'predictions.csv'), index=False)
 
@@ -1152,9 +1298,22 @@ def main():
                     m = SSVBCASA_AIS(hidden_dim=CONFIG['hidden_dim'],
                                      num_subjects=n_subj)
                 m.load_state_dict(best_state)
+                # Per-source-dataset optimal thresholds for deployment
+                per_ds_thresholds = {}
+                if len(y_subj) > 0:
+                    src_ds = np.array([str(s).split('_')[0] for s in y_subj])
+                    for src in sorted(set(src_ds)):
+                        mask = src_ds == src
+                        if mask.sum() > 0:
+                            opt_t, _ = find_optimal_threshold(
+                                np.array(y_true)[mask], np.array(y_prob)[mask], metric='f1')
+                            per_ds_thresholds[src] = round(float(opt_t), 3)
                 torch.save(m.state_dict(), deploy_path)
-                export_deployment_weights(m, deploy_path, optimal_threshold=best_thresh_for_export)
+                export_deployment_weights(m, deploy_path, optimal_threshold=best_thresh_for_export,
+                                          per_dataset_thresholds=per_ds_thresholds)
                 print(f"\n  [DEPLOY] Production weights saved to {deploy_path}")
+                if per_ds_thresholds:
+                    print(f"  [DEPLOY] Per-dataset thresholds: {per_ds_thresholds}")
 
     # Build summary report
     combined_true = np.hstack(combined_true)
@@ -1178,6 +1337,7 @@ def main():
     })
     subj_metrics = per_subject_metrics(results_df)
     ds_metrics = per_dataset_metrics(results_df)
+    src_ds_metrics = per_source_dataset_metrics(results_df)
 
     # Write final report
     report = {
@@ -1186,6 +1346,7 @@ def main():
         'combined': combined_metrics,
         'per_subject': subj_metrics,
         'per_dataset_breakdown': ds_metrics,
+        'per_source_dataset': src_ds_metrics,
         'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
     }
 
@@ -1214,6 +1375,14 @@ def main():
     print(f"\n  Per-subject accuracy: mean={subj_metrics['subject_acc_mean']:.4f} "
           f"std={subj_metrics['subject_acc_std']:.4f}")
     print(f"  Per-dataset: {ds_metrics}")
+    print(f"  Per-source-dataset (threshold=0.50):")
+    for src, m in sorted(src_ds_metrics.items()):
+        auc_str = f"AUC={m['auc']:.4f}" if m['auc'] is not None else "AUC=N/A"
+        print(f"    {src:20s}  {auc_str}  F1={m['f1']:.4f}  ACC={m['accuracy']:.4f}  n={m['n_windows']}")
+    print(f"  Per-source-dataset (optimal threshold per dataset):")
+    for src, m in sorted(src_ds_metrics.items()):
+        auc_str = f"AUC={m['auc']:.4f}" if m['auc'] is not None else "AUC=N/A"
+        print(f"    {src:20s}  {auc_str}  optF1={m['optimal_f1']:.4f}  thresh={m['optimal_threshold']:.2f}  prec={m['optimal_precision']:.4f}  rec={m['optimal_recall']:.4f}")
     print(f"\n  Reports: {combined_dir}")
     print(f"  Weights: {DEPLOY_DIR}/ssvb_casa_ais_production_{model_tag}.pt")
     print(f"{'='*60}")

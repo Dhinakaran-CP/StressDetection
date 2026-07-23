@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | VitalMind Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#00daf3",
+                    "on-error-container": "#93000a",
+                    "primary": "#0050cb",
+                    "on-tertiary-container": "#fdf6ff",
+                    "on-secondary-container": "#00616d",
+                    "tertiary-fixed-dim": "#d0bcff",
+                    "primary-fixed-dim": "#b3c5ff",
+                    "outline-variant": "#c2c6d8",
+                    "tertiary": "#6834d2",
+                    "error": "#ba1a1a",
+                    "surface-dim": "#cbdbf5",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#001849",
+                    "surface": "#f8f9ff",
+                    "background": "#f8f9ff",
+                    "on-error": "#ffffff",
+                    "surface-variant": "#d3e4fe",
+                    "surface-tint": "#0054d6",
+                    "on-surface": "#0b1c30",
+                    "on-primary-container": "#f8f7ff",
+                    "inverse-primary": "#b3c5ff",
+                    "inverse-surface": "#213145",
+                    "tertiary-fixed": "#e9ddff",
+                    "primary-container": "#0066ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#d3e4fe",
+                    "surface-container-low": "#eff4ff",
+                    "on-primary": "#ffffff",
+                    "secondary-container": "#00e3fd",
+                    "secondary-fixed": "#9cf0ff",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-fixed-variant": "#5516be",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-fixed": "#23005c",
+                    "primary-fixed": "#dae1ff",
+                    "outline": "#727687",
+                    "on-secondary-fixed-variant": "#004f58",
+                    "surface-container": "#e5eeff",
+                    "on-primary-fixed-variant": "#003fa4",
+                    "tertiary-container": "#8252ec",
+                    "on-secondary-fixed": "#001f24",
+                    "on-surface-variant": "#424656",
+                    "on-background": "#0b1c30",
+                    "surface-container-high": "#dce9ff",
+                    "inverse-on-surface": "#eaf1ff",
+                    "surface-bright": "#f8f9ff",
+                    "secondary": "#006875"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-lg": "48px",
+                    "margin-desktop": "64px",
+                    "stack-md": "24px",
+                    "unit": "8px",
+                    "margin-mobile": "20px",
+                    "container-max-width": "1440px",
+                    "stack-sm": "12px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display-hero-mobile": ["Geist"],
+                    "metric-xl": ["Geist"],
+                    "label-caps": ["Geist"],
+                    "headline-md": ["Geist"],
+                    "headline-lg": ["Geist"],
+                    "display-hero": ["Geist"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-hero-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "metric-xl": ["64px", {"lineHeight": "64px", "letterSpacing": "-0.05em", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "display-hero": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(248, 249, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 80, 203, 0.1);
+            box-shadow: 0 40px 40px -10px rgba(0, 80, 203, 0.05);
+        }
+
+        .ripple-btn {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .ripple-btn:active {
+            transform: scale(0.98);
+        }
+
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .floating-label-group {
+            position: relative;
+        }
+
+        .floating-label-group input:focus ~ label,
+        .floating-label-group input:not(:placeholder-shown) ~ label {
+            transform: translateY(-22px) scale(0.85);
+            color: var(--tw-color-primary);
+            background: white;
+            padding: 0 4px;
+        }
+
+        .floating-label-group label {
+            position: absolute;
+            top: 14px;
+            left: 16px;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            color: #727687;
+        }
+
+        .bg-mesh {
+            background-color: #f8f9ff;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 102, 255, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(130, 82, 236, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 218, 243, 0.1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(0, 80, 203, 0.1) 0px, transparent 50%);
+        }
+    </style>
+</head>
+<body class="bg-mesh min-h-screen flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop font-body-md text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- Main Container -->
+<main class="w-full max-w-[480px] z-10">
+<!-- Brand & Welcome Section -->
+<div class="text-center mb-stack-lg">
+<div class="inline-flex items-center justify-center space-x-2 mb-stack-sm">
+<span class="material-symbols-outlined text-[40px] text-primary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">VitalMind Pro</h1>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Welcome back to your clinical sanctuary.</p>
+</div>
+<!-- Login Card -->
+<div class="glass-card rounded-lg p-gutter md:p-stack-lg">
+<form class="space-y-stack-md" id="loginForm" onsubmit="return false;">
+<!-- Email Field -->
+<div class="floating-label-group">
+<input class="w-full px-4 py-4 rounded-DEFAULT border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary bg-surface/50 transition-all outline-none" id="email" placeholder=" " required="" type="email"/>
+<label class="font-body-md" for="email">Email Address</label>
+</div>
+<!-- Password Field -->
+<div class="floating-label-group">
+<input class="w-full px-4 py-4 rounded-DEFAULT border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary bg-surface/50 transition-all outline-none" id="password" placeholder=" " required="" type="password"/>
+<label class="font-body-md" for="password">Password</label>
+</div>
+<!-- Utilities Row -->
+<div class="flex items-center justify-between text-sm">
+<label class="flex items-center space-x-2 cursor-pointer group">
+<div class="relative flex items-center justify-center">
+<input class="peer appearance-none w-5 h-5 border-2 border-outline-variant rounded focus:ring-0 checked:bg-primary checked:border-primary transition-all" type="checkbox"/>
+<span class="material-symbols-outlined absolute text-white text-[16px] opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
+</div>
+<span class="font-body-md text-on-surface-variant group-hover:text-primary transition-colors">Remember me</span>
+</label>
+<a class="font-body-md text-primary font-semibold hover:underline decoration-primary/30 underline-offset-4" href="#">Forgot Password?</a>
+</div>
+<!-- Primary Action -->
+<button class="ripple-btn w-full bg-primary text-on-primary font-headline-md text-headline-md py-4 rounded-DEFAULT shadow-lg shadow-primary/20 hover:bg-primary-container transition-colors flex items-center justify-center space-x-2" id="signInBtn" type="submit">
+<span>Sign In</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<!-- Divider -->
+<div class="relative flex items-center py-2">
+<div class="flex-grow border-t border-outline-variant/30"></div>
+<span class="flex-shrink mx-4 text-on-surface-variant font-label-caps text-label-caps">OR CONTINUE WITH</span>
+<div class="flex-grow border-t border-outline-variant/30"></div>
+</div>
+<!-- Biometric & Social Options -->
+<div class="grid grid-cols-2 gap-gutter">
+<button class="flex items-center justify-center space-x-2 p-3 border border-outline-variant/50 rounded-DEFAULT hover:bg-primary/5 transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-primary">drafts</span>
+<span class="font-body-md text-on-surface-variant">Face ID</span>
+</button>
+<button class="flex items-center justify-center space-x-2 p-3 border border-outline-variant/50 rounded-DEFAULT hover:bg-primary/5 transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-primary">fingerprint</span>
+<span class="font-body-md text-on-surface-variant">Touch ID</span>
+</button>
+</div>
+</form>
+</div>
+<!-- Footer Link -->
+<p class="text-center mt-stack-md font-body-md text-on-surface-variant">
+            Don't have a professional account? 
+            <a class="text-primary font-bold hover:underline decoration-primary/30 underline-offset-4 ml-1" href="#">Create an Account</a>
+</p>
+</main>
+<!-- Background Decorative Elements -->
+<div class="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+<div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full"></div>
+<div class="absolute top-[60%] -right-[5%] w-[30%] h-[30%] bg-tertiary/5 blur-[100px] rounded-full"></div>
+</div>
+<!-- Ripple Effect Script -->
+<script>
+        document.getElementById('signInBtn').addEventListener('click', function (e) {
+            let x = e.clientX - e.target.offsetLeft;
+            let y = e.clientY - e.target.offsetTop;
+            
+            let ripples = document.createElement('span');
+            ripples.style.left = x + 'px';
+            ripples.style.top = y + 'px';
+            ripples.classList.add('ripple');
+            this.appendChild(ripples);
+
+            setTimeout(() => {
+                ripples.remove();
+            }, 600);
+        });
+
+        // Simple animation for the background on mouse move
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            const root = document.documentElement;
+            // Subtle shift in mesh center could be added here if desired
+        });
+    </script>
+</body></html>

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Insights &amp; Analytics | VitalMind AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#003fa4",
+                        "surface-tint": "#0054d6",
+                        "on-secondary-fixed-variant": "#004f58",
+                        "surface-variant": "#d3e4fe",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-primary": "#b3c5ff",
+                        "outline-variant": "#c2c6d8",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "surface-container": "#e5eeff",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#cbdbf5",
+                        "on-tertiary-fixed": "#23005c",
+                        "on-primary-fixed": "#001849",
+                        "outline": "#727687",
+                        "primary-container": "#0066ff",
+                        "secondary": "#006875",
+                        "on-primary-container": "#f8f7ff",
+                        "background": "#f8f9ff",
+                        "primary-fixed": "#dae1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#8252ec",
+                        "surface-container-high": "#dce9ff",
+                        "on-surface-variant": "#424656",
+                        "on-background": "#0b1c30",
+                        "on-secondary-container": "#00616d",
+                        "surface-container-low": "#eff4ff",
+                        "tertiary-fixed": "#e9ddff",
+                        "surface": "#f8f9ff",
+                        "primary": "#0050cb",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#fdf6ff",
+                        "inverse-surface": "#213145",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "tertiary": "#6834d2",
+                        "secondary-fixed": "#9cf0ff",
+                        "secondary-fixed-dim": "#00daf3",
+                        "on-secondary-fixed": "#001f24",
+                        "on-surface": "#0b1c30",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#00e3fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-mobile": "20px",
+                        "stack-lg": "48px",
+                        "unit": "8px",
+                        "stack-md": "24px",
+                        "margin-desktop": "64px",
+                        "container-max-width": "1440px",
+                        "stack-sm": "12px"
+                    },
+                    "fontFamily": {
+                        "display-hero": ["Geist"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "label-caps": ["Geist"],
+                        "body-lg": ["Inter"],
+                        "display-hero-mobile": ["Geist"],
+                        "metric-xl": ["Geist"],
+                        "headline-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "display-hero": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "display-hero-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "metric-xl": ["64px", {"lineHeight": "64px", "letterSpacing": "-0.05em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #f8f9ff;
+            font-family: 'Inter', sans-serif;
+            color: #0b1c30;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 80, 203, 0.1);
+            border-radius: 1.5rem;
+            box-shadow: 0 40px 40px -10px rgba(0, 84, 214, 0.05);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .active-nav {
+            background-color: rgba(0, 102, 255, 0.1);
+            border-right: 2px solid #0050cb;
+            color: #0050cb;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chart-grid {
+            background-image: radial-gradient(circle, rgba(0, 80, 203, 0.05) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        /* Sidebar Transition Logic */
+        .sidebar-expanded {
+            width: 16rem; /* 256px */
+        }
+        .sidebar-collapsed {
+            width: 5rem; /* 80px */
+        }
+        .sidebar-transition {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .main-expanded {
+            margin-left: 16rem;
+        }
+        .main-collapsed {
+            margin-left: 5rem;
+        }
+        .main-transition {
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .label-transition {
+            transition: opacity 0.2s ease-in-out, visibility 0.2s;
+        }
+        .collapsed .sidebar-label {
+            opacity: 0;
+            visibility: hidden;
+            width: 0;
+            overflow: hidden;
+        }
+        .collapsed .sidebar-header-text {
+            opacity: 0;
+            visibility: hidden;
+            height: 0;
+            margin: 0;
+        }
+        .collapsed .sidebar-btn-text {
+            display: none;
+        }
+        .collapsed .sidebar-btn-icon {
+            margin-right: 0;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen bg-background">
+<!-- SideNavBar (Shared Component) -->
+<aside class="sidebar-transition sidebar-expanded hidden lg:flex flex-col fixed left-0 top-0 h-full z-50 px-4 py-8 bg-surface/70 backdrop-blur-2xl border-r border-primary/10" id="sidebar">
+<div class="mb-10 px-4 flex items-center justify-between">
+<div class="sidebar-header-text label-transition">
+<h1 class="font-display-hero text-headline-md text-primary tracking-tighter whitespace-nowrap">VitalMind AI</h1>
+<p class="font-label-caps text-on-surface-variant/70 mt-1">Executive Health</p>
+</div>
+<button class="material-symbols-outlined text-primary hover:bg-primary/5 p-1 rounded-lg transition-colors cursor-pointer" id="sidebar-toggle">
+            chevron_left
+        </button>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-surface-variant/30 transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="sidebar-label label-transition font-label-caps uppercase tracking-wider whitespace-nowrap">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-surface-variant/30 transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined">animated_images</span>
+<span class="sidebar-label label-transition font-label-caps uppercase tracking-wider whitespace-nowrap">Realtime Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 active-nav transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="sidebar-label label-transition font-label-caps uppercase tracking-wider whitespace-nowrap">Insights</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-surface-variant/30 transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined">self_care</span>
+<span class="sidebar-label label-transition font-label-caps uppercase tracking-wider whitespace-nowrap">Recovery</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-surface-variant/30 transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="sidebar-label label-transition font-label-caps uppercase tracking-wider whitespace-nowrap">Profile</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-surface-variant/30 transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="sidebar-label label-transition font-label-caps uppercase tracking-wider whitespace-nowrap">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2">
+<button class="w-full bg-primary text-white py-4 rounded-xl font-label-caps uppercase tracking-widest shadow-lg hover:shadow-primary/20 transition-all active:scale-95 flex items-center justify-center">
+<span class="sidebar-btn-icon material-symbols-outlined mr-2">upload</span>
+<span class="sidebar-btn-text">Upload Bio-Data</span>
+</button>
+<div class="mt-6 flex items-center gap-3 px-2 overflow-hidden">
+<img class="w-10 h-10 rounded-full border-2 border-primary/20 flex-shrink-0" data-alt="Professional studio portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD03YR4N7xYNrlQUjpheaRnTs4M9yA59UBX5FLBZ342lkcCU0gnMZBkDGz3ToRwx7rdPhXtE_yIn5BbCqlsg3g4j7UycLAt1rskzQM-xeJNDjT6nKITXBbm8nAJJqa_pwRUckGvj0V-4fPpiDtYUUbBvLiaI-2d_xfBaSWNkmDW8fDgqk7RH3_wDfd6_20JjkfPI0ZxYA2Ny6IN2Fg92B8ykqd86oPSK8D1-erluO67ARlnVLDWFQ"/>
+<div class="sidebar-label label-transition">
+<p class="font-label-caps text-on-surface leading-none whitespace-nowrap">Marcus Sterling</p>
+<p class="text-[10px] text-on-surface-variant/60 uppercase mt-1 whitespace-nowrap">Tier: Platinum AI</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-surface/80 backdrop-blur-xl z-40 border-b border-primary/10 flex items-center justify-between px-gutter main-transition" id="top-nav">
+<div class="flex items-center gap-4">
+<span class="lg:hidden material-symbols-outlined text-primary cursor-pointer">menu</span>
+<h2 class="font-headline-md text-primary">Insights</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex bg-surface-container-low px-4 py-2 rounded-full border border-primary/5 items-center gap-3 w-64 focus-within:border-primary/30 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant/50">search</span>
+<input class="bg-transparent border-none text-body-md outline-none w-full focus:ring-0 placeholder:text-on-surface-variant/30" placeholder="Search analytics..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors" data-icon="smart_toy">smart_toy</span>
+<div class="relative">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors" data-icon="account_circle">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 lg:ml-64 mt-16 p-gutter pb-stack-lg max-w-container-max-width mx-auto main-transition" id="main-content">
+<!-- Header Actions -->
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-stack-md mb-stack-md">
+<div>
+<p class="font-label-caps text-primary tracking-[0.2em] mb-2">BIOMETRIC LONG-TERM ANALYSIS</p>
+<h1 class="font-display-hero text-headline-lg lg:text-display-hero text-on-background">System Health Report</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-surface-container p-1 rounded-full flex">
+<button class="px-6 py-2 rounded-full font-label-caps bg-primary text-white shadow-sm transition-all">WEEK</button>
+<button class="px-6 py-2 rounded-full font-label-caps text-on-surface-variant hover:bg-surface-variant transition-all">MONTH</button>
+<button class="px-6 py-2 rounded-full font-label-caps text-on-surface-variant hover:bg-surface-variant transition-all">YEAR</button>
+</div>
+<button class="flex items-center gap-2 bg-white border border-primary/10 px-5 py-3 rounded-full hover:bg-primary/5 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span class="font-label-caps">OCT 12 - OCT 19</span>
+</button>
+</div>
+</section>
+<!-- Bento Grid Insights -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-stack-md items-start">
+<!-- Main Stress History Chart -->
+<div class="lg:col-span-8 glass-card p-stack-md h-[500px] flex flex-col relative overflow-hidden">
+<div class="flex items-center justify-between mb-8 z-10">
+<div>
+<h3 class="font-headline-md">Stress Flux &amp; Allostatic Load</h3>
+<p class="text-body-md text-on-surface-variant">Continuous biometric tracing vs. cognitive baseline</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="text-label-caps">STRESS LEVEL</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary"></span>
+<span class="text-label-caps">HRV VARIANCE</span>
+</div>
+</div>
+</div>
+<div class="flex-1 w-full relative chart-grid rounded-xl border border-primary/5 overflow-hidden">
+<div class="absolute inset-x-0 bottom-0 top-1/2 bg-gradient-to-t from-primary/5 to-transparent"></div>
+<!-- Mock Chart Visualization -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 800 300">
+<path d="M0,200 Q100,180 200,220 T400,150 T600,190 T800,100" fill="none" stroke="url(#gradient-stress)" stroke-linecap="round" stroke-width="3"></path>
+<path d="M0,250 Q150,230 300,260 T500,200 T800,230" fill="none" stroke="url(#gradient-hrv)" stroke-dasharray="8 4" stroke-linecap="round" stroke-width="3"></path>
+<defs>
+<lineargradient id="gradient-stress" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0%" stop-color="#0066ff"></stop>
+<stop offset="100%" stop-color="#6834d2"></stop>
+</lineargradient>
+<lineargradient id="gradient-hrv" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0%" stop-color="#006875"></stop>
+<stop offset="100%" stop-color="#00e3fd"></stop>
+</lineargradient>
+</defs>
+<g class="cursor-pointer group">
+<circle cx="400" cy="150" fill="#ffffff" r="6" stroke="#0050cb" stroke-width="3"></circle>
+<rect class="opacity-0 group-hover:opacity-100 transition-opacity" fill="#213145" height="50" rx="12" width="80" x="360" y="80"></rect>
+<text class="opacity-0 group-hover:opacity-100 transition-opacity" fill="white" font-family="Geist" font-size="10" text-anchor="middle" x="400" y="105">74 HIGH</text>
+<text class="opacity-0 group-hover:opacity-100 opacity-70 transition-opacity" fill="white" font-family="Geist" font-size="8" text-anchor="middle" x="400" y="120">Oct 16, 2:40 PM</text>
+</g>
+</svg>
+<div class="absolute bottom-4 inset-x-4 flex justify-between px-2 font-label-caps text-on-surface-variant/40">
+<span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+</div>
+</div>
+</div>
+<!-- Achievement & Goal Tracking -->
+<div class="lg:col-span-4 flex flex-col gap-stack-md h-full">
+<div class="glass-card p-stack-md flex-1 relative overflow-hidden group hover:scale-[1.01] transition-transform">
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-6">
+<span class="material-symbols-outlined text-secondary text-3xl bg-secondary-container/20 p-3 rounded-2xl" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+<span class="font-label-caps text-secondary-fixed-dim bg-secondary/10 px-3 py-1 rounded-full">ACTIVE STREAK</span>
+</div>
+<p class="font-display-hero text-metric-xl text-on-background">12<span class="text-headline-lg font-medium opacity-40 ml-2">Days</span></p>
+<p class="text-body-md text-on-surface-variant mt-2 leading-relaxed">You have maintained optimal recovery scores for 12 consecutive days. This is 40% higher than your average.</p>
+<div class="mt-8 pt-6 border-t border-primary/5">
+<div class="flex justify-between font-label-caps mb-2">
+<span class="text-on-surface-variant">LEVEL 4 PERFORMANCE</span>
+<span class="text-primary">85%</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000 shadow-[0_0_12px_rgba(0,102,255,0.4)]" style="width: 85%;"></div>
+</div>
+</div>
+</div>
+<div class="absolute -bottom-8 -right-8 opacity-5 transition-transform duration-700 group-hover:scale-125">
+<span class="material-symbols-outlined text-[160px]">shield_moon</span>
+</div>
+</div>
+<div class="glass-card p-stack-md bg-inverse-surface text-white">
+<h4 class="font-label-caps text-primary-fixed mb-4">AI ACTION ITEM</h4>
+<p class="font-headline-md leading-tight mb-6 italic">"The data suggests a high correlation between your 9 PM blue light exposure and 3 AM cortisol spikes. Implement 'Digital Sunset' tonight."</p>
+<button class="w-full bg-white text-on-background font-label-caps py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors">
+                    SET REMINDER
+                    <span class="material-symbols-outlined text-[20px]">alarm</span>
+</button>
+</div>
+</div>
+<!-- Correlation Heatmap -->
+<div class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-stack-md">
+<div class="glass-card p-stack-md">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="font-headline-md">Recovery vs. Stress Correlation</h3>
+<p class="text-body-md text-on-surface-variant">Mapping biometrics against recovery time</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">info</span>
+</div>
+<div class="grid grid-cols-7 gap-2">
+<div class="aspect-square bg-secondary/10 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/20 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/40 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/60 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/80 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/50 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/30 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/50 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/70 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/90 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/20 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+<div class="aspect-square bg-secondary/10 rounded-lg hover:ring-2 ring-primary transition-all cursor-pointer"></div>
+</div>
+<div class="mt-4 flex justify-between font-label-caps text-on-surface-variant/40 text-[10px]">
+<span>LOW CORRELATION</span>
+<span>HIGH CLINICAL SIGNIFICANCE</span>
+</div>
+</div>
+<!-- AI Clinical Reports Section -->
+<div class="glass-card p-stack-md flex flex-col">
+<div class="flex items-center justify-between mb-8">
+<h3 class="font-headline-md">AI-Clinical Reports</h3>
+<button class="text-primary font-label-caps hover:underline">VIEW ARCHIVE</button>
+</div>
+<div class="space-y-4 flex-1">
+<div class="group flex items-center justify-between p-4 bg-surface-container-low rounded-2xl hover:bg-white transition-all border border-transparent hover:border-primary/20">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-tertiary-container/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">analytics</span>
+</div>
+<div>
+<p class="font-label-caps text-on-surface">Weekly Executive Vitality v2.1</p>
+<p class="text-[12px] text-on-surface-variant">Generated Oct 18, 2023 • 4.2MB</p>
+</div>
+</div>
+<button class="flex items-center gap-2 font-label-caps text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+                            EXPORT PDF
+                        </button>
+</div>
+<div class="group flex items-center justify-between p-4 bg-surface-container-low rounded-2xl hover:bg-white transition-all border border-transparent hover:border-primary/20">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">psychology</span>
+</div>
+<div>
+<p class="font-label-caps text-on-surface">Sleep Quality Index Deep Dive</p>
+<p class="text-[12px] text-on-surface-variant">Generated Oct 15, 2023 • 1.8MB</p>
+</div>
+</div>
+<button class="flex items-center gap-2 font-label-caps text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+                            EXPORT PDF
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Historical Log Table -->
+<div class="lg:col-span-12 glass-card overflow-hidden">
+<div class="p-stack-md flex items-center justify-between border-b border-primary/10">
+<h3 class="font-headline-md">Historical Biometric Events</h3>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">filter_list</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">download</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-gutter py-4 font-label-caps text-on-surface-variant border-b border-primary/5">TIMESTAMP</th>
+<th class="px-gutter py-4 font-label-caps text-on-surface-variant border-b border-primary/5">EVENT TYPE</th>
+<th class="px-gutter py-4 font-label-caps text-on-surface-variant border-b border-primary/5">BIO-SCORE</th>
+<th class="px-gutter py-4 font-label-caps text-on-surface-variant border-b border-primary/5">RECOVERY IMPACT</th>
+<th class="px-gutter py-4 font-label-caps text-on-surface-variant border-b border-primary/5">ACTION TAKEN</th>
+<th class="px-gutter py-4 font-label-caps text-on-surface-variant border-b border-primary/5">STATUS</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-primary/5">
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-gutter py-5 font-body-md">Oct 19, 08:45 AM</td>
+<td class="px-gutter py-5 font-body-md flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+                                Cortisol Spike
+                            </td>
+<td class="px-gutter py-5 font-body-md font-semibold">92/100</td>
+<td class="px-gutter py-5 font-body-md text-error">-12%</td>
+<td class="px-gutter py-5 font-body-md italic text-on-surface-variant/70">Breathing Exercise</td>
+<td class="px-gutter py-5">
+<span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-label-caps text-[10px]">RESOLVED</span>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-gutter py-5 font-body-md">Oct 18, 11:20 PM</td>
+<td class="px-gutter py-5 font-body-md flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+                                Deep Sleep Entry
+                            </td>
+<td class="px-gutter py-5 font-body-md font-semibold">44/100</td>
+<td class="px-gutter py-5 font-body-md text-emerald-600">+24%</td>
+<td class="px-gutter py-5 font-body-md italic text-on-surface-variant/70">Automatic Climate Control</td>
+<td class="px-gutter py-5">
+<span class="px-3 py-1 rounded-full bg-primary-container/20 text-primary font-label-caps text-[10px]">OPTIMAL</span>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-gutter py-5 font-body-md">Oct 18, 02:15 PM</td>
+<td class="px-gutter py-5 font-body-md flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                Cognitive Load Peak
+                            </td>
+<td class="px-gutter py-5 font-body-md font-semibold">78/100</td>
+<td class="px-gutter py-5 font-body-md text-on-surface-variant">-4%</td>
+<td class="px-gutter py-5 font-body-md italic text-on-surface-variant/70">Micro-Break Prompt</td>
+<td class="px-gutter py-5">
+<span class="px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-caps text-[10px]">STABILIZED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-6 bg-surface-container-low/30 flex items-center justify-center">
+<button class="font-label-caps text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2">
+                    LOAD MORE LOGS
+                    <span class="material-symbols-outlined">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Panel (Contextual Only) -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="w-16 h-16 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group overflow-hidden">
+<span class="material-symbols-outlined text-3xl relative z-10" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</button>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('sidebar-toggle');
+        const mainContent = document.getElementById('main-content');
+        const topNav = document.getElementById('top-nav');
+
+        toggleBtn.addEventListener('click', () => {
+            const isExpanded = sidebar.classList.contains('sidebar-expanded');
+            
+            if (isExpanded) {
+                // Collapse
+                sidebar.classList.remove('sidebar-expanded');
+                sidebar.classList.add('sidebar-collapsed', 'collapsed');
+                mainContent.classList.remove('lg:ml-64');
+                mainContent.classList.add('lg:ml-20');
+                topNav.classList.remove('lg:left-64');
+                topNav.classList.add('lg:left-20');
+                toggleBtn.textContent = 'menu';
+            } else {
+                // Expand
+                sidebar.classList.remove('sidebar-collapsed', 'collapsed');
+                sidebar.classList.add('sidebar-expanded');
+                mainContent.classList.remove('lg:ml-20');
+                mainContent.classList.add('lg:ml-64');
+                topNav.classList.remove('lg:left-20');
+                topNav.classList.add('lg:left-64');
+                toggleBtn.textContent = 'chevron_left';
+            }
+        });
+
+        // Tab logic for Week/Month/Year
+        const filterButtons = document.querySelectorAll('button.px-6.py-2');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterButtons.forEach(b => {
+                    b.classList.remove('bg-primary', 'text-white', 'shadow-sm');
+                    b.classList.add('text-on-surface-variant');
+                });
+                btn.classList.remove('text-on-surface-variant');
+                btn.classList.add('bg-primary', 'text-white', 'shadow-sm');
+            });
+        });
+    });
+</script>
+</body></html>

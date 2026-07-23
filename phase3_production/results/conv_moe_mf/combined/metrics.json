@@ -21,7 +21,7 @@
     "dataset_weight_empathicschool": 0.3,
     "dataset_weight_stressid": 1.0,
     "dataset_weight_wesad": 1.0,
-    "n_folds": 5,
+    "n_folds": 15,
     "model_type": "conv_moe_mf",
     "device": "cuda",
     "trained_on": "combined",
@@ -29,47 +29,80 @@
   },
   "per_dataset": {
     "combined": {
-      "accuracy": 0.853641456582633,
-      "precision": 1.0,
-      "recall": 0.3888888888888889,
-      "f1": 0.56,
-      "roc_auc": 0.4340994636683792,
-      "avg_precision": 0.5040673482947094,
-      "mse": 0.14609581284130965,
-      "mae": 0.15345229286332254,
-      "mean_confidence": 0.6215119361877441
+      "accuracy": 0.6987849072692389,
+      "precision": 0.7681159420289855,
+      "recall": 0.2037636584378794,
+      "f1": 0.32208539900847594,
+      "roc_auc": 0.6103372109571457,
+      "avg_precision": 0.4860896674105138,
+      "mse": 0.29332299996070166,
+      "mae": 0.3057879033508799,
+      "mean_confidence": 0.6158526539802551,
+      "n_folds": 15
     }
   },
   "combined": {
-    "accuracy": 0.853641456582633,
-    "precision": 1.0,
-    "recall": 0.3888888888888889,
-    "f1": 0.56,
-    "roc_auc": 0.4340994636683792,
-    "avg_precision": 0.5040673482947094,
-    "mse": 0.14609581284130965,
-    "mae": 0.15345229286332254,
+    "accuracy": 0.6987849072692389,
+    "precision": 0.7681159420289855,
+    "recall": 0.2037636584378794,
+    "f1": 0.32208539900847594,
+    "roc_auc": 0.6103372109571457,
+    "avg_precision": 0.4860896674105138,
+    "mse": 0.29332299996070166,
+    "mae": 0.3057879033508799,
     "optimal": {
-      "accuracy": 0.853641456582633,
-      "precision": 1.0,
-      "recall": 0.3888888888888889,
-      "f1": 0.56,
-      "roc_auc": 0.4340994636683792,
-      "avg_precision": 0.5040673482947094,
-      "mse": 0.14609581284130965,
-      "mae": 0.15345229286332254
+      "accuracy": 0.7001350103034178,
+      "precision": 0.7714285714285715,
+      "recall": 0.20760825576689598,
+      "f1": 0.32716836734693877,
+      "roc_auc": 0.6103372109571457,
+      "avg_precision": 0.4860896674105138,
+      "mse": 0.29332299996070166,
+      "mae": 0.3057879033508799
     },
-    "mean_confidence": 0.6215119361877441,
+    "mean_confidence": 0.6158526539802551,
     "optimal_threshold": 0.1
   },
   "per_subject": {
-    "subject_acc_mean": 0.7572439660795827,
-    "subject_acc_std": 0.2551415427636497,
-    "subject_acc_min": 0.3958333333333333,
-    "subject_acc_max": 1.0
+    "subject_acc_mean": 0.7331009174272958,
+    "subject_acc_std": 0.08970141440163698,
+    "subject_acc_min": 0.6300268096514745,
+    "subject_acc_max": 0.8869047619047619
   },
   "per_dataset_breakdown": {
-    "combined": 0.853641456582633
+    "combined": 0.7001350103034178
   },
-  "timestamp": "2026-07-22 18:03:39"
+  "per_source_dataset": {
+    "empathicschool": {
+      "n_windows": 9613,
+      "auc": 0.5333095515855517,
+      "accuracy": 0.6843857276604598,
+      "f1": 0.0,
+      "optimal_threshold": 0.5,
+      "optimal_f1": 0.0,
+      "optimal_precision": 0.0,
+      "optimal_recall": 0.0
+    },
+    "stressid": {
+      "n_windows": 3360,
+      "auc": 0.7264419767257135,
+      "accuracy": 0.7586309523809524,
+      "f1": 0.7129203539823009,
+      "optimal_threshold": 0.05,
+      "optimal_f1": 0.7215189873417721,
+      "optimal_precision": 0.7714285714285715,
+      "optimal_recall": 0.6776750330250991
+    },
+    "wesad": {
+      "n_windows": 1100,
+      "auc": 0.628578824003106,
+      "accuracy": 0.6418181818181818,
+      "f1": 0.0,
+      "optimal_threshold": 0.5,
+      "optimal_f1": 0.0,
+      "optimal_precision": 0.0,
+      "optimal_recall": 0.0
+    }
+  },
+  "timestamp": "2026-07-23 15:21:02"
 }

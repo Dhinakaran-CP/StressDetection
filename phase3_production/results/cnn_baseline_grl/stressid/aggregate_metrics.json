@@ -1,0 +1,17 @@
+{
+  "aggregate": {
+    "accuracy": 0.7343309477336804,
+    "precision": 0.71875,
+    "recall": 0.6877076411960132,
+    "f1": 0.7028862478777589,
+    "roc_auc": 0.7329793924405338,
+    "avg_precision": 0.6881717877959586,
+    "mse": 0.19898091759784622,
+    "mae": 0.3931275370082998,
+    "mean_confidence": 1.0,
+    "n_folds": 15
+  },
+  "model_type": "cnn_baseline_grl",
+  "dataset": "stressid",
+  "n_subjects": 53
+}

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile &amp; Settings | VitalMind Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#00daf3",
+                        "on-error-container": "#93000a",
+                        "primary": "#0050cb",
+                        "on-tertiary-container": "#fdf6ff",
+                        "on-secondary-container": "#00616d",
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "outline-variant": "#c2c6d8",
+                        "tertiary": "#6834d2",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#cbdbf5",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#001849",
+                        "surface": "#f8f9ff",
+                        "background": "#f8f9ff",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#d3e4fe",
+                        "surface-tint": "#0054d6",
+                        "on-surface": "#0b1c30",
+                        "on-primary-container": "#f8f7ff",
+                        "inverse-primary": "#b3c5ff",
+                        "inverse-surface": "#213145",
+                        "tertiary-fixed": "#e9ddff",
+                        "primary-container": "#0066ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#d3e4fe",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#00e3fd",
+                        "secondary-fixed": "#9cf0ff",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#23005c",
+                        "primary-fixed": "#dae1ff",
+                        "outline": "#727687",
+                        "on-secondary-fixed-variant": "#004f58",
+                        "surface-container": "#e5eeff",
+                        "on-primary-fixed-variant": "#003fa4",
+                        "tertiary-container": "#8252ec",
+                        "on-secondary-fixed": "#001f24",
+                        "on-surface-variant": "#424656",
+                        "on-background": "#0b1c30",
+                        "surface-container-high": "#dce9ff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-bright": "#f8f9ff",
+                        "secondary": "#006875"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "margin-desktop": "64px",
+                        "stack-md": "24px",
+                        "unit": "8px",
+                        "margin-mobile": "20px",
+                        "container-max-width": "1440px",
+                        "stack-sm": "12px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-hero-mobile": ["Geist"],
+                        "metric-xl": ["Geist"],
+                        "label-caps": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "display-hero": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-hero-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "metric-xl": ["64px", {"lineHeight": "64px", "letterSpacing": "-0.05em", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "display-hero": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(248, 249, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 80, 203, 0.1);
+            box-shadow: 0 40px 40px -10px rgba(0, 80, 203, 0.05);
+        }
+        .dark .glass-card {
+            background: rgba(11, 28, 48, 0.7);
+            border: 1px solid rgba(179, 197, 255, 0.1);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-chip-active {
+            background: rgba(0, 104, 117, 0.1);
+            color: #006875;
+        }
+        .mesh-gradient {
+            background: radial-gradient(at 0% 0%, rgba(0, 80, 203, 0.05) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(104, 52, 210, 0.05) 0px, transparent 50%);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen mesh-gradient">
+<div class="flex min-h-screen">
+<!-- SideNavBar - Predicted Component -->
+<aside class="hidden md:flex flex-col h-screen sticky left-0 w-64 bg-surface/80 backdrop-blur-xl dark:bg-on-surface/70 border-r border-primary/10 shadow-[0_40px_40px_-10px_rgba(0,80,203,0.05)] p-4 space-y-unit z-50">
+<div class="mb-8 px-2 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim leading-none">VitalMind</h1>
+<p class="text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant opacity-70">Clinical AI</p>
+</div>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/5 rounded-lg font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/5 rounded-lg font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">monitoring</span> Realtime Monitor
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/5 rounded-lg font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">insights</span> Insights
+                </a>
+<div class="pt-4 pb-2 px-4 text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest">Account</div>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container font-bold rounded-lg font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span> Profile
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/5 rounded-lg font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">tune</span> Calibration
+                </a>
+</nav>
+<div class="mt-auto pt-6 space-y-1 border-t border-primary/5">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/5 rounded-lg font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">help</span> Support
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/5 rounded-lg font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined">settings</span> Settings
+                </a>
+<div class="p-4 bg-primary-fixed rounded-xl mt-4">
+<p class="text-[11px] font-bold text-on-primary-fixed mb-2 uppercase tracking-tighter">Elite Status</p>
+<button class="w-full bg-primary text-on-primary text-label-caps py-2 rounded-lg font-bold hover:opacity-90 transition-opacity active:scale-95 transition-transform">Upgrade to Elite</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 w-full flex flex-col min-w-0 bg-background">
+<!-- TopNavBar - Predicted Component -->
+<header class="w-full top-0 sticky z-40 bg-surface/80 backdrop-blur-xl dark:bg-on-surface/70 border-b border-primary/10 shadow-[0_40px_40px_-10px_rgba(0,80,203,0.05)] flex justify-between items-center px-margin-desktop py-4">
+<div class="flex items-center gap-6">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Profile &amp; Account</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-8 w-[1px] bg-primary/10"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-body-md font-bold leading-none">Dr. Alistair Vance</p>
+<p class="text-label-caps text-on-surface-variant opacity-70">Chief Neurologist</p>
+</div>
+<img class="w-10 h-10 rounded-full border-2 border-primary/20 object-cover" data-alt="A professional studio portrait of a middle-aged man with sharp features and grey-flecked hair, wearing a high-end charcoal designer turtleneck. The lighting is soft and cinematic with a neutral blue-grey studio background, conveying an aura of clinical expertise and minimalist luxury." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVYvDhyIl-jl0Xc52906lyp4tDl4YGTyFbTf_8iJK__ximJRdYizXdL91c-10thwSyXJ5IudvRNQ7sPsdV4nCnAY4k-yvJ23sSMv_0DFAJom4eMxynJwBvbXrBs_iYkwZQDfIpH5MIJgQ5mEVp46ExTyowwu3JZC98LkhW1JTaW_3z01mszr0J-IUWVYFSD9ptYCvb7eVPogfpPrY91DNudaOCEv379E9fkEBF6NfExR5_uuSa_g"/>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="p-margin-mobile md:p-margin-desktop max-w-container-max-width mx-auto w-full space-y-stack-lg">
+<!-- Section 1: User Info & Connected Devices (Bento Style) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Profile Card -->
+<div class="lg:col-span-2 glass-card rounded-lg p-8 flex flex-col md:flex-row gap-8 items-start">
+<div class="relative group">
+<img class="w-32 h-32 md:w-40 md:h-40 rounded-xl object-cover shadow-lg border-4 border-white/50" data-alt="A professional studio portrait of a middle-aged man with sharp features and grey-flecked hair, wearing a high-end charcoal designer turtleneck. The lighting is soft and cinematic with a neutral blue-grey studio background, conveying an aura of clinical expertise and minimalist luxury." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZ-Aom3ZXWEerXxP-1rBS95NVByTIPVp8TGzq-xq1RxDXldHQyiCf2gishT6azZ6QbeejTZapz6CjZLYUziWdyLH2aP7Wa4xO0eYREWuvM16msgHYE1IEOHxHcOU3Adz6pWYRzT_A5wj2G6GEHyljKeukj_HlBjXOkWMer7vBNfgSud0y7afBQ8mcz8XS_xHPIJWQ8yl2TF1il-WTGjWC9iB5zMrfq01Kt-6I7ay-JyzJxk-RNFQ"/>
+<button class="absolute -bottom-2 -right-2 bg-primary text-on-primary p-2 rounded-lg shadow-xl hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</div>
+<div class="flex-1 space-y-4">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Dr. Alistair Vance</h3>
+<p class="font-body-lg text-primary font-medium">Chief Neurologist &amp; High-Performance Consultant</p>
+</div>
+<button class="px-6 py-2 bg-primary-container text-on-primary-container rounded-full font-label-caps text-label-caps hover:opacity-90 transition-all active:scale-95">Edit Profile</button>
+</div>
+<p class="text-on-surface-variant font-body-md max-w-2xl leading-relaxed">
+                                Specializing in cognitive optimization and stress-resilience frameworks for executive leadership. Leveraging VitalMind Pro to synchronize circadian rhythms and neuro-metabolic recovery cycles.
+                            </p>
+<div class="flex flex-wrap gap-3 pt-2">
+<span class="px-3 py-1 bg-surface-container rounded-full text-label-caps text-on-surface-variant border border-primary/5">London, UK</span>
+<span class="px-3 py-1 bg-surface-container rounded-full text-label-caps text-on-surface-variant border border-primary/5">Joined Oct 2023</span>
+<span class="px-3 py-1 bg-secondary-container/20 text-secondary font-bold rounded-full text-label-caps border border-secondary/20">Elite Member</span>
+</div>
+</div>
+</div>
+<!-- Connected Devices -->
+<div class="glass-card rounded-lg p-6 space-y-6">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md">Biometric Nodes</h4>
+<span class="material-symbols-outlined text-primary">sensors</span>
+</div>
+<div class="space-y-4">
+<!-- Apple Watch -->
+<div class="flex items-center justify-between p-3 bg-surface/50 rounded-xl border border-primary/5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-on-surface text-surface rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined">watch</span>
+</div>
+<div>
+<p class="font-bold text-body-md">Apple Watch Ultra</p>
+<p class="text-label-caps text-on-surface-variant">Syncing Live</p>
+</div>
+</div>
+<div class="h-2 w-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+</div>
+<!-- Oura -->
+<div class="flex items-center justify-between p-3 bg-surface/50 rounded-xl border border-primary/5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-on-surface-variant text-surface rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined">radio_button_checked</span>
+</div>
+<div>
+<p class="font-bold text-body-md">Oura Ring Gen 3</p>
+<p class="text-label-caps text-on-surface-variant">Last sync: 2m ago</p>
+</div>
+</div>
+<div class="h-2 w-2 bg-emerald-500 rounded-full"></div>
+</div>
+<!-- Garmin -->
+<div class="flex items-center justify-between p-3 bg-surface/50 rounded-xl border border-primary/5 opacity-60">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-outline text-surface rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined">navigation</span>
+</div>
+<div>
+<p class="font-bold text-body-md">Garmin Fenix 7</p>
+<p class="text-label-caps text-on-surface-variant">Disconnected</p>
+</div>
+</div>
+<button class="text-primary font-bold text-label-caps">Connect</button>
+</div>
+</div>
+<button class="w-full py-3 border border-dashed border-primary/20 rounded-xl text-primary font-label-caps hover:bg-primary/5 transition-colors">Add New Device</button>
+</div>
+</div>
+<!-- Section 2: Settings Tabs -->
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-gutter">
+<!-- Left Column: Menu -->
+<div class="xl:col-span-1 glass-card rounded-lg p-2 h-fit space-y-1">
+<button class="w-full text-left px-6 py-4 rounded-lg bg-primary/10 text-primary font-bold flex items-center justify-between">
+<span class="flex items-center gap-3">
+<span class="material-symbols-outlined">security</span> Security
+                            </span>
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+<button class="w-full text-left px-6 py-4 rounded-lg hover:bg-primary/5 transition-colors text-on-surface-variant flex items-center justify-between">
+<span class="flex items-center gap-3">
+<span class="material-symbols-outlined">notifications_active</span> Notifications
+                            </span>
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+<button class="w-full text-left px-6 py-4 rounded-lg hover:bg-primary/5 transition-colors text-on-surface-variant flex items-center justify-between">
+<span class="flex items-center gap-3">
+<span class="material-symbols-outlined">palette</span> Appearance
+                            </span>
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+<button class="w-full text-left px-6 py-4 rounded-lg hover:bg-primary/5 transition-colors text-on-surface-variant flex items-center justify-between">
+<span class="flex items-center gap-3">
+<span class="material-symbols-outlined">download</span> Export Data
+                            </span>
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<!-- Right Column: Panel Content -->
+<div class="xl:col-span-3 space-y-8">
+<!-- Security & Privacy -->
+<div class="glass-card rounded-lg p-8">
+<h5 class="font-headline-md text-headline-md mb-6 flex items-center gap-2">
+                                Security &amp; Privacy <span class="text-label-caps bg-emerald-100 text-emerald-700 px-2 py-1 rounded ml-2">Secure</span>
+</h5>
+<div class="space-y-6">
+<div class="flex items-center justify-between py-4 border-b border-primary/5">
+<div>
+<p class="font-bold text-body-md">Password</p>
+<p class="text-label-caps text-on-surface-variant">Last changed 4 months ago</p>
+</div>
+<button class="px-4 py-2 border border-primary/20 rounded-lg font-label-caps text-primary hover:bg-primary/5">Update</button>
+</div>
+<div class="flex items-center justify-between py-4 border-b border-primary/5">
+<div>
+<p class="font-bold text-body-md">Two-Factor Authentication (2FA)</p>
+<p class="text-label-caps text-on-surface-variant">Enabled via Authenticator App</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-emerald-600 font-bold text-label-caps uppercase">Active</span>
+<button class="text-on-surface-variant"><span class="material-symbols-outlined">settings</span></button>
+</div>
+</div>
+<div class="flex items-center justify-between py-4">
+<div>
+<p class="font-bold text-body-md">AI Data Sharing</p>
+<p class="text-label-caps text-on-surface-variant">Share anonymized metrics to improve Clinical AI accuracy</p>
+</div>
+<div class="relative inline-block w-12 h-6 rounded-full bg-primary/20 cursor-pointer transition-colors" onclick="this.classList.toggle('bg-primary'); this.querySelector('div').classList.toggle('translate-x-6')">
+<div class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Notification Preferences -->
+<div class="glass-card rounded-lg p-8">
+<h5 class="font-headline-md text-headline-md mb-6">Notification Channels</h5>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-xl border border-primary/10 bg-surface/40 flex flex-col items-center text-center space-y-3">
+<span class="material-symbols-outlined text-primary text-[32px]">mail</span>
+<p class="font-bold text-body-md">Email Reports</p>
+<div class="relative inline-block w-10 h-5 rounded-full bg-primary cursor-pointer">
+<div class="absolute right-1 top-1 w-3 h-3 rounded-full bg-white"></div>
+</div>
+</div>
+<div class="p-4 rounded-xl border border-primary/10 bg-surface/40 flex flex-col items-center text-center space-y-3">
+<span class="material-symbols-outlined text-primary text-[32px]">notifications_active</span>
+<p class="font-bold text-body-md">Push Alerts</p>
+<div class="relative inline-block w-10 h-5 rounded-full bg-primary cursor-pointer">
+<div class="absolute right-1 top-1 w-3 h-3 rounded-full bg-white"></div>
+</div>
+</div>
+<div class="p-4 rounded-xl border border-primary/10 bg-surface/40 flex flex-col items-center text-center space-y-3 opacity-50">
+<span class="material-symbols-outlined text-on-surface-variant text-[32px]">sms</span>
+<p class="font-bold text-body-md">SMS Critical</p>
+<div class="relative inline-block w-10 h-5 rounded-full bg-primary/20 cursor-pointer">
+<div class="absolute left-1 top-1 w-3 h-3 rounded-full bg-white"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Appearance Toggle -->
+<div class="glass-card rounded-lg p-8 flex items-center justify-between">
+<div>
+<h5 class="font-headline-md text-headline-md">Interface Theme</h5>
+<p class="text-on-surface-variant text-body-md">Switch between light and dark modes for optimal viewing</p>
+</div>
+<div class="flex bg-surface-container-low p-1 rounded-xl border border-primary/10">
+<button class="flex items-center gap-2 px-6 py-2 rounded-lg bg-white shadow-sm font-bold text-primary transition-all" onclick="document.documentElement.classList.remove('dark')">
+<span class="material-symbols-outlined text-[18px]">light_mode</span> Light
+                                </button>
+<button class="flex items-center gap-2 px-6 py-2 rounded-lg text-on-surface-variant hover:bg-primary/5 transition-all" onclick="document.documentElement.classList.add('dark')">
+<span class="material-symbols-outlined text-[18px]">dark_mode</span> Dark
+                                </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Calibration History Table -->
+<div class="glass-card rounded-lg overflow-hidden">
+<div class="p-8 border-b border-primary/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h4 class="font-headline-md text-headline-md">Calibration History</h4>
+<p class="text-on-surface-variant text-body-md">Baseline accuracy recalibrations over the last quarter</p>
+</div>
+<button class="flex items-center gap-2 px-6 py-2 bg-primary text-on-primary rounded-lg font-label-caps text-label-caps hover:shadow-lg active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">refresh</span> Run New Calibration
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-label-caps text-on-surface-variant border-b border-primary/10">
+<th class="px-8 py-4">Date</th>
+<th class="px-8 py-4">Session Type</th>
+<th class="px-8 py-4">Neural Score</th>
+<th class="px-8 py-4">Drift Factor</th>
+<th class="px-8 py-4 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-primary/5">
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-8 py-5 font-medium">Dec 14, 2023</td>
+<td class="px-8 py-5">Resting Baseline</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-2">
+<div class="w-12 h-1 bg-primary/10 rounded-full overflow-hidden">
+<div class="w-[94%] h-full bg-primary"></div>
+</div>
+<span class="font-bold text-primary">94.2</span>
+</div>
+</td>
+<td class="px-8 py-5 text-emerald-600 font-bold">+0.02%</td>
+<td class="px-8 py-5 text-right">
+<button class="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity underline text-label-caps">Details</button>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-8 py-5 font-medium">Nov 28, 2023</td>
+<td class="px-8 py-5">Peak Performance</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-2">
+<div class="w-12 h-1 bg-primary/10 rounded-full overflow-hidden">
+<div class="w-[89%] h-full bg-primary"></div>
+</div>
+<span class="font-bold text-primary">89.5</span>
+</div>
+</td>
+<td class="px-8 py-5 text-amber-600 font-bold">-1.24%</td>
+<td class="px-8 py-5 text-right">
+<button class="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity underline text-label-caps">Details</button>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-8 py-5 font-medium">Oct 12, 2023</td>
+<td class="px-8 py-5">Initial Setup</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-2">
+<div class="w-12 h-1 bg-primary/10 rounded-full overflow-hidden">
+<div class="w-[91%] h-full bg-primary"></div>
+</div>
+<span class="font-bold text-primary">91.0</span>
+</div>
+</td>
+<td class="px-8 py-5 text-on-surface-variant">0.00%</td>
+<td class="px-8 py-5 text-right">
+<button class="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity underline text-label-caps">Details</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Section 4: Export Reports -->
+<div class="glass-card rounded-lg p-8">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+<div class="space-y-2">
+<h4 class="font-headline-md text-headline-md">Clinical Reports Export</h4>
+<p class="text-on-surface-variant text-body-md max-w-xl">Generate and download comprehensive biometric datasets. Reports are HIPPA compliant and formatted for medical review.</p>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+<select class="w-full sm:w-48 bg-surface-container border border-primary/10 rounded-lg px-4 py-3 font-label-caps text-label-caps focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+<option value="pdf">Professional PDF</option>
+<option value="csv">Raw CSV Data</option>
+<option value="json">JSON (API Ready)</option>
+<option value="dicom">DICOM Sync</option>
+</select>
+<button class="w-full sm:w-auto px-8 py-3 bg-on-surface text-surface rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined">file_download</span> Export
+                            </button>
+</div>
+</div>
+</div>
+<!-- Danger Zone -->
+<div class="pt-8 pb-16 flex justify-center">
+<button class="flex items-center gap-2 text-error font-bold text-label-caps hover:bg-error/5 px-6 py-3 rounded-xl transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete_forever</span> Deactivate Account
+                    </button>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Nav Bar (Predicted Component Placeholder Logic) -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-xl border-t border-primary/10 flex justify-around items-center py-3 px-4 z-50">
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-label-caps">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="text-[10px] font-label-caps">Monitor</span>
+</button>
+<div class="relative -top-6">
+<button class="w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+</button>
+</div>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="text-[10px] font-label-caps">Profile</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-label-caps">Settings</span>
+</button>
+</div>
+<script>
+        // Micro-interaction for toggle switches
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const inner = toggle.querySelector('div');
+                const isActive = toggle.classList.contains('bg-primary');
+                if (isActive) {
+                    toggle.classList.remove('bg-primary');
+                    toggle.classList.add('bg-primary/20');
+                    inner.classList.remove('translate-x-6');
+                } else {
+                    toggle.classList.add('bg-primary');
+                    toggle.classList.remove('bg-primary/20');
+                    inner.classList.add('translate-x-6');
+                }
+            });
+        });
+    </script>
+</body></html>
