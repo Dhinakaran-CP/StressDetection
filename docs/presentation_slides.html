@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multimodal Stress Detection - Presentation Slide Deck</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist:wght@600;700;800&display=swap');
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #0f172a;
+      color: #334155;
+      padding: 20px;
+    }
+    
+    .print-instructions {
+      max-width: 900px;
+      margin: 0 auto 30px auto;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid #334155;
+      border-left: 6px solid #3b82f6;
+      border-radius: 12px;
+      padding: 20px 24px;
+      color: #f8fafc;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    
+    .print-instructions h2 {
+      font-family: 'Geist', sans-serif;
+      font-size: 1.25rem;
+      color: #60a5fa;
+      margin-bottom: 8px;
+    }
+    
+    .print-instructions p {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    
+    .print-btn {
+      display: inline-block;
+      margin-top: 12px;
+      background-color: #2563eb;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    
+    .print-btn:hover {
+      background-color: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    
+    .deck-container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+    
+    .slide {
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 40px;
+      min-height: 520px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      page-break-after: always;
+      break-after: page;
+    }
+    
+    .slide-header {
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .slide-number {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #3b82f6;
+      background-color: #eff6ff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .slide-title {
+      font-family: 'Geist', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #1e293b;
+      letter-spacing: -0.02em;
+    }
+    
+    .slide-subtitle {
+      font-size: 0.95rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    
+    .slide-body {
+      flex: 1;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #334155;
+    }
+    
+    .slide-footer {
+      border-top: 1px solid #f1f5f9;
+      padding-top: 16px;
+      margin-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    
+    /* Elements */
+    .title-slide {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #ffffff;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .title-slide h1 {
+      font-family: 'Geist', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+    
+    .title-slide p {
+      font-size: 1.15rem;
+      color: #94a3b8;
+      max-width: 700px;
+      margin: 0 auto 24px auto;
+    }
+    
+    .badge-container {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    .badge {
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #60a5fa;
+    }
+    
+    ul.bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    
+    ul.bullet-list li {
+      position: relative;
+      padding-left: 28px;
+      font-size: 0.95rem;
+    }
+    
+    ul.bullet-list li::before {
+      content: "•";
+      position: absolute;
+      left: 8px;
+      top: 0;
+      color: #2563eb;
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+    
+    ul.bullet-list strong {
+      color: #0f172a;
+    }
+    
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    .card {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    
+    .card h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .card p {
+      font-size: 0.88rem;
+      color: #475569;
+      line-height: 1.5;
+    }
+    
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+    
+    table.data-table th, table.data-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    table.data-table th {
+      background-color: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+    }
+    
+    table.data-table tr.highlight {
+      background-color: #eff6ff;
+      font-weight: 600;
+    }
+
+    code {
+      font-family: monospace;
+      background-color: #f1f5f9;
+      color: #2563eb;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+      .print-instructions {
+        display: none !important;
+      }
+      .deck-container {
+        max-width: 100%;
+      }
+      .slide {
+        box-shadow: none;
+        border: none;
+        border-radius: 0;
+        margin: 0;
+        padding: 40px;
+        min-height: 98vh;
+        page-break-after: always;
+        break-after: page;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="print-instructions">
+    <h2>📄 Download / Print as PDF Instructions</h2>
+    <p>This presentation document is formatted with print page breaks. To save as a PDF file:</p>
+    <p>1. Click the <strong>Download / Print PDF</strong> button below (or press <code>Ctrl + P</code>).</p>
+    <p>2. Set Destination to <strong>Save as PDF</strong>.</p>
+    <p>3. Set Margins to <strong>None</strong> or <strong>Default</strong> and click <strong>Save</strong>.</p>
+    <button class="print-btn" onclick="window.print()">🖨️ Download / Print as PDF</button>
+  </div>
+
+  <div class="deck-container">
+
+    <!-- Slide 1 -->
+    <div class="slide title-slide">
+      <div>
+        <div style="color: #60a5fa; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.9rem; margin-bottom: 12px;">Final Project Review Presentation</div>
+        <h1>Multimodal Stress Detection System</h1>
+        <p>Subject-Independent Machine Learning Engine Deployed on Cloud Infrastructure</p>
+        <div class="badge-container">
+          <div class="badge">Vercel: https://stress-detection-hpss.vercel.app</div>
+          <div class="badge">Render: https://stress-detection-backend-dgfj.onrender.com</div>
+        </div>
+      </div>
+      <div style="font-size: 0.85rem; color: #64748b; margin-top: 40px;">August 12, 2026 · Reviewer Panel Presentation</div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">Executive Summary & Architecture</h2>
+            <div class="slide-subtitle">Full-stack live cloud deployment</div>
+          </div>
+          <div class="slide-number">Slide 02</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <h4>🌐 Deployed Cloud Infrastructure</h4>
+              <p><strong>Frontend (Vercel)</strong>: React SPA with automatic HTTPS encryption (mandatory for browser webcam & microphone permissions).</p>
+              <p style="margin-top: 8px;"><strong>Backend (Render)</strong>: Flask + PyTorch + SocketIO engine running on Python 3.10 WSGI (Gunicorn Eventlet).</p>
+            </div>
+            <div class="card">
+              <h4>⚡ Core Capabilities</h4>
+              <p><strong>Realtime Tracking</strong>: 468 3D webcam face landmarks + Librosa vocal prosody audio analysis.</p>
+              <p style="margin-top: 8px;"><strong>Sub-5ms Inference</strong>: Fast classical Random Forest & CNN+GRL inference engines.</p>
+            </div>
+          </div>
+          <div style="margin-top: 20px;" class="card">
+            <h4>💡 Problem & Value Proposition</h4>
+            <p>Monitors cognitive and emotional stress in real time without lab equipment or invasive tracking, solving single-modality failure modes through multimodal fusion.</p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>Executive Summary</span>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">Deployment Infrastructure Stack</h2>
+            <div class="slide-subtitle">Production setup on Vercel & Render</div>
+          </div>
+          <div class="slide-number">Slide 03</div>
+        </div>
+        <div class="slide-body">
+          <ul class="bullet-list">
+            <li><strong>Frontend Layer (Vercel)</strong>: Built with React 19, Tailwind CSS, and Framer Motion. Configured with <code>vercel.json</code> SPA proxy rules to ensure client-side routing works smoothly.</li>
+            <li><strong>Media Streaming Security</strong>: Vercel provides native SSL/TLS HTTPS encryption, allowing browsers to grant webcam and microphone permissions safely.</li>
+            <li><strong>Backend Engine (Render)</strong>: Python 3.10.12 WSGI application powered by <code>gunicorn</code> with <code>eventlet</code> async workers for high-concurrency WebSocket support.</li>
+            <li><strong>Build Speed Optimization</strong>: Configured PyTorch CPU wheel index (<code>torch-cpu</code>) reducing dependency download size from 900MB to 80MB, cutting build time by 90%.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>Infrastructure Stack</span>
+      </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">Active Model Selection (CNN+GRL & RF)</h2>
+            <div class="slide-subtitle">Dual-mode selection in production web app</div>
+          </div>
+          <div class="slide-number">Slide 04</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="border-top: 4px solid #2563eb;">
+              <h4>🧠 CNN + GRL (Primary Deep Champion)</h4>
+              <p><strong>Architecture</strong>: 1D-CNN baseline with Gradient Reversal Layer (GRL).</p>
+              <p style="margin-top: 6px;"><strong>Adversarial Subject De-identification</strong>: Penalizes identity memorization (&lambda; = -0.02), forcing model to learn pure stress indicators.</p>
+              <p style="margin-top: 6px;"><strong>Size</strong>: ~23,000 lightweight parameters.</p>
+            </div>
+            <div class="card" style="border-top: 4px solid #059669;">
+              <h4>🌲 Random Forest (Production ML Ensemble)</h4>
+              <p><strong>Architecture</strong>: Multi-tree decision ensemble with balanced class weighting.</p>
+              <p style="margin-top: 6px;"><strong>Performance</strong>: <strong>77.46% Accuracy</strong> under 15-fold Leave-One-Subject-Out validation.</p>
+              <p style="margin-top: 6px;"><strong>Footprint</strong>: Sub-3ms CPU execution latency, 2.5 MB weights.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>Model Zoo</span>
+      </div>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">Real-time Feature Pipeline & Modalities</h2>
+            <div class="slide-subtitle">Domain-specific non-invasive indicators</div>
+          </div>
+          <div class="slide-number">Slide 05</div>
+        </div>
+        <div class="slide-body">
+          <ul class="bullet-list">
+            <li><strong>Facial Modality (MediaPipe WASM 468 Points)</strong>: Computes 18 scale-invariant indicators including Eye Aspect Ratio (EAR), Brow Descent, Masseter Tension Proxy, and Lip Compression.</li>
+            <li><strong>Vocal Modality (Librosa Audio Spectrum)</strong>: Extracts Mel-Frequency Cepstral Coefficients (MFCCs 1–13), Fundamental Frequency (F0) pitch variance, Spectral Flux, and Pause Rate.</li>
+            <li><strong>Physiological Telemetry</strong>: Captures Heart Rate Variability (HRV - SDNN, RMSSD), Respiration Rate, and Galvanic Skin Response (GSR/EDA) Phasic spikes.</li>
+            <li><strong>Sampling Optimization</strong>: Client-side windowing processes landmarks at 15 FPS to conserve CPU and network bandwidth.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>Feature Pipeline</span>
+      </div>
+    </div>
+
+    <!-- Slide 6 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">Validation Protocol & Performance</h2>
+            <div class="slide-subtitle">15-Fold Leave-One-Subject-Out (LOSO) Results</div>
+          </div>
+          <div class="slide-number">Slide 06</div>
+        </div>
+        <div class="slide-body">
+          <p style="margin-bottom: 12px; font-size: 0.9rem;">To prevent identity data leakage, all models were evaluated under strict <strong>GroupKFold Leave-One-Subject-Out</strong> cross-validation where test subjects are completely unseen during training.</p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Deployed Model</th>
+                <th>Accuracy</th>
+                <th>F1-Score</th>
+                <th>ROC-AUC</th>
+                <th>CPU Latency</th>
+                <th>Deployment Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight">
+                <td>Random Forest Ensemble</td>
+                <td>77.46%</td>
+                <td>0.6648</td>
+                <td>0.7422</td>
+                <td>&lt; 3 ms</td>
+                <td>🏆 Fast ML Champion</td>
+              </tr>
+              <tr>
+                <td>CNN + GRL (Adversarial)</td>
+                <td>70.51%</td>
+                <td>0.6816</td>
+                <td>0.7535</td>
+                <td>14 ms</td>
+                <td>🧠 Deep Champion</td>
+              </tr>
+              <tr>
+                <td>Support Vector Machine (SVM)</td>
+                <td>71.20%</td>
+                <td>0.6115</td>
+                <td>0.6980</td>
+                <td>12 ms</td>
+                <td>Classical Benchmark</td>
+              </tr>
+              <tr>
+                <td>Logistic Regression</td>
+                <td>65.40%</td>
+                <td>0.5420</td>
+                <td>0.6210</td>
+                <td>&lt; 1 ms</td>
+                <td>Baseline Benchmark</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>Benchmark Results</span>
+      </div>
+    </div>
+
+    <!-- Slide 7 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">Live UI & Interactive Features</h2>
+            <div class="slide-subtitle">Real-time user experience in production app</div>
+          </div>
+          <div class="slide-number">Slide 07</div>
+        </div>
+        <div class="slide-body">
+          <ul class="bullet-list">
+            <li><strong>Live Top Bar Model Switcher</strong>: Interactive dropdown allowing users to select <code>CNN + GRL</code> or <code>Random Forest</code>; backend dynamically updates inference routing on the fly.</li>
+            <li><strong>Realtime Monitor Center</strong>: HTML5 MediaStream video box with real-time face mesh bounding box overlays.</li>
+            <li><strong>Multimodal Sync Badges</strong>: Displays active status for Facial Vectors (60Hz), Voice Spectral (48kHz), and Bio-GSR logic.</li>
+            <li><strong>Stress State Indicator</strong>: Displays stress levels (Minimal, Moderate, High, Extreme) and confidence percentage.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>User Interface</span>
+      </div>
+    </div>
+
+    <!-- Slide 8 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">SHAP Clinical Explainability Engine</h2>
+            <div class="slide-subtitle">Transparent feature attribution & driver analysis</div>
+          </div>
+          <div class="slide-number">Slide 08</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <h4>🔍 Real-Time SHAP Attribution</h4>
+              <p>Computes local feature contribution values per frame, identifying which biometrics drove a specific prediction.</p>
+            </div>
+            <div class="card">
+              <h4>📊 Primary Feature Drivers</h4>
+              <p>Highlights top positive and negative drivers (e.g. elevated heart rate, brow furrowing, voice pitch variance).</p>
+            </div>
+          </div>
+          <div style="margin-top: 16px;" class="card">
+            <h4>💡 Actionable Behavioral Insights</h4>
+            <p>Converts black-box ML predictions into personalized wellness recommendations such as box-breathing exercises, cognitive focus breaks, and recovery tracking.</p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>Explainability Engine</span>
+      </div>
+    </div>
+
+    <!-- Slide 9 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">Security & Production Hardening</h2>
+            <div class="slide-subtitle">Privacy preservation & API security</div>
+          </div>
+          <div class="slide-number">Slide 09</div>
+        </div>
+        <div class="slide-body">
+          <ul class="bullet-list">
+            <li><strong>Zero Raw Video Storage</strong>: Webcam images and microphone streams are processed transiently in RAM and discarded immediately to preserve privacy.</li>
+            <li><strong>Thread-Safe Temporary Files</strong>: Replaced static temporary filenames with <code>tempfile.NamedTemporaryFile</code> to prevent race conditions during concurrent user uploads.</li>
+            <li><strong>Secret Admin Auth Guard</strong>: Protected sensitive admin routes (<code>/api/admin/*</code>, restart, shutdown) using <code>X-Admin-Key</code> header verification.</li>
+            <li><strong>Secure API Key Headers</strong>: Passed Gemini API key via <code>x-goog-api-key</code> headers to prevent key exposure in HTTP access logs.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>Production Security</span>
+      </div>
+    </div>
+
+    <!-- Slide 10 -->
+    <div class="slide">
+      <div>
+        <div class="slide-header">
+          <div>
+            <h2 class="slide-title">Summary & Live Demonstration</h2>
+            <div class="slide-subtitle">Ready for review presentation</div>
+          </div>
+          <div class="slide-number">Slide 10</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="border-left: 4px solid #2563eb;">
+              <h4>✅ Project Summary</h4>
+              <p>• Live deployed cloud app on Vercel & Render.</p>
+              <p>• Validated subject-independent accuracy under LOSO validation.</p>
+              <p>• Sub-5ms CPU execution with SHAP explainability.</p>
+            </div>
+            <div class="card" style="border-left: 4px solid #059669;">
+              <h4>🚀 Live Demo Links</h4>
+              <p><strong>Frontend App</strong>:<br/><code>https://stress-detection-hpss.vercel.app</code></p>
+              <p style="margin-top: 8px;"><strong>Backend API</strong>:<br/><code>https://stress-detection-backend-dgfj.onrender.com</code></p>
+            </div>
+          </div>
+          <div style="margin-top: 24px; text-align: center; font-weight: 700; color: #1e293b; font-size: 1.1rem;">
+            Thank you! We welcome any questions from the Reviewer Panel.
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Multimodal Stress Detection</span>
+        <span>Live Demonstration</span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
