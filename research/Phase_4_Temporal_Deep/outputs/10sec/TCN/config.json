@@ -1,9 +1,0 @@
-{
-    "model_name": "TCN",
-    "scale": "10sec",
-    "category": "temporal_deep",
-    "execution_hardware": "GPU",
-    "input_dimensions": 60,
-    "optimizer": "Adam",
-    "learning_rate": 0.001
-}

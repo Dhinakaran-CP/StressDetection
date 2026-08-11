@@ -137,3 +137,9 @@ _archive/
 StressDetectionUsingML_Deploy/
 *.zip
 research.zip
+research/
+output/
+benchmark_results/
+phase3_results/
+*.csv
+*.json.gz
