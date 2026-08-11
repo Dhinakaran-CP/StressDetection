@@ -273,7 +273,7 @@ export default function FaceStream({ onResult, onIndicatorsUpdate, active, calib
     // Initialize singleton instance once
     if (!globalMesh) {
       globalMesh = new FaceMeshClass({
-        locateFile: (file) => `/mediapipe/face_mesh/${file}`,
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
       });
       globalMesh.setOptions({
         maxNumFaces: 1,
@@ -305,7 +305,7 @@ export default function FaceStream({ onResult, onIndicatorsUpdate, active, calib
       width: 320,   // lower resolution = much less memory and CPU
       height: 240,
     });
-    cam.start();
+    cam.start().catch(err => console.warn("Camera start failed, requesting media permission:", err));
     camRef.current = cam;
 
     // FPS counter
