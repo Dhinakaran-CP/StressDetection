@@ -23,6 +23,7 @@ def print(*args, **kwargs):
     builtins.print(*args, **kwargs)
 
 import eventlet
+from functools import wraps
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -208,15 +209,15 @@ def ask_gemini_stress_assistant(user_message, stress_level, stress_percentage):
         }
     }
 
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-        f"?key={GEMINI_API_KEY}"
-    )
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
     req = urllib.request.Request(
         url=url,
         data=json.dumps(payload).encode('utf-8'),
-        headers={'Content-Type': 'application/json'},
+        headers={
+            'Content-Type': 'application/json',
+            'x-goog-api-key': GEMINI_API_KEY
+        },
         method='POST'
     )
 
@@ -1041,18 +1042,19 @@ def capture_webcam():
         image_bytes = base64.b64decode(image_data)
         image = Image.open(BytesIO(image_bytes))
         
-        # Save temporarily
-        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_webcam.jpg')
-        image.save(temp_path)
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.jpg', dir=app.config['UPLOAD_FOLDER'], delete=False) as f:
+            temp_path = f.name
+            image.save(temp_path)
         
-        # Extract features and predict
-        facial_features, _ = model.extract_facial_features(temp_path)
-        result = runtime_engine.predict_face(raw_features=facial_features)
-        
-        # Clean up
-        os.remove(temp_path)
-        
-        return jsonify(result)
+        try:
+            # Extract features and predict
+            facial_features, _ = model.extract_facial_features(temp_path)
+            result = runtime_engine.predict_face(raw_features=facial_features)
+            return jsonify(result)
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
     
     except Exception as e:
         return jsonify({
@@ -1956,16 +1958,27 @@ def muse_stream_status():
 # -----------------------------------------------------------------------------
 # SYSTEM SHUTDOWN ENDPOINTS
 # -----------------------------------------------------------------------------
+# ADMIN AUTHENTICATION GUARD
+# -----------------------------------------------------------------------------
+ADMIN_SECRET_KEY = os.environ.get('ADMIN_SECRET_KEY', '')
+
+def require_admin(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        admin_key = request.headers.get('X-Admin-Key', '')
+        if not ADMIN_SECRET_KEY or admin_key != ADMIN_SECRET_KEY:
+            return jsonify({'status': 'error', 'message': 'Unauthorized admin access'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
 
 @app.route('/api/restart/backend', methods=['POST'])
+@require_admin
 def restart_backend():
-    if request.access_route[-1] != '127.0.0.1':
-        return jsonify({'status': 'error', 'message': 'Forbidden'}), 403
     print("[Shutdown] Restarting backend server...")
     def restart_self():
         import time, os, sys, subprocess
         time.sleep(1)
-        # On Windows, ping localhost for a few seconds to let the port free up, then restart
         if os.name == 'nt':
             cmd = f'ping 127.0.0.1 -n 3 > nul && "{sys.executable}" "{sys.argv[0]}"'
             subprocess.Popen(cmd, shell=True)
@@ -1978,9 +1991,8 @@ def restart_backend():
     return jsonify({'status': 'success', 'message': 'Backend is restarting...'})
 
 @app.route('/api/shutdown/backend', methods=['POST'])
+@require_admin
 def shutdown_backend():
-    if request.access_route[-1] != '127.0.0.1':
-        return jsonify({'status': 'error', 'message': 'Forbidden'}), 403
     print("[Shutdown] Shutting down backend server...")
     def kill_self():
         import time, os
@@ -1994,6 +2006,7 @@ def shutdown_backend():
 # --- Phase 8: Admin & Monitoring Endpoints ---
 
 @app.route('/api/admin/metrics', methods=['GET'])
+@require_admin
 def get_metrics():
     return jsonify({
         "status": "success",
@@ -2002,6 +2015,7 @@ def get_metrics():
     })
 
 @app.route('/api/admin/rollback', methods=['POST'])
+@require_admin
 def rollback():
     global runtime_engine, stream_processor
     
@@ -2020,6 +2034,7 @@ def rollback():
     return jsonify({"status": "error", "message": "Rollback failed"}), 400
 
 @app.route('/api/admin/golden_replay', methods=['POST'])
+@require_admin
 def run_golden_replay():
     data = request.json or {}
     rows = data.get('rows', [])

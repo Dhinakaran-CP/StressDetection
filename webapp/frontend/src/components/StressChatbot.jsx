@@ -63,22 +63,36 @@ export default function StressChatbot({ stressLevel, stressPercentage, open, onC
 
   const renderMessage = (text) => {
     if (!text) return null;
-    
-    // 1. Escape raw HTML to prevent browser from swallowing <tags>
-    let html = text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    const lines = text.split("\n");
+    return (
+      <div className="space-y-1">
+        {lines.map((line, lIdx) => {
+          if (!line.trim()) return <div key={lIdx} className="h-1" />;
+          const isBullet = line.trim().startsWith("* ") || line.trim().startsWith("- ");
+          const content = isBullet ? line.trim().substring(2) : line;
 
-    // 2. Replace **text** with <strong>text</strong>
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // 3. Replace '* text' list items with a styled div
-    html = html.replace(/(?:^|\s)\* (.*?)(?=(?:\s\* |$))/g, '<div style="margin-top: 6px; margin-left: 12px;">• $1</div>');
-    // 4. Replace newlines with <br/>
-    html = html.replace(/\n/g, '<br/>');
-    
-    return <span dangerouslySetInnerHTML={{ __html: html }} />;
+          const parts = content.split(/(\*\*.*?\*\*)/g);
+          const formattedParts = parts.map((part, pIdx) => {
+            if (part.startsWith("**") && part.endsWith("**")) {
+              return <strong key={pIdx} className="font-semibold">{part.slice(2, -2)}</strong>;
+            }
+            return part;
+          });
+
+          if (isBullet) {
+            return (
+              <div key={lIdx} className="flex items-start gap-1.5 ml-2 mt-1">
+                <span className="text-primary font-bold">•</span>
+                <div>{formattedParts}</div>
+              </div>
+            );
+          }
+          return <div key={lIdx}>{formattedParts}</div>;
+        })}
+      </div>
+    );
   };
+
 
   return (
     <div className="fixed right-6 bottom-6 z-50">

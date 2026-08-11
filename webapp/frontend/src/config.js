@@ -1,3 +1,7 @@
+if (!process.env.REACT_APP_API_BASE && process.env.NODE_ENV === 'production') {
+  console.warn('REACT_APP_API_BASE is not explicitly set in environment variables! Defaulting to localhost.');
+}
+
 export const API_BASE = process.env.REACT_APP_API_BASE || "http://127.0.0.1:5000";
 
 export const STRESS_LEVELS = {
@@ -8,3 +12,4 @@ export const STRESS_LEVELS = {
 };
 
 export const CHATBOT_PROMPT = "You are a supportive stress-management assistant in a general stress monitoring app. Give concise, practical, non-medical advice. Do not diagnose.";
+
