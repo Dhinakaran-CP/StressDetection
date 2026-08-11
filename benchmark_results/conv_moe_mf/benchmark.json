@@ -1,0 +1,55 @@
+{
+  "model": "conv_moe_mf",
+  "group": "phase3",
+  "description": "ConvMoE-MF: light conv encoders, MoE fusion, dual GRL",
+  "params": {
+    "hidden_dim": 16,
+    "embed_dim": 8,
+    "num_subjects": 91,
+    "num_datasets": 3,
+    "face_dim": 33,
+    "voice_dim": 23,
+    "physio_dim": 13,
+    "grl_alpha_subj": 0.02,
+    "grl_alpha_ds": 0.02
+  },
+  "per_dataset": {
+    "stressid": {
+      "accuracy": 0.7567969413763806,
+      "precision": 0.8191089640365002,
+      "recall": 0.6538131962296486,
+      "f1": 0.7271860852990231,
+      "roc_auc": 0.7526552468941958,
+      "avg_precision": 0.693957805782218,
+      "mse": 0.23700504849114437,
+      "mae": 0.27083043755924424,
+      "mean_confidence": 0.3754051923751831,
+      "n_folds": 15
+    },
+    "wesad": {
+      "accuracy": 0.6559724487946348,
+      "precision": 0.7512953367875648,
+      "recall": 0.07268170426065163,
+      "f1": 0.13254113345521024,
+      "roc_auc": 0.7482558611178713,
+      "avg_precision": 0.6029703919920062,
+      "mse": 0.20392926806500156,
+      "mae": 0.39965075438172676,
+      "mean_confidence": 0.4018910527229309,
+      "n_folds": 15
+    },
+    "combined": {
+      "accuracy": 0.7451913133402275,
+      "precision": 0.7770320656226697,
+      "recall": 0.5275949367088607,
+      "f1": 0.6284680337756333,
+      "roc_auc": 0.6942644064795963,
+      "avg_precision": 0.6036753514731017,
+      "mse": 0.24941089277092574,
+      "mae": 0.264817656908773,
+      "mean_confidence": 0.35596853494644165,
+      "n_folds": 15
+    }
+  },
+  "timestamp": "2026-07-24 09:15:34"
+}

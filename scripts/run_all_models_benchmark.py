@@ -678,8 +678,9 @@ def forward_model(model, model_entry, batch, device):
     return logits, subj_logits, confidence, label.long(), subj_id.long()
 
 def run_benchmark_on_dataset(dataset_name, model_entry: ModelEntry, config: dict, device,
-                              exclude_dataset=None):
+                              exclude_dataset=None, exclude_subjects=None):
     """Train and evaluate a single model on a single dataset with LOSO CV."""
+    exclude_subjects = set(exclude_subjects or [])
     meta_path = os.path.join(ENRICHED_DIR, dataset_name, 'metadata.parquet')
     if not os.path.exists(meta_path):
         print(f"    SKIP {dataset_name}: enriched data not found")
@@ -720,12 +721,20 @@ def run_benchmark_on_dataset(dataset_name, model_entry: ModelEntry, config: dict
     single_class_subjs = set(subj_label_set[subj_label_set.apply(lambda x: len(x) < 2)].index)
     multi_class_subjs = [s for s in subjects if s not in single_class_subjs]
 
-    if len(multi_class_subjs) < 2:
-        print(f"    SKIP {dataset_name}: only {len(multi_class_subjs)} multi-class subjects")
+    # Exclude problematic subjects from test pool (remain in training)
+    excluded_from_test = set(s for s in multi_class_subjs if str(s) in exclude_subjects)
+    test_pool = [s for s in multi_class_subjs if s not in excluded_from_test]
+    if excluded_from_test:
+        print(f"      Excluding from test pool: {sorted(excluded_from_test)}")
+        print(f"      Test pool: {len(test_pool)} subjects (of {len(multi_class_subjs)} multi-class)")
+
+    if len(test_pool) < 2:
+        print(f"    SKIP {dataset_name}: only {len(test_pool)} eligible test subjects")
         return None, []
 
     print(f"      Subjects: {n_subjects} total, {len(multi_class_subjs)} multi-class, "
-          f"{len(single_class_subjs)} single-class (train-only)")
+          f"{len(single_class_subjs)} single-class, {len(excluded_from_test)} excluded")
+    multi_class_subjs = test_pool
 
     # Stratified fold selection from multi-class pool
     rng = np.random.RandomState(config['seed'])
@@ -945,6 +954,8 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Validate setup without training')
     parser.add_argument('--exclude-dataset', type=str, default=None,
                         help='Exclude dataset from combined training (e.g., empathicschool)')
+    parser.add_argument('--exclude-subjects', type=str, default=None,
+                        help='Comma-separated subject IDs to exclude from test pool (e.g., stressid_m8g5,stressid_71i5)')
     args = parser.parse_args()
 
     if args.list:
@@ -1007,6 +1018,12 @@ def main():
         print("  Dry-run OK")
         return
 
+    # Parse excluded subjects
+    exclude_subject_list = []
+    if args.exclude_subjects:
+        exclude_subject_list = [s.strip() for s in args.exclude_subjects.split(',')]
+        print(f"  Excluding subjects from test pool: {exclude_subject_list}")
+
     # Run benchmark
     all_summaries = {}
     exclude_ds = args.exclude_dataset
@@ -1030,7 +1047,8 @@ def main():
             exclude_this = exclude_ds if ds_name == 'combined' else None
             agg, fold_metrics = run_benchmark_on_dataset(
                 ds_name, model_entry, TRAIN_CFG, DEVICE,
-                exclude_dataset=exclude_this)
+                exclude_dataset=exclude_this,
+                exclude_subjects=exclude_subject_list)
 
             if agg is None:
                 continue

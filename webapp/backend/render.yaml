@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: stress-detection-backend
+    env: python
+    region: oregon
+    plan: free
+    rootDir: webapp/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: FRONTEND_URL
+        value: "*"

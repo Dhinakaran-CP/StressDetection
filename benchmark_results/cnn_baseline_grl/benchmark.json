@@ -1,0 +1,55 @@
+{
+  "model": "cnn_baseline_grl",
+  "group": "phase3",
+  "description": "CNNBaseline+GRL: 1D-CNN with adversarial subject head",
+  "params": {
+    "total_feat_dim": 69,
+    "hidden_dims": [
+      64,
+      32,
+      16
+    ],
+    "num_classes": 2,
+    "num_subjects": 91,
+    "grl_alpha": 0.02
+  },
+  "per_dataset": {
+    "stressid": {
+      "accuracy": 0.731728475384949,
+      "precision": 0.7294303797468354,
+      "recall": 0.6563834836260085,
+      "f1": 0.6909817636772421,
+      "roc_auc": 0.711313630512016,
+      "avg_precision": 0.6548841922581476,
+      "mse": 0.2040277316455508,
+      "mae": 0.3879127776873549,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "wesad": {
+      "accuracy": 0.7823092260286387,
+      "precision": 0.6636438582028029,
+      "recall": 0.8070175438596491,
+      "f1": 0.7283420040714771,
+      "roc_auc": 0.872272532552278,
+      "avg_precision": 0.8300384196744566,
+      "mse": 0.15121022051927763,
+      "mae": 0.31454941773514006,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "combined": {
+      "accuracy": 0.690471114900874,
+      "precision": 0.7389885807504079,
+      "recall": 0.18332658842573857,
+      "f1": 0.29377431906614787,
+      "roc_auc": 0.670435678334788,
+      "avg_precision": 0.5255050842123793,
+      "mse": 0.2418160067267269,
+      "mae": 0.3618175069465343,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    }
+  },
+  "timestamp": "2026-07-24 10:22:25"
+}

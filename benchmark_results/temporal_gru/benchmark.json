@@ -1,0 +1,50 @@
+{
+  "model": "temporal_gru",
+  "group": "temporal",
+  "description": "GRU temporal classifier",
+  "params": {
+    "input_dim": 69,
+    "hidden_dim": 64,
+    "num_layers": 2,
+    "dropout": 0.3
+  },
+  "per_dataset": {
+    "stressid": {
+      "accuracy": 0.7683799609629147,
+      "precision": 0.7865416436845009,
+      "recall": 0.6767916468913147,
+      "f1": 0.7275510204081632,
+      "roc_auc": 0.7050534048228103,
+      "avg_precision": 0.6720802246440205,
+      "mse": 0.19227067517379906,
+      "mae": 0.36776917789077274,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "wesad": {
+      "accuracy": 0.791915896320464,
+      "precision": 0.6883059137394397,
+      "recall": 0.7759398496240602,
+      "f1": 0.7295004712535345,
+      "roc_auc": 0.8753797469255193,
+      "avg_precision": 0.8164526039229485,
+      "mse": 0.15616231733800273,
+      "mae": 0.24106260394744705,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "combined": {
+      "accuracy": 0.7272081290414268,
+      "precision": 0.8146035367940673,
+      "recall": 0.28895184135977336,
+      "f1": 0.4265870052277819,
+      "roc_auc": 0.5881026943538364,
+      "avg_precision": 0.5282885821061241,
+      "mse": 0.2211931695296396,
+      "mae": 0.32716402237249026,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    }
+  },
+  "timestamp": "2026-07-23 20:04:42"
+}

@@ -1,0 +1,50 @@
+{
+  "model": "cross_attn_fusion",
+  "group": "phase2",
+  "description": "Cross-attention reinforced modality fusion (6 cross-attn blocks)",
+  "params": {
+    "face_dim": 33,
+    "voice_dim": 23,
+    "physio_dim": 13,
+    "hidden_dim": 16
+  },
+  "per_dataset": {
+    "stressid": {
+      "accuracy": 0.7289091303404901,
+      "precision": 0.7373961218836566,
+      "recall": 0.6317038443284291,
+      "f1": 0.6804703476482618,
+      "roc_auc": 0.6758900045641261,
+      "avg_precision": 0.6433224497305763,
+      "mse": 0.21852470451473277,
+      "mae": 0.40028612947766473,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "wesad": {
+      "accuracy": 0.8160232010150444,
+      "precision": 0.7390243902439024,
+      "recall": 0.7593984962406015,
+      "f1": 0.7490729295426453,
+      "roc_auc": 0.8817429006929589,
+      "avg_precision": 0.8472856568210037,
+      "mse": 0.12974412425327914,
+      "mae": 0.24587182626999254,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "combined": {
+      "accuracy": 0.6970084559084773,
+      "precision": 0.7373949579831933,
+      "recall": 0.2130716309186564,
+      "f1": 0.3306122448979592,
+      "roc_auc": 0.5550258145068713,
+      "avg_precision": 0.4803491363066716,
+      "mse": 0.2346650719582217,
+      "mae": 0.35979086072298966,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    }
+  },
+  "timestamp": "2026-07-23 22:18:41"
+}

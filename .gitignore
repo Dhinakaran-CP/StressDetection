@@ -135,3 +135,5 @@ desktop.ini
 quarantine/
 _archive/
 StressDetectionUsingML_Deploy/
+*.zip
+research.zip

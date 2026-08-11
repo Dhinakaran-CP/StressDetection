@@ -1,0 +1,48 @@
+{
+  "model": "ssvb_casa_ais",
+  "group": "phase3",
+  "description": "Full SSVB-CASA-AIS: 9 experts, cross-attention, global MoE, GRL",
+  "params": {
+    "hidden_dim": 16,
+    "num_subjects": 91
+  },
+  "per_dataset": {
+    "stressid": {
+      "accuracy": 0.5042480883602379,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.2715431888879023,
+      "avg_precision": 0.38042198564637797,
+      "mse": 0.4943331162838471,
+      "mae": 0.4964831803828749,
+      "mean_confidence": 0.29363757371902466,
+      "n_folds": 15
+    },
+    "wesad": {
+      "accuracy": 0.6383904295812942,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.4654215037878626,
+      "avg_precision": 0.34123757265482935,
+      "mse": 0.23242204094282326,
+      "mae": 0.45697237508267147,
+      "mean_confidence": 0.31115391850471497,
+      "n_folds": 15
+    },
+    "combined": {
+      "accuracy": 0.5915201654601862,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.2750567407276268,
+      "avg_precision": 0.2899792464002918,
+      "mse": 0.4083748266623447,
+      "mae": 0.4088050233409628,
+      "mean_confidence": 0.29929763078689575,
+      "n_folds": 15
+    }
+  },
+  "timestamp": "2026-07-24 09:30:45"
+}

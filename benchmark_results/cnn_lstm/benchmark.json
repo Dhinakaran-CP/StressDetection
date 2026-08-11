@@ -1,0 +1,50 @@
+{
+  "model": "cnn_lstm",
+  "group": "temporal",
+  "description": "CNN + LSTM hybrid",
+  "params": {
+    "input_dim": 69,
+    "hidden_dim": 64,
+    "num_layers": 1,
+    "dropout": 0.3
+  },
+  "per_dataset": {
+    "stressid": {
+      "accuracy": 0.7547169811320755,
+      "precision": 0.7528497409326425,
+      "recall": 0.6896060749881348,
+      "f1": 0.7198414664354719,
+      "roc_auc": 0.7044154127956257,
+      "avg_precision": 0.631099354625986,
+      "mse": 0.19573278788753407,
+      "mae": 0.38098582301577266,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "wesad": {
+      "accuracy": 0.7928221859706363,
+      "precision": 0.6964944649446494,
+      "recall": 0.7568922305764411,
+      "f1": 0.7254383857794859,
+      "roc_auc": 0.8753796757652222,
+      "avg_precision": 0.8362960420159834,
+      "mse": 0.15644420231733427,
+      "mae": 0.2416419115304766,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    },
+    "combined": {
+      "accuracy": 0.6869182121793506,
+      "precision": 0.7178861788617886,
+      "recall": 0.17867260218535005,
+      "f1": 0.2861309138042774,
+      "roc_auc": 0.5419553713892676,
+      "avg_precision": 0.4696279913529553,
+      "mse": 0.23737105620097307,
+      "mae": 0.3647198925777999,
+      "mean_confidence": 1.0,
+      "n_folds": 15
+    }
+  },
+  "timestamp": "2026-07-23 21:59:38"
+}

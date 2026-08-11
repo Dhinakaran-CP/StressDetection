@@ -42,11 +42,11 @@ from backend.model import MultimodalStressDetector, safe_pickle_load
 app = Flask(__name__)
 # Secure CORS for production compatibility
 FRONTEND_URLS = [
-    os.environ.get('FRONTEND_URL', 'http://localhost:3000'),
+    os.environ.get('FRONTEND_URL', '*'),
     'http://localhost:3000',
     'http://127.0.0.1:3000'
 ]
-CORS(app, resources={r"/api/*": {"origins": FRONTEND_URLS}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=60, ping_interval=25, max_http_buffer_size=100000000)
 
 # Initialize global stream processor (will be injected after runtime_engine is ready)
@@ -458,6 +458,36 @@ def explainability_status():
     return jsonify(runtime_engine.expl_engine.status())
 
 
+@app.route('/api/model/select', methods=['GET', 'POST'])
+def select_model():
+    """Get or switch active model between CNN + GRL ('cnn_grl') and Random Forest ('random_forest')."""
+    if request.method == 'POST':
+        data = request.json or {}
+        model_choice = data.get('model', '').lower()
+        if model_choice in ['cnn_grl', 'cnn+grl', 'deep', 'cnn']:
+            runtime_engine.use_deep = True
+        elif model_choice in ['random_forest', 'rf', 'classical']:
+            runtime_engine.use_deep = False
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f"Invalid model choice '{model_choice}'. Choose 'cnn_grl' or 'random_forest'."
+            }), 400
+
+    active_key = 'cnn_grl' if runtime_engine.use_deep else 'random_forest'
+    active_name = 'CNN + GRL (Primary Deep Champion)' if runtime_engine.use_deep else 'Random Forest (Production Classifier)'
+    return jsonify({
+        'status': 'success',
+        'active_model_key': active_key,
+        'active_model_name': active_name,
+        'use_deep': runtime_engine.use_deep,
+        'available_models': [
+            {'key': 'cnn_grl', 'name': 'CNN + GRL', 'type': 'Deep Learning', 'description': '1D-CNN baseline with Gradient Reversal Layer for subject identity suppression.'},
+            {'key': 'random_forest', 'name': 'Random Forest', 'type': 'Machine Learning', 'description': 'Fast classical ensemble classifier.'}
+        ]
+    })
+
+
 @app.route('/api/model/version', methods=['GET'])
 def model_version():
     """Return current active model strategy and versions from the registry."""
@@ -471,9 +501,13 @@ def model_version():
             'deep_physio_expert': runtime_engine.registry.get_active_model('adv_physio_expert' if runtime_engine.strategy_used == 'adversarial' else 'physio_expert'),
             'deep_fusion_router': runtime_engine.registry.get_active_model('adv_fusion_router' if runtime_engine.strategy_used == 'adversarial' else 'deep_fusion_router')
         }
+        active_key = 'cnn_grl' if runtime_engine.use_deep else 'random_forest'
+        active_name = 'CNN + GRL (Primary Deep Champion)' if runtime_engine.use_deep else 'Random Forest (Production Classifier)'
         return jsonify({
             'status': 'success',
             'use_deep': runtime_engine.use_deep,
+            'active_model_key': active_key,
+            'active_model_name': active_name,
             'strategy': runtime_engine.strategy_used,
             'active_models': active_models
         })
@@ -518,8 +552,13 @@ def predict_realtime():
             "fallback_reason": "SSVB-CASA-AIS disabled or unavailable" if fallback_active else ""
         }
         
+        active_model_name = "CNN + GRL (Primary Deep Champion)" if runtime_engine.use_deep else "Random Forest (Production Classifier)"
+        active_model_key = "cnn_grl" if runtime_engine.use_deep else "random_forest"
+        
         return jsonify({
             "status": "success",
+            "model_used": active_model_name,
+            "active_model_key": active_model_key,
             "predicted_class": result.get("predicted_class", "No Stress"),
             "probability": float(prob),
             "confidence_percentage": float(confidence_pct),
@@ -604,17 +643,12 @@ def predict_upload():
             if voice_features is None: voice_features = json_data.get("voice")
             if phys_features is None: phys_features = json_data.get("physio")
         
-        # Route to fast Random Forest (temporarily bypass deep mode)
-        was_deep = runtime_engine.use_deep
-        runtime_engine.use_deep = False
-        try:
-            result = runtime_engine.predict_fused(
-                face=facial_features,
-                voice=voice_features,
-                physio=phys_features
-            )
-        finally:
-            runtime_engine.use_deep = was_deep
+        # Route to active model selection (CNN + GRL or Random Forest)
+        result = runtime_engine.predict_fused(
+            face=facial_features,
+            voice=voice_features,
+            physio=phys_features
+        )
             
         if 'error' in result:
             return jsonify({'status': 'error', 'message': result['error']}), 400
@@ -630,9 +664,13 @@ def predict_upload():
                 physio_features=phys_features
             )
         
+        active_model_name = "CNN + GRL (Primary Deep Champion)" if runtime_engine.use_deep else "Random Forest (Production Classifier)"
+        active_model_key = "cnn_grl" if runtime_engine.use_deep else "random_forest"
+
         return jsonify({
             "status": "success",
-            "model_used": "Random Forest (Production Classifier)",
+            "model_used": active_model_name,
+            "active_model_key": active_model_key,
             "predicted_class": result.get("predicted_class", "No Stress"),
             "probability": float(prob),
             "fused_score": float(prob),
@@ -1993,7 +2031,6 @@ def run_golden_replay():
 
 if __name__ == '__main__':
     print("Starting Multimodal Stress Detection API...")
-    
-    # Waitress does not support WebSockets/Socket.IO, so we use eventlet via socketio.run
-    print("Starting SocketIO server on http://localhost:5000...")
-    socketio.run(app, debug=False, host='127.0.0.1', port=5000, use_reloader=False, minimum_chunk_size=1)
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Starting SocketIO server on 0.0.0.0:{port}...")
+    socketio.run(app, debug=False, host='0.0.0.0', port=port, use_reloader=False, minimum_chunk_size=1)

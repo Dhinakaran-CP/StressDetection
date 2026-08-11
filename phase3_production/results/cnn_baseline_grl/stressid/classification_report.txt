@@ -3,12 +3,12 @@ Classification Report — cnn_baseline_grl (stressid)
 
               precision    recall  f1-score   support
 
-        Calm     0.7464    0.7736    0.7598      2504
-      Stress     0.7188    0.6877    0.7029      2107
+        Calm     0.7819    0.8335    0.8069       817
+      Stress     0.7908    0.7301    0.7592       704
 
-    accuracy                         0.7343      4611
-   macro avg     0.7326    0.7306    0.7313      4611
-weighted avg     0.7338    0.7343    0.7338      4611
+    accuracy                         0.7857      1521
+   macro avg     0.7863    0.7818    0.7831      1521
+weighted avg     0.7860    0.7857    0.7848      1521
 
-AUC-ROC: 0.7330
-Average Precision (AP): 0.6882
+AUC-ROC: 0.7444
+Average Precision (AP): 0.6723
