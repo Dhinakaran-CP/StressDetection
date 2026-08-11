@@ -253,78 +253,92 @@ export default function FaceStream({ onResult, onIndicatorsUpdate, active, calib
   }, []);
 
   useEffect(() => {
-    if (!active || !libsReady) {
-      if (camRef.current) {
-        camRef.current.stop();
-        camRef.current = null;
+    let localStream = null;
+    let animFrameId = null;
+
+    if (!active) {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
       }
       if (fpsTimer.current) {
         clearInterval(fpsTimer.current);
         fpsTimer.current = null;
       }
+      setFps(0);
       return;
     }
 
-    const FaceMeshClass = window.FaceMesh;
-    const CameraClass = window.Camera;
+    // Direct HTML5 getUserMedia stream for 100% reliable camera display across browsers
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } })
+        .then(stream => {
+          localStream = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(e => console.warn("Video play exception:", e));
+          }
 
-    if (!FaceMeshClass || !CameraClass) return;
+          // Initialize MediaPipe FaceMesh for landmark detection
+          const FaceMeshClass = window.FaceMesh;
+          if (FaceMeshClass) {
+            if (!globalMesh) {
+              globalMesh = new FaceMeshClass({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+              });
+              globalMesh.setOptions({
+                maxNumFaces: 1,
+                refineLandmarks: false,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5,
+              });
+            }
 
-    // Initialize singleton instance once
-    if (!globalMesh) {
-      globalMesh = new FaceMeshClass({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-      });
-      globalMesh.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: false,  // false = faster, saves ~20ms per frame
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
+            globalMesh.onResults(handleResults);
+
+            let frameCounter = 0;
+            const processFrame = async () => {
+              frameCounter++;
+              if (frameCounter % 2 === 0 && videoRef.current && videoRef.current.readyState >= 2 && globalMesh) {
+                try {
+                  await globalMesh.send({ image: videoRef.current });
+                  frameCount.current++;
+                } catch (e) {
+                  // Ignore frame send exception
+                }
+              }
+              animFrameId = requestAnimationFrame(processFrame);
+            };
+            animFrameId = requestAnimationFrame(processFrame);
+          }
+        })
+        .catch(err => {
+          console.error("Camera access error:", err);
+        });
     }
 
-    // Bind results handler immediately upon starting the camera
-    globalMesh.onResults(handleResults);
-
-    let frameCounter = 0;
-
-    const cam = new CameraClass(videoRef.current, {
-      onFrame: async () => {
-        frameCounter++;
-        // Skip every other frame to process landmarks at 15fps, saving 50% CPU
-        if (frameCounter % 2 !== 0) return;
-
-        if (videoRef.current && globalMesh) {
-          try {
-            await globalMesh.send({ image: videoRef.current });
-          } catch (e) {
-            console.error("Error sending frame to MediaPipe mesh:", e);
-          }
-        }
-      },
-      width: 320,   // lower resolution = much less memory and CPU
-      height: 240,
-    });
-    cam.start().catch(err => console.warn("Camera start failed, requesting media permission:", err));
-    camRef.current = cam;
-
-    // FPS counter
     fpsTimer.current = setInterval(() => {
       setFps(frameCount.current);
       frameCount.current = 0;
     }, 1000);
 
     return () => {
-      if (camRef.current) {
-        camRef.current.stop();
-        camRef.current = null;
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
       }
       if (fpsTimer.current) {
         clearInterval(fpsTimer.current);
         fpsTimer.current = null;
       }
     };
-  }, [active, libsReady, handleResults]);
+  }, [active, handleResults]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, overflow: 'hidden' }}>
